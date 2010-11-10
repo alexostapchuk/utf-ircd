@@ -1,0 +1,43 @@
+The rusnet-ircd team is a group of ircd coders who were sick and tired
+of the limitations, instability and lack of multi-language support
+of the ircd daemon available. 
+
+Rusnet-ircd stands for the classic ircd branch with advanced character sets
+support, many optimizations and new features implemented by rusnet team coders.
+ 
+Anyone is welcome to contribute to this effort.  
+If you are interested in current rusnet-ircd development you are encouraged
+to participate in the rusnet development mailing list.  To subscribe to this
+list, send email to majordomo@rinet.ru with the line:
+
+subscribe rusnet-devel@rusnet.org.ru
+
+in the body.
+
+---------------------------------------------------------------------------
+The core team of this major release:
+
+	skold		Aristotle Symplides,
+        erra            Seva Gluschenko,
+        LoSt            Andriy Gritsenko,
+	cj		Seva Jitomirsky
+	 
+The following people have contributed a lot of their
+time, brains or nerves to this project by testing, coding or bugs-fighting:
+
+        Adel           	Adel Abushaev,
+        Umka            Alexey Lyashkov 
+        baron           Alexander Dubovikov,
+	denk		Denis Kozadaev,
+        az              Alex Zhilyakov,
+        kmale           Kirill Pushkaryov,
+	local		Arkadiy Oskotskiy,
+	
+        
+Others are always welcome.
+And if we left anyone off of the above list,
+be sure to let us know about that.  Many others have contributed to
+previous versions of this ircd, too many to list here.
+
+
+Send your bug-fixes, patches or suggestions to rusnet-devel@rusnet.org.ru.
