@@ -1,0 +1,26 @@
+RusNet IRC network is serving Russian community all throughout the
+world but mostly in Russia and Ukraine. According to the network specifics 
+numerous add-ons and extensions to original IRC daemon have been made. Some
+features might be found useful in other irc networks. Some of our code may
+appear in future releases of the original IRC daemon,
+but there will always be the "national" code.
+
+RusNet official site is:
+
+http://www.rus-net.org/
+
+There's no open mail-list, but there's a web-forum at our site.
+
+Currently RusNet includes (but not limiting to) the following list of
+servers:
+
+irc.stv.su         (Rusnet-RU)
+irc.run.net        (Rusnet-RU)
+irc.lucky.net      (Rusnet-UA)
+irc.tsua.net       (Rusnet-UA)
+irc.chelyabinsk.ru (Rusnet-RU)
+irc.tomsk.net      (Rusnet-RU)
+irc.mv.ru          (Rusnet-RU)
+irc.nnov.net       (Rusnet-RU)
+irc.start4.info    (Rusnet-DE)
+irc.anarxi.st	   (Rusnet-NL)

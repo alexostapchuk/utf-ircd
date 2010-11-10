@@ -1,0 +1,85 @@
+# @(#)$Id: RELEASE_NOTES,v 1.12 2010-11-10 13:38:40 gvs Exp $
+
+===============================================================================
+Important changes in 1.5.0 (since 1.4.3):
+	* UTF 8 support by means of iconv.
+	* UTF negotiation added to server link proto.
+	
+---------
+
+
+
+This is version 1.4.3 of the Rusnet-IRC
+==============================================================================
+Important changes in 1.4.3p21 [RC6] (since 1.4.3p15):
+	* A lot of bugfixes
+	* You can see local joins by defining JOIN_NOTICES
+	* Local clients disconnectings are now logged in &OPER together with 
+	    connections
+	* You can now set R-lines for reserved nicks instead of K-lines and
+	    they will be activated on-fly
+==============================================================================
+Important changes in 1.4.3p15 [RC1] (since 1.4.3p12):
+	* Several minor bugs and defects were fixed in logging, rline and ssl umode
+	* LOCOP_TLINE/OPER_TLINE define added to config.h to allow opers/locops
+	  locally K/R/E-line
+	* WALLOPS messages are now being sent to &WALLOPS channel by default.
+	* #include directive bug fixed
+	
+==============================================================================
+Important changes in 1.4.3p12 (since 1.4.3p10):
+	* LOG_OLDFORMAT define in config.h: you may choose between old and new
+	  log files format. Read RUSNET_DOC about new detailed format.
+	* New 'half-op' channel mode introduced
+	* mod_dnsbl now supports white-lists (not only black-lists)
+	
+==============================================================================
+Important changes in 1.4.3p10 (since 1.4.3p9):
+	* New logging system configuration at runtime by means of l:lines 
+	  instead of editing config.h at compile time. Read RUSNET_DOC for details.
+	  Note that logging configuration changed, you need to revise it.
+	* Many SSL and configure bug-fixes and cleanups
+	* support for sparc-solaris-2.[7-9]
+		  	  
+==============================================================================
+Important changes in 1.4.3p9 (since 1.4.3p8):
+	* stats P now shows all ports ircd listens to.
+	* DELAY_CLOSE allows to delay connection closing to prevent waste of
+	  CPU if there are fast-reconnecting clones (from 2.11).
+	* Numerous cleanups and bug-fixes.
+	
+==============================================================================
+Important changes in 1.4.3p8 (since 1.4.3p7):
+	* TKLINES removed from code
+	* TkServ must be UNDEFINED for RusNet (this is default)
+	* Fast, reliable K/R/E lines handling mechanizm implemented (iserv)
+	* kline, unkline, rline, unrline, eline and uneline commands are now 
+	  available for opers. Read RUSNET-DOC.
+	* STATS e now shows K-line exempts
+	* K/R lines now support full masks (nick!user@host).
+	* E lines now support expiration time and also reasons and full masks.
+	* rehash E for rehashing only E-lines
+	
+===============================================================================
+
+Important changes in 1.4.3p7 (since 1.4.3p1):
+	* Umode +R and R-lines for restricting user instead of K-lining (read
+	  more in RUSNET-DOC)
+	* Rehash command now supports parameters (see RUSNET-DOC)
+
+===============================================================================
+
+New features in 1.4.3p0:
+	* SSL support added and new p:lines (ssl ports) introduced (see INSTALL)
+
+===============================================================================
+Important changes in 1.4.3 (since 1.4.2):
+	* No TkServ anymore. Do not compile it or try to use. But keep #include 
+	  kills.conf in your configuration and write permissions on it for ircd user.
+	* No TKLINES functionality, use KLINE, UNKLINE commands instead
+	* SSL support added
+	* usermode +R (restriction) in conjuction with R-lines added.
+	* channel mod +h (halfop %) implemented
+	* New logging style by means of l:lines
+	* new &wallops channel to log all oper messages
+------

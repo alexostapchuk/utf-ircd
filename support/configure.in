@@ -1,0 +1,1630 @@
+dnl configure.in for rusnet-ircd-1.5.13
+dnl Matthew Green (mrg@mame.mu.oz.au), Alain Nissen (Alain.Nissen@ulg.ac.be)
+dnl using portions of Avalon's Config and GNU Autoconf 1.12.
+
+
+
+AC_DEFUN(IRC_MATHLIB, [
+	AC_CHECK_LIB([m], [pow], [MATHLIBS=-lm], [])
+	AC_SUBST(MATHLIBS)
+])
+
+dnl based on the version from the GNU Autoconf Macro Archive at:
+dnl http://www.gnu.org/software/ac-archive/htmldoc/ac_func_accept_argtypes.html
+dnl
+AC_DEFUN([AC_FUNC_ACCEPT_ARGTYPES],
+[AC_MSG_CHECKING([types of arguments for accept()])
+ AC_CACHE_VAL(ac_cv_func_accept_arg1,dnl
+ [AC_CACHE_VAL(ac_cv_func_accept_arg2,dnl
+  [AC_CACHE_VAL(ac_cv_func_accept_arg3,dnl
+   [for ac_cv_func_accept_arg1 in 'int' 'unsigned int'; do
+     for ac_cv_func_accept_arg2 in 'struct sockaddr' 'const struct sockaddr' 'void'; do
+      for ac_cv_func_accept_arg3 in 'socklen_t' 'size_t' 'unsigned int' 'int'; do
+       AC_TRY_COMPILE(dnl
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+extern accept ($ac_cv_func_accept_arg1, $ac_cv_func_accept_arg2 *, $ac_cv_func_accept_arg3 *);],,dnl
+        [ac_not_found=no ; break 3], ac_not_found=yes)
+      done
+     done
+    done
+   ])dnl AC_CACHE_VAL
+  ])dnl AC_CACHE_VAL
+ ])dnl AC_CACHE_VAL
+ if test "$ac_not_found" = no; then
+   AC_MSG_RESULT([$ac_cv_func_accept_arg1, $ac_cv_func_accept_arg2 *, $ac_cv_func_accept_arg3 *])
+dnl AC_DEFINE_UNQUOTED(ACCEPT_TYPE_ARG1,$ac_cv_func_accept_arg1)
+dnl AC_DEFINE_UNQUOTED(ACCEPT_TYPE_ARG2,$ac_cv_func_accept_arg2)
+   AC_DEFINE_UNQUOTED(ACCEPT_TYPE_ARG3,$ac_cv_func_accept_arg3, [Type of the 3rd argument of accept()])
+ else
+   AC_MSG_RESULT([Not found])
+   AC_MSG_WARN([Using default types for arguments to accept()])
+ fi
+])
+
+
+dnl Check for user-specified random device
+AC_DEFUN(IRC_RANDOM_FILE,
+[AC_MSG_CHECKING(for random device)
+AC_ARG_WITH(random, AC_HELP_STRING([--with-random=FILE],[Read randomness from FILE (default=/dev/urandom)]),[],[])
+
+RANDOM_FILE=$with_random
+     for irc_dev in $RANDOM_FILE /dev/urandom /dev/random; do
+       if test -r $irc_dev ; then
+         RANDOM_FILE=$irc_dev
+         break
+       fi
+     done
+  if test "x$RANDOM_FILE" = x; then
+    AC_MSG_RESULT(no)
+  else
+    AC_DEFINE_UNQUOTED([RANDOM_FILE], ["$RANDOM_FILE"], [Random file])
+    AC_MSG_RESULT([ $RANDOM_FILE ])
+  fi
+])
+
+dnl Check for user-specified EGD socket
+AC_DEFUN(IRC_EGD_SOCKET,
+[AC_MSG_CHECKING(for EGD socket)
+AC_ARG_WITH(egd, AC_HELP_STRING([--with-egd=FILE],[Read entropy from FILE]),[],[])
+    EGD_SOCKET=$with_egd
+     for irc_dev in $EGD_SOCKET /var/run/egd-pool /dev/egd-pool /etc/egd-pool /etc/entropy "~/.rnd" .rnd; do
+       if test -r $irc_dev ; then
+         EGD_SOCKET=$irc_dev
+         break
+       fi
+     done
+  if test "x$EGD_SOCKET" = x; then
+    AC_MSG_RESULT(no)
+  else
+    AC_DEFINE_UNQUOTED([EGD_SOCKET], ["$EGD_SOCKET"], [EGD socket])
+    AC_MSG_RESULT([ $EGD_SOCKET ])
+  fi
+])
+
+# Search for OpenSSL
+
+AC_DEFUN(IRC_PATH_OPENSSL,
+[AC_MSG_CHECKING(for openssl package)
+irc_save_LIBS="$LIBS"
+irc_save_LDFLAGS="$LDFLAGS"
+irc_save_CFLAGS="$CFLAGS"
+irc_openssl_dir=""
+IRC_OPENSSL_LIBRARY=""
+AC_ARG_WITH(openssl, 
+	AC_HELP_STRING([--with-openssl=PATH], [Specify path to OpenSSL installation]),
+	[
+	    # Disable OpenSSL
+                if test "x$withval" != "xno" ; then
+			if test "x$withval" != "xyes" ; then
+				case "$withval" in
+					# Relative paths
+					./*|../*)       withval="`pwd`/$withval"	;;
+				esac
+				if test -d "$withval/lib"; then
+					if test -n "${need_dash_r}"; then
+						irc_openssl_lib="-L${withval}/lib -R${withval}/lib"
+						LDFLAGS="$irc_openssl_lib ${LDFLAGS}"
+					else
+						irc_openssl_lib="-Wl,--rpath -Wl,${withval}/lib -L${withval}/lib"
+						LDFLAGS="${irc_openssl_lib} ${LDFLAGS}"
+					fi
+				else
+					if test -n "${need_dash_r}"; then
+						irc_openssl_lib="-L${withval} -R${withval}"
+						LDFLAGS="${irc_openssl_lib} ${LDFLAGS}"
+					else
+						irc_openssl_lib="-Wl,--rpath -Wl,${withval} -L${withval}"
+						LDFLAGS="${irc_openssl_lib} ${LDFLAGS}"
+					fi
+				fi
+				if test -d "$withval/include"; then
+					irc_openssl_include="-I${withval}/include"
+					CFLAGS="${irc_openssl_include} ${CFLAGS}"
+				else
+					irc_openssl_include="-I${withval}"
+					CFLAGS="${irc_openssl_include} ${CFLAGS}"
+				fi
+				irc_openssl_dir="${withval}"
+			else
+				irc_openssl_dir="system default"
+			fi
+
+			# Now check if it links
+			LIBS="-lcrypto -lssl $irc_save_LIBS"
+			AC_TRY_LINK_FUNC(SSL_library_init, 
+			[
+			    AC_DEFINE(USE_OPENSSL)
+			    AC_MSG_RESULT(linked with $LDFLAGS)
+			    IRC_OPENSSL_LIBRARY="${LIBS}"
+			    LIBS="${irc_save_LIBS}"
+			],
+			[
+			AC_MSG_RESULT(not found)
+			AC_MSG_CHECKING(if linker can find openssl itself)
+			dnl Check default openssl install dir
+			irc_openssl_dir=""
+			irc_openssl_lib=""
+			LDFLAGS="${irc_save_LDFLAGS}"
+			irc_openssl_include=""
+			CFLAGS="${irc_save_CFLAGS}"
+			AC_TRY_LINK_FUNC(SSL_library_init, 
+				[	
+					AC_MSG_RESULT(yes)
+					irc_openssl_dir="system default"
+					irc_openssl_include="found by compiler"
+					irc_openssl_lib="found by linker"
+					AC_DEFINE(USE_OPENSSL)
+					IRC_OPENSSL_LIBRARY="${LIBS}"
+					LIBS="${irc_save_LIBS}"
+				],
+				[
+					irc_openssl_dir=""
+					LIBS="${irc_save_LIBS}"
+					AC_MSG_RESULT(could not find OpenSSL libcrypto: see config.log for details)
+				]
+			)
+			])
+                else
+			irc_openssl_dir=""
+			AC_MSG_RESULT(disabled)
+		fi		
+	],
+	[
+	    # We didn't get any dir
+		for irc_tryssl_dir in /usr/local/ssl /usr /usr/local /usr/local/share /usr/local/openssl /usr/lib/openssl \
+		    /usr/lib/ssl /usr/local /usr/pkg /opt /opt/openssl; do
+		    test -d "$irc_tryssl_dir/." || continue
+		    irc_openssl_dir="${irc_tryssl_dir}"
+                    if test -d "${irc_tryssl_dir}/lib"; then
+                        if test -n "${need_dash_r}"; then
+			    irc_openssl_lib="-L${irc_tryssl_dir}/lib -R${irc_tryssl_dir}/lib"
+                            LDFLAGS="${irc_openssl_lib} ${LDFLAGS}"
+                        else
+			    irc_openssl_lib="-L${irc_tryssl_dir}/lib"
+                            LDFLAGS="${irc_openssl_lib} ${LDFLAGS}"
+                        fi
+                    fi
+                    if test -d "${irc_tryssl_dir}/include"; then
+			irc_openssl_include="-I${irc_tryssl_dir}/include"
+                        CFLAGS="${irc_openssl_include} ${CFLAGS}"
+                    else
+			irc_openssl_include="-I${irc_tryssl_dir}"
+                        CFLAGS="${irc_openssl_include} ${CFLAGS}"
+                    fi
+		# Now check if it links
+		LIBS="-lcrypto -lssl $irc_save_LIBS"
+		AC_TRY_LINK_FUNC(SSL_library_init, 
+		[
+		    AC_DEFINE(USE_OPENSSL)
+		    AC_MSG_RESULT(found in $irc_openssl_dir)
+		    IRC_OPENSSL_LIBRARY="${LIBS}"
+		    LIBS="${irc_save_LIBS}"
+		    break
+    		],
+		[
+		    irc_openssl_dir=""
+    		])
+		done
+		if test "x$irc_openssl_dir" = "x"; then
+		    # Last chance to find it
+            	    dnl Check default openssl install dir
+		    irc_openssl_dir="/usr/local/ssl"
+            	    if test -n "${need_dash_r}"; then
+			irc_openssl_lib="-L/usr/local/ssl/lib -R/usr/local/ssl/lib"
+                        LDFLAGS="${irc_openssl_lib} ${irc_save_LDFLAGS}"
+            	    else
+			irc_openssl_lib="-L/usr/local/ssl/lib"
+                        LDFLAGS="$irc_openssl_lib ${irc_save_LDFLAGS}"
+            	    fi
+		    irc_openssl_include="-I/usr/local/ssl/include"
+            	    CFLAGS="$irc_openssl_include ${irc_save_CFLAGS}"
+            	    AC_TRY_LINK_FUNC(SSL_library_init, 
+			[
+			    AC_MSG_RESULT(found in $irc_openssl_dir)
+			    irc_openssl_lib=""
+			    irc_openssl_include=""
+			    AC_DEFINE(USE_OPENSSL)
+			    IRC_OPENSSL_LIBRARY="${LIBS}"
+			    LIBS="${irc_save_LIBS}"
+			],
+                        [
+			    irc_openssl_dir=""
+			    LIBS="${irc_save_LIBS}"
+			    CFLAGS="${irc_save_CFLAGS}"
+			    LDFLAGS="${irc_save_LDFLAGS}"
+                            AC_MSG_RESULT(could not find OpenSSL libcrypto (see config.log for details))
+                        ]
+            	    )
+		fi
+		if test "x$irc_openssl_dir" != "x"; then
+		    AC_MSG_NOTICE(libcrypto linked from $irc_openssl_dir)
+		else
+		    AC_MSG_NOTICE(OpenSSL not found)
+		fi
+	]
+
+# Determine OpenSSL header version
+if test "x$irc_openssl_dir" != "x"; then
+AC_MSG_CHECKING([OpenSSL header version])
+AC_RUN_IFELSE(
+        [AC_LANG_SOURCE([[
+#include <stdio.h>
+#include <string.h>
+#include <openssl/opensslv.h>
+#define DATA "conftest.sslincver"
+int main(void) {
+        FILE *fd;
+        int rc;
+
+        fd = fopen(DATA,"w");
+        if(fd == NULL)
+                exit(1);
+        if ((rc = fprintf(fd ,"%x (%s)\n", OPENSSL_VERSION_NUMBER, OPENSSL_VERSION_TEXT)) <0)
+                exit(1);
+        exit(0);
+}
+        ]])
+	],
+        [
+                ssl_header_ver=`cat conftest.sslincver`
+                AC_MSG_RESULT($ssl_header_ver)
+        ],
+        [
+                AC_MSG_RESULT(not found)
+                AC_MSG_ERROR(OpenSSL version header not found.)
+        ],
+        [
+                AC_MSG_WARN([cross compiling: not checking])
+        ]
+)
+# Determine OpenSSL library version
+AC_MSG_CHECKING([OpenSSL library version])
+AC_RUN_IFELSE(
+        [AC_LANG_SOURCE([[
+#include <stdio.h>
+#include <string.h>
+#include <openssl/opensslv.h>
+#include <openssl/crypto.h>
+#define DATA "conftest.ssllibver"
+int main(void) {
+        FILE *fd;
+        int rc;
+
+        fd = fopen(DATA,"w");
+        if(fd == NULL)
+                exit(1);
+
+        if ((rc = fprintf(fd ,"%x (%s)\n", SSLeay(), SSLeay_version(SSLEAY_VERSION))) <0)
+                exit(1);
+
+        exit(0);
+}
+        ]])],
+        [
+                ssl_library_ver=`cat conftest.ssllibver`
+                AC_MSG_RESULT($ssl_library_ver)
+        ],
+        [
+                AC_MSG_RESULT(not found)
+                AC_MSG_ERROR(OpenSSL library not found.)
+        ],
+        [
+                AC_MSG_WARN([cross compiling: not checking])
+        ]
+)
+
+# Sanity check OpenSSL headers
+AC_MSG_CHECKING([whether OpenSSL headers match the library])
+AC_RUN_IFELSE(
+        [AC_LANG_SOURCE([[
+#include <string.h>
+#include <openssl/opensslv.h>
+int main(void) { exit(SSLeay() == OPENSSL_VERSION_NUMBER ? 0 : 1); }
+        ]])],
+        [
+                AC_MSG_RESULT(yes)
+        ],
+        [
+                AC_MSG_RESULT(no)
+                AC_MSG_ERROR([Your OpenSSL headers do NOT match your library.
+Check config.log for details.])
+        ],
+        [
+                AC_MSG_WARN([cross compiling: not checking])
+        ]
+)
+IRC_OPENSSL_LIBRARY="-lssl -lcrypto ${IRC_OPENSSL_LIBRARY}"
+# Some systems want crypt() from libcrypt, *not* the version in OpenSSL,
+# because the system crypt() is more featureful.
+if test "x$check_for_libcrypt_before" = "x1"; then
+        AC_CHECK_LIB(crypt, crypt, IRC_OPENSSL_LIBRARY="-lcrypt ${IRC_OPENSSL_LIBRARY}")
+fi
+
+# Some Linux systems (Slackware) need crypt() from libcrypt, *not* the
+# version in OpenSSL.
+if test "x$check_for_libcrypt_later" = "x1"; then
+        AC_CHECK_LIB(crypt, crypt, IRC_OPENSSL_LIBRARY="${IRC_OPENSSL_LIBRARY} -lcrypt")
+fi
+
+LIBS="$irc_save_LIBS"
+CFLAGS="$irc_save_CFLAGS"
+LDFLAGS="$irc_save_LDFLAGS"
+
+if test "x$irc_openssl_dir" = x; then
+    IRC_OPENSSL_LIBRARY=""
+    IRC_OPENSSL_INCLUDE=""
+    AC_MSG_RESULT(no)
+else
+  AC_DEFINE([USE_OPENSSL], [1], [Define if openssl package must be used for compilation/linking.])
+  if test "x$irc_openssl_lib" = x; then
+    irc_openssl_library_message="found by the linker"
+ else
+    IRC_OPENSSL_LIBRARY="${IRC_OPENSSL_LIBRARY} ${irc_openssl_lib}"
+    irc_openssl_library_message="${IRC_OPENSSL_LIBRARY}"
+  fi
+  if test "x$irc_openssl_include" = x; then
+    irc_openssl_include_message="found by the compiler"
+    IRC_OPENSSL_INCLUDE=
+  else
+    irc_openssl_include_message="$irc_openssl_include"
+    IRC_OPENSSL_INCLUDE="${irc_openssl_include}"
+  fi
+  AC_MSG_NOTICE(linker flags: $irc_openssl_library_message)
+  AC_MSG_NOTICE(compiler flags: $irc_openssl_include_message)
+
+fi
+    AC_SUBST(IRC_OPENSSL_INCLUDE)
+    AC_SUBST(IRC_OPENSSL_LIBRARY)
+fi
+)])
+
+# End of OpenSSL
+# Search for ZLIB package
+
+AC_DEFUN(IRC_PATH_ZLIB,
+[AC_MSG_CHECKING(for zlib package)
+irc_save_LIBS="$LIBS"
+irc_save_LDFLAGS="$LDFLAGS"
+irc_save_CFLAGS="$CFLAGS"
+irc_zlib_dir=""
+IRC_ZLIB_LIBRARY=""
+AC_ARG_WITH(zlib,
+        AC_HELP_STRING([--with-zlib=PATH], [Specify path to ZLIB installation]),
+        [
+            # Disable ZLIB
+                if test "x$withval" != "xno" ; then
+			if test "x$withval" != "xyes" ; then
+				case "$withval" in
+					# Relative paths
+					./*|../*)       withval="`pwd`/$withval"
+				esac
+				if test -d "$withval/lib"; then
+					if test -n "${need_dash_r}"; then
+						irc_zlib_lib="-L${withval}/lib -R${withval}/lib"
+						LDFLAGS="$irc_zlib_lib ${LDFLAGS}"
+					else
+						irc_zlib_lib="-Wl,--rpath -Wl,${withval}/lib -L${withval}/lib"
+						LDFLAGS="${irc_zlib_lib} ${LDFLAGS}"
+					fi
+				else
+					if test -n "${need_dash_r}"; then
+						irc_zlib_lib="-L${withval} -R${withval}"
+						LDFLAGS="${irc_zlib_lib} ${LDFLAGS}"
+					else
+						irc_zlib_lib="-Wl,--rpath -Wl,${withval} -L${withval}"
+						LDFLAGS="${irc_zlib_lib} ${LDFLAGS}"
+					fi
+				fi
+				if test -d "$withval/include"; then
+					irc_zlib_include="-I${withval}/include"
+					CFLAGS="${irc_zlib_include} ${CFLAGS}"
+				else
+					irc_zlib_include="-I${withval}"
+					CFLAGS="${irc_zlib_include} ${CFLAGS}"
+				fi
+				irc_zlib_dir="${withval}"
+			fi
+
+			# Now check if it links
+			LIBS="-lz $irc_save_LIBS"
+			AC_TRY_LINK_FUNC(inflate,
+			[
+			    AC_DEFINE(USE_ZLIB)
+			    AC_MSG_RESULT(linked with $LDFLAGS)
+			    IRC_ZLIB_LIBRARY="-lz"
+			    LIBS="$irc_save_LIBS"
+			],
+			[
+			AC_MSG_RESULT(not found)
+			AC_MSG_CHECKING(if linker can find zlib itself)
+			dnl Check default zlib install dir
+			irc_zlib_dir=""
+			irc_zlib_lib=""
+			LDFLAGS="${irc_save_LDFLAGS}"
+			irc_zlib_include=""
+			CFLAGS="${irc_save_CFLAGS}"
+			AC_TRY_LINK_FUNC(inflate,
+				[
+					AC_MSG_RESULT(yes)
+					irc_zlib_dir="system default"
+					irc_zlib_include="found by compiler"
+					irc_zlib_lib="found by linker"
+					AC_DEFINE(USE_ZLIB)
+					IRC_ZLIB_LIBRARY="-lz"
+					LIBS="$irc_save_LIBS"
+				],
+				[
+					irc_zlib_dir=""
+					LIBS="${irc_save_LIBS}"
+					AC_MSG_RESULT(could not find libz: see config.log for details)
+				]
+			)
+			])
+                else
+                        irc_zlib_dir=""
+                        AC_MSG_RESULT(disabled)
+                fi
+        ],
+        [
+            # We didn't get any dir
+                for irc_tryzlib_dir in /usr /usr/local /usr/unsupported \
+                    /usr/share /usr/local/share /lib /usr/zlib \
+                    /usr/local/zlib /usr/lib/zlib /usr/local/lib/zlib \
+                    /usr/unsupported/lib/zlib /usr/share/lib/zlib \
+                    /usr/local/share/lib/zlib /lib/zlib /usr/pkg /opt /opt/zlib \
+                    /usr/zlib/lib/zlib /usr/local/zlib/lib/zlib;  do
+                    if test ! -d "$irc_tryzlib_dir" ; then
+                        continue;
+		fi
+                    irc_zlib_dir="${irc_tryzlib_dir}"
+                    if test -d "${irc_tryzlib_dir}/lib"; then
+                        if test -n "${need_dash_r}"; then
+                            irc_zlib_lib="-L${irc_zlib_dir}/lib -R${irc_zlib_dir}/lib"
+                            LDFLAGS="${irc_zlib_lib} ${LDFLAGS}"
+                        else
+                            irc_zlib_lib="-L${irc_zlib_dir}/lib"
+                            LDFLAGS="${irc_zlib_lib} ${LDFLAGS}"
+                        fi
+                    fi
+                    if test -d "${irc_zlib_dir}/include"; then
+                        irc_zlib_include="-I${irc_zlib_dir}/include"
+                        CFLAGS="${irc_zlib_include} ${CFLAGS}"
+                    else
+                        irc_zlib_include="-I${irc_zlib_dir}"
+                        CFLAGS="${irc_zlib_include} ${CFLAGS}"
+                    fi
+# Now check if it links
+                LIBS="-lz $irc_save_LIBS"
+                AC_TRY_LINK_FUNC(zlibVersion,
+                [
+                    AC_DEFINE(USE_ZLIB)
+                    AC_MSG_RESULT(found in $irc_zlib_dir)
+		    IRC_ZLIB_LIBRARY="-lz"
+		    LIBS="$irc_save_LIBS"
+                    break
+                ],
+                [
+                    irc_zlib_dir=""
+                ])
+	    done
+                if test "x$irc_zlib_dir" != "x"; then
+                    AC_MSG_NOTICE(libzlib linked from $irc_zlib_dir)
+                else
+                    AC_MSG_NOTICE(ZLIB not found)
+                fi
+        ]
+
+# Determine ZLIB header version
+if test "x$irc_zlib_dir" != "x"; then
+AC_MSG_CHECKING([ZLIB header version])
+AC_RUN_IFELSE(
+        [AC_LANG_SOURCE([[
+#include <stdio.h>
+#include <string.h>
+#include <zlib.h>
+#define DATA "conftest.zlibincver"
+int main(void) {
+        FILE *fd;
+        int rc;
+
+        fd = fopen(DATA,"w");
+        if(fd == NULL)
+                exit(1);
+        if ((rc = fprintf(fd ,"Zlib header version %s found\n", ZLIB_VERSION)) <0)
+                exit(1);
+        exit(0);
+}
+        ]])
+        ],
+        [
+                zlib_header_ver=`cat conftest.zlibincver`
+                AC_MSG_RESULT($zlib_header_ver)
+        ],
+        [
+                AC_MSG_RESULT(not found)
+                AC_MSG_ERROR(Zlib version header not found.)
+        ],
+        [
+                AC_MSG_WARN([cross compiling: not checking])
+        ]
+)
+# Determine ZLIB library version
+AC_MSG_CHECKING([ZLIB library version])
+AC_RUN_IFELSE(
+        [AC_LANG_SOURCE([[
+#include <stdio.h>
+#include <string.h>
+#include <zlib.h>
+#define DATA "conftest.zlibver"
+int main(void) {
+        FILE *fd;
+        int rc;
+
+        fd = fopen(DATA,"w");
+        if(fd == NULL)
+                exit(1);
+
+        if ((rc = fprintf(fd ,"Zlib version %s found\n",  zlibVersion())) <0)
+                exit(1);
+
+        exit(0);
+}
+        ]])],
+        [
+                zlib_library_ver=`cat conftest.zlibver`
+                AC_MSG_RESULT($zlib_library_ver)
+        ],
+        [
+                AC_MSG_RESULT(not found)
+                AC_MSG_ERROR(Zlib library not found.)
+        ],
+        [
+                AC_MSG_WARN([cross compiling: not checking])
+        ]
+)
+
+# Sanity check ZLIB headers
+AC_MSG_CHECKING([whether ZLIB headers match the library])
+AC_RUN_IFELSE(
+        [AC_LANG_SOURCE([[
+#include <string.h>
+#include <zlib.h>
+int main(void) { exit(strcmp(zlibVersion(), ZLIB_VERSION) ? 1 : 0); }
+        ]])],
+        [
+                AC_MSG_RESULT(yes)
+        ],
+        [
+                AC_MSG_RESULT(no)
+                AC_MSG_ERROR([Your ZLIB headers do not match your library.
+Check config.log for details.])
+        ],
+        [
+                AC_MSG_WARN([cross compiling: not checking])
+        ]
+)
+IRC_ZLIB_LIBRARY="-lz ${IRC_ZLIB_LIBRARY}"
+
+LIBS="$irc_save_LIBS"
+CFLAGS="$irc_save_CFLAGS"
+LDFLAGS="$irc_save_LDFLAGS"
+
+if test "x$irc_zlib_dir" = x; then
+    IRC_ZLIB_LIBRARY=""
+    IRC_ZLIB_INCLUDE=""
+  AC_MSG_RESULT(no)
+else
+  AC_DEFINE([USE_ZLIB], [1], [Define if zlib package must be used for compilation/linking.])
+  if test "x$irc_zlib_lib" = x; then
+    irc_zlib_library_message="found by the linker"
+  else
+    IRC_ZLIB_LIBRARY="${IRC_ZLIB_LIBRARY} ${irc_zlib_lib}"
+    irc_zlib_library_message="${IRC_ZLIB_LIBRARY}"
+  fi
+  if test "x$irc_zlib_include" = x; then
+    irc_zlib_include_message="found by the compiler"
+    IRC_ZLIB_INCLUDE=
+  else
+    irc_zlib_include_message="$irc_zlib_include"
+    IRC_ZLIB_INCLUDE="${irc_zlib_include}"
+  fi
+  AC_MSG_NOTICE(linker flags: $irc_zlib_library_message)
+  AC_MSG_NOTICE(compiler flags: $irc_zlib_include_message)
+
+fi
+    AC_SUBST(IRC_ZLIB_INCLUDE)
+    AC_SUBST(IRC_ZLIB_LIBRARY)
+fi
+)])
+
+# End of ZLIB
+
+AC_DEFUN(IRC_UNION_WAIT,
+[AC_MSG_CHECKING(whether an union wait * is mandatory in waitpid)
+AC_CACHE_VAL(irc_cv_type_union_wait,
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#if HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif]],
+[[
+int status;
+waitpid(-1, &status, 0);
+]])],
+[irc_cv_type_union_wait=no],
+[AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#if HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif]],
+[[
+union wait status;
+waitpid(-1, &status, 0);
+]])],
+irc_cv_type_union_wait=yes,
+irc_cv_type_union_wait=no)]))
+if test $irc_cv_type_union_wait = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE([USE_UNION_WAIT], [1], [Define if the second argument of waitpid must be an "union wait *" instead of an "int *".])
+else
+  AC_MSG_RESULT(no)
+fi
+])
+
+
+AC_DEFUN(IRC_SUN,
+[AC_MSG_CHECKING([for SunOS])
+AC_CACHE_VAL(irc_cv_sun,
+[if test "x`(uname) 2>/dev/null`" = "xSunOS"; then
+  irc_cv_sun="`uname -r`"
+else
+  irc_cv_sun=no
+fi
+])
+irc_cv_solaris_2=no
+if test "$irc_cv_sun" = no; then
+  AC_MSG_RESULT(no)
+else
+  if uname -r 2>/dev/null | grep "^5" >/dev/null; then
+    irc_cv_solaris_2="`uname -r | sed -e \"s/^5/2/g\"`"
+    AC_MSG_RESULT([yes, Solaris $irc_cv_solaris_2])
+    AC_DEFINE([SOLARIS_2], [1], [Define if the operating system is Solaris 2.x (SunOS 5.x).])
+    if echo "$irc_cv_solaris_2" | egrep "^2\.(0|1|2)" >/dev/null; then
+      AC_DEFINE([SOLARIS_2_0_2_1_2_2], [1], [Define if the operating system is Solaris 2.[0-2] (SunOS 5.[0-2]).])
+    elif echo "$irc_cv_solaris_2" | grep "^2\.3" >/dev/null; then
+      AC_DEFINE([SOLARIS_2_3], [1], [Define if the operating system is Solaris 2.3 (SunOS 5.3).])
+    fi
+  else
+    AC_MSG_RESULT([yes, SunOS $irc_cv_sun])
+  fi
+fi
+])
+
+
+AC_DEFUN(IRC_DECL_SYS_ERRLIST,
+[AC_CACHE_CHECK([for sys_errlist declaration in stdio.h, errno.h or sys/errno.h],
+  irc_cv_decl_sys_errlist,
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STDIO_H
+#include <stdio.h>
+#endif
+#if HAVE_ERRNO_H
+#include <errno.h>
+#endif
+#if HAVE_SYS_ERRNO_H
+#include <sys/errno.h>
+#endif]], [[char *msg = sys_errlist[0];]])],[irc_cv_decl_sys_errlist=yes],[irc_cv_decl_sys_errlist=no])])
+if test $irc_cv_decl_sys_errlist = yes; then
+  AC_DEFINE([SYS_ERRLIST_DECLARED], [1], [Define if sys_errlist is declared in stdio.h or errno.h.])
+elif test $ac_cv_func_strerror != yes; then
+  AC_MSG_WARN([Neither strerror() nor sys_errlist found.])
+fi
+])
+
+
+AC_DEFUN(IRC_DECL_SYS_NERR,
+[AC_CACHE_CHECK([for sys_nerr declaration in stdio.h, errno.h or sys/errno.h],
+  irc_cv_decl_sys_nerr,
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STDIO_H
+#include <stdio.h>
+#endif
+#if HAVE_ERRNO_H
+#include <errno.h>
+#endif
+#if HAVE_SYS_ERRNO_H
+#include <sys/errno.h>
+#endif]], [[int num = sys_nerr;]])],[irc_cv_decl_sys_nerr=yes],[irc_cv_decl_sys_nerr=no])])
+if test $irc_cv_decl_sys_nerr = yes; then
+  AC_DEFINE([SYS_NERR_DECLARED], [1], [Define if sys_nerr is declared in stdio.h or errno.h.])
+fi
+])
+
+
+AC_DEFUN(IRC_DECL_ERRNO,
+[AC_CACHE_CHECK([for errno declaration in errno.h or sys/errno.h],
+  irc_cv_decl_errno,
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_ERRNO_H
+#include <errno.h>
+#endif
+#if HAVE_SYS_ERRNO_H
+#include <sys/errno.h>
+#endif]], [[int num = errno;]])],[irc_cv_decl_errno=yes],[irc_cv_decl_errno=no])])
+if test $irc_cv_decl_errno = yes; then
+  AC_DEFINE([ERRNO_DECLARED], [1], [Define if errno is declared in errno.h.])
+fi
+])
+
+
+AC_DEFUN(IRC_DECL_H_ERRNO,
+[AC_CACHE_CHECK([for h_errno declaration in errno.h, sys/errno.h or netdb.h],
+  irc_cv_decl_h_errno,
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_ERRNO_H
+#include <errno.h>
+#endif
+#if HAVE_SYS_ERRNO_H
+#include <sys/errno.h>
+#endif
+#if HAVE_NETDB_H
+#include <netdb.h>
+#endif]], [[int num = h_errno;]])],[irc_cv_decl_h_errno=yes],[irc_cv_decl_h_errno=no])])
+if test $irc_cv_decl_h_errno = yes; then
+  AC_DEFINE([H_ERRNO_DECLARED], [1], [Define if h_errno is declared in errno.h or netdb.h.])
+fi
+])
+
+
+AC_DEFUN(IRC_SGI_CC,
+[AC_MSG_CHECKING([for SGI's cc (isn't it stupid nowadays?)])
+AC_EGREP_CPP(yes,
+[#ifdef sgi
+yes
+#endif],
+if test x$CC = xcc; then
+  AC_MSG_RESULT(yes)
+  CC="$CC -cckr"
+else
+  AC_MSG_RESULT(no)
+fi,
+AC_MSG_RESULT(no))
+])
+
+
+AC_DEFUN(IRC_ALPHA_BETA,
+[AC_MSG_CHECKING(whether this is an alpha/beta release)
+AC_CACHE_VAL(irc_cv_alpha_beta,
+[AC_EGREP_CPP(^ *\"..........00\",
+[#include "../common/patchlevel.h"
+#ifdef PATCHLEVEL
+PATCHLEVEL
+#else
+"0000000000"
+#endif
+],irc_cv_alpha_beta=,
+irc_cv_alpha_beta=yes)
+])
+if test x$irc_cv_alpha_beta = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_MSG_WARN([
+
+This is a development version of the package,
+it is not intended to be used in a production environment.
+])
+else
+  AC_MSG_RESULT(no)
+fi
+])
+
+
+AC_DEFUN(IRC_SELECT_POLL,
+[AC_MSG_CHECKING([whether select or poll system call will be used])
+AC_CACHE_VAL(irc_cv_select_poll,
+[if test "$irc_cv_sun" != "no" && test "x$irc_cv_solaris_2" = "xno"; then
+  # we don't like SunOS' poll() function
+  irc_cv_select_poll=select
+else  
+  if test "$ac_cv_func_poll" = "yes"; then
+    irc_cv_select_poll=poll
+  else
+    irc_cv_select_poll=select
+  fi
+fi])
+
+if test "$irc_cv_select_poll" = "poll"; then
+  AC_MSG_RESULT(poll)
+  AC_DEFINE([USE_POLL], [1], [Define if poll(2) must be used instead of select(2). Note: some systems (e.g. linux 2.0.x) have a non-working poll()])
+else
+  AC_MSG_RESULT(select)
+fi
+])
+
+
+AC_DEFUN(IRC_SIGNAL_IMPLEMENTATION,
+[AC_MSG_CHECKING([for signal implementation])
+#AC_CACHE_VAL(irc_cv_signal_implementation,
+#[if test x$ac_cv_func_sigaction = xyes; then
+if test x$ac_cv_func_sigaction = xyes; then
+  irc_cv_signal_implementation=posix_sigaction
+elif test x$ac_cv_func_sigset = xyes; then
+  irc_cv_signal_implementation=bsd_sigset
+else
+  AC_RUN_IFELSE([AC_LANG_SOURCE([[
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+#ifndef SIGCHLD
+#define SIGCHLD SIGCLD
+#endif
+
+int got = 0;
+
+RETSIGTYPE hand()
+{
+  got++;
+}
+
+main()
+{
+  (void)signal(SIGCHLD, hand);
+  kill(getpid(), SIGCHLD);
+  kill(getpid(), SIGCHLD);
+  if (got < 2)
+    exit(1);
+  exit(0);
+}
+]])],[irc_cv_signal_implementation=bsd_signal],[irc_cv_signal_implementation=sysv_signal],[])
+fi
+#])
+if test $irc_cv_signal_implementation = posix_sigaction; then
+  AC_MSG_RESULT([using POSIX sigaction])
+  AC_DEFINE([POSIX_SIGNALS], [1], [Define if the system provides POSIX sigaction.])
+elif test $irc_cv_signal_implementation = bsd_sigset; then
+  AC_MSG_RESULT([using BSD sigset])
+  AC_DEFINE([BSD_RELIABLE_SIGNALS], [1], [Define if the system provides reliable BSD signals.])
+  AC_DEFINE([signal], [sigset], [Define this to sigset if the system provides reliable BSD signals through sigset instead of signal.])
+elif test $irc_cv_signal_implementation = bsd_signal; then
+  AC_MSG_RESULT([using reliable BSD signal])
+  AC_DEFINE([BSD_RELIABLE_SIGNALS], [1], [Define if the system provides reliable BSD signals.])
+else
+  AC_MSG_RESULT([using unreliable SystemV signal])
+  AC_DEFINE([SYSV_UNRELIABLE_SIGNALS], [1], [Define if the system provides unreliable SystemV signals.])
+fi
+])
+
+
+AC_DEFUN(IRC_NON_BLOCKING_SYSTEM,
+[AC_MSG_CHECKING([for a working non-blocking system])
+AC_CACHE_VAL(irc_cv_non_blocking_system,
+[
+changequote(<<, >>)dnl
+irc_precode='#include "confdefs.h"
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#ifdef HAVE_UNISTD>H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+#if HAVE_SYS_FILE_H
+#include <sys/file.h>
+#endif
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
+RETSIGTYPE alarmed()
+{
+  exit(1);
+}
+
+main()
+{
+  char b[12];
+  struct sockaddr x;
+  int f;
+  socklen_t l = sizeof(x);
+  f = socket(AF_INET, SOCK_DGRAM, 0);
+  if (f >= 0 && !(fcntl(f, F_SETFL, '
+irc_postcode=')))
+    {
+      signal(SIGALRM, alarmed);
+      alarm(3);
+      recvfrom(f, b, 12, 0, &x, &l);
+      alarm(0);
+      exit(0);
+    }
+   exit(1);
+}'
+changequote([, ])dnl
+irc_code_posix="${irc_precode}O_NONBLOCK${irc_postcode}"
+irc_code_bsd="${irc_precode}O_NDELAY${irc_postcode}"
+irc_code_sysv="${irc_precode}FIONBIO${irc_postcode}"
+AC_RUN_IFELSE($irc_code_posix,
+  irc_cv_non_blocking_system=posix,
+  AC_RUN_IFELSE($irc_code_bsd,
+    irc_cv_non_blocking_system=bsd,
+    AC_RUN_IFELSE($irc_code_sysv,
+      irc_cv_non_blocking_system=sysv,
+      irc_cv_non_blocking_system=none)))
+])
+if test $irc_cv_non_blocking_system = posix; then
+  AC_MSG_RESULT([using POSIX O_NONBLOCK])
+  AC_DEFINE([NBLOCK_POSIX], [1], [Define if the system provides POSIX non-blocking system.])
+elif test $irc_cv_non_blocking_system = bsd; then
+  AC_MSG_RESULT([using BSD O_NDELAY])
+  AC_DEFINE([NBLOCK_BSD], [1], [Define if the system provides BSD non-blocking system.])
+elif test $irc_cv_non_blocking_system = sysv; then
+  AC_MSG_RESULT([using SystemV FIONBIO])
+  AC_DEFINE([NBLOCK_SYSV], [1], [Define if the system provides SystemV non-blocking system.])
+else
+  AC_MSG_RESULT([using none])
+  AC_MSG_WARN([I can't find a working non-blocking system.])
+fi
+])
+
+
+AC_DEFUN(IRC_PATH_RESCONF,
+[AC_MSG_CHECKING([for resolver configuration file])
+AC_ARG_WITH(resconf, [  --with-resconf=FILE     use FILE as resolver config file [[/etc/resolv.conf]]], irc_cv_path_resconf="$withval", irc_cv_path_resconf="/etc/resolv.conf")
+AC_MSG_RESULT($irc_cv_path_resconf)
+AC_DEFINE_UNQUOTED([IRC_RESCONF], ["$irc_cv_path_resconf"], [Define as the resolver configuration file.])
+if test ! -r "$irc_cv_path_resconf"; then
+  AC_MSG_WARN([Unable to read "$irc_cv_path_resconf"! Without resolver configuration file, the server won't work.])
+fi
+])
+
+
+AC_DEFUN(IRC_EGREP_RMLF_CPP,
+[cat > conftest.$ac_ext <<EOF
+[#]line __oline__ "configure"
+#include "confdefs.h"
+[$2]
+EOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&AS_MESSAGE_LOG_FD() |
+  $AWK "{if (NR > 1) printf(\" \"); printf(\[$]0)}" |
+changequote(, )dnl
+  egrep "$1" >/dev/null 2>&1; then
+changequote([, ])dnl
+  ifelse([$3], , :, [rm -rf conftest*
+  $3])
+ifelse([$4], , , [else
+  rm -rf conftest*
+  $4
+])dnl
+fi
+rm -f conftest*
+])
+
+
+AC_DEFUN(IRC_LINUX,
+[AC_MSG_CHECKING(for Linux)
+AC_CACHE_VAL(irc_cv_linux,
+[if test "x`(uname) 2>/dev/null`" = "xLinux"; then
+  IRC_EGREP_RMLF_CPP(
+    [struct( |	)+hostent( |	)+\{.*const.*h_name],
+    [#include <netdb.h>],
+    irc_cv_linux=bad,
+    irc_cv_linux=good)
+else
+  irc_cv_linux=no
+fi
+])
+if test "$irc_cv_linux" = no; then
+  AC_MSG_RESULT(no)
+elif test "$irc_cv_linux" = good; then
+  AC_MSG_RESULT([yes, with a good <netdb.h> file])
+else
+  AC_MSG_RESULT([yes, with a bad <netdb.h> file])
+  AC_DEFINE([BAD___CONST_NETDB_H], [1], [Define if <netdb.h> contains bad __const usages (Linux).])
+fi
+])
+
+
+AC_DEFUN(IRC_IP6,
+[AC_ARG_ENABLE(ipv6, [  --enable-ipv6           enables IPv6], [], [enableval=no])
+if test "x$enableval" = xyes; then
+  AC_DEFINE([INET6], [1], [Define to enable IPv6 support])
+  dnl be smart about it
+  AC_MSG_CHECKING([IPv6 system type])
+  AC_CACHE_VAL(irc_cv_v6type, [
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#include <unistd.h>
+#include <netinet/in.h>]], [[struct in6_addr addr]])],
+	[irc_cv_v6type=native])
+
+    if test "x$irc_cv_v6type" = x; then
+      if test -d /usr/inet6; then
+        AC_EGREP_CPP(yes, [
+#include "/usr/inet6/include/netinet/in.h"
+#ifdef _INET6APPS_NETINET_IN_H
+yes
+#endif], irc_cv_v6type=linux)
+      fi
+    fi
+
+    if test "x$irc_cv_v6type" = x; then
+	irc_cv_v6type=unknown
+    fi
+  ])	
+
+  AC_MSG_RESULT($irc_cv_v6type)
+
+  if test "x$irc_cv_v6type" = xunknown; then
+     AC_MSG_WARN([[You have an unknown IPv6 system. You will probably need to change the Makefile manually, or #undef INET6 in setup.h]])
+  fi
+
+  dnl eventually update LIBS
+  case $irc_cv_v6type in
+	linux)
+		LIBS="-L/usr/inet6/lib -linet6 $LIBS"
+		CFLAGS="$CFLAGS -I/usr/inet6/include"
+		;;
+	esac
+
+  dnl RFC 2553 check
+  AC_CHECK_FUNCS(getipnodebyname)
+
+fi
+])
+
+
+AC_DEFUN(IRC_SHAREDMODULES,
+[AC_ARG_ENABLE(dsm, [  --enable-dsm            enables dynamically shared modules for iauth])
+if test "x$enable_dsm" != x; then
+  AC_DEFINE([USE_DSM], [1], [Define to enable dynamically shared iauth module support.])
+dnl  AC_CONFIG_HEADER(dl.h)
+  AC_CHECK_HEADERS(dlfcn.h)
+  AC_CHECK_LIB(dl, dlclose, IRC_DLIB="-ldl")
+  AC_SUBST(IRC_DLIB)
+fi
+])
+
+
+dnl -------------------------------------------------------------------
+dnl modified Autoconf tests; their names begin with IRC_ instead of AC_
+dnl -------------------------------------------------------------------
+
+AC_DEFUN(IRC_PROG_CC,
+[define(AC_PROVIDE_AC_PROG_CC)
+AC_BEFORE([$0], [AC_PROG_CPP])dnl
+AC_CHECK_PROG(CC, gcc, gcc)
+if test -z "$CC"; then
+  AC_CHECK_PROG(CC, cc, cc, , , /usr/ucb/cc)
+  test -z "$CC" && AC_MSG_ERROR([no acceptable cc found in \$PATH])
+fi
+ac_test_CFLAGS="${CFLAGS+set}"
+if test x$ac_cv_c_compiler_gnu = xyes; then
+  GCC=yes
+  ac_save_CFLAGS="$CFLAGS"
+  CFLAGS=
+  if test "$ac_test_CFLAGS" = set; then
+    CFLAGS="$ac_save_CFLAGS"
+  else
+    CFLAGS="-O2"
+  fi
+else
+  GCC=
+fi
+])
+
+
+AC_DEFUN(IRC_AIX,
+[AC_MSG_CHECKING(for AIX)
+AC_CACHE_VAL(irc_cv_aix,
+[if test "x`(uname) 2>/dev/null`" = "xAIX"; then
+  irc_cv_aix="`uname -rv`"
+else
+  irc_cv_aix=no
+fi
+])
+if test "$irc_cv_aix" = no; then
+  AC_MSG_RESULT(no)
+else
+  AC_MSG_RESULT(yes)
+  AC_AIX
+  if test "x$irc_cv_aix" = "x2 3"; then
+    AC_DEFINE([AIX_3_2], [1], [Define if the OS is AIX 3.2.*])
+  fi
+  if test x$CC = xcc; then
+    CFLAGS="$CFLAGS -O3 -qstrict"
+  fi
+fi
+])
+
+
+AC_DEFUN(IRC_FUNC_MEMCMP,
+[AC_CACHE_CHECK(for 8-bit clean memcmp, irc_cv_func_memcmp_clean,
+[AC_RUN_IFELSE([AC_LANG_SOURCE([[
+main()
+{
+  char c0 = 0x40, c1 = 0x80, c2 = 0x81;
+  exit(memcmp(&c0, &c2, 1) < 0 && memcmp(&c1, &c2, 1) < 0 ? 0 : 1);
+}
+]])],[irc_cv_func_memcmp_clean=yes],[irc_cv_func_memcmp_clean=no],[irc_cv_func_memcmp_clean=no])])
+if test $irc_cv_func_memcmp_clean = no; then
+  AC_DEFINE([MEMCMP_BROKEN], [1], [Define if memcmp is not 8-bit clean.])
+fi
+])
+
+AC_DEFUN(IRC_CHECK_ICONV,
+[AC_MSG_CHECKING(for iconv)
+AC_ARG_ENABLE(iconv, [  --enable-iconv=DIR      enables full unicode support via iconv (default)],
+		[], [enableval=yes])
+if test "x$enableval" != xno; then
+    case "$enableval" in
+	# Absolute paths
+	/*|yes)
+	    ;;
+	# Relative paths
+	*)
+	    enableval="`pwd`/$enableval"
+	    ;;
+    esac
+    if test "x$enableval" = xyes; then
+	irc_cv_have_iconv=yes
+	ICONV_HEADER="<iconv.h>"
+    else
+	ICONV_HEADER="\"$enableval/include/iconv.h\""
+	irc_cv_have_iconv="irc_iconv_includes= irc_iconv_libs= irc_iconv_alib=\"$enableval/lib/libiconv.a\" irc_iconv_libpath= irc_iconv_bin=\"$enableval/bin/iconv\""
+    fi
+    if test x$NO_UTF_LOCALE = x; then
+	AC_DEFINE(HAVE_UTF_LOCALE, 1, [Define if you have working UTF locale in OS])
+    fi
+else
+    irc_cv_have_iconv=no
+fi
+
+AC_SUBST(ICONV_HEADER)
+
+if test "x${irc_cv_have_iconv}" != xno; then
+  if test "x$irc_cv_have_iconv" = xyes; then
+    # check for default include path first...
+    AC_TRY_CPP([#include <iconv.h>],
+	[irc_iconv_includes=],
+	[# not found, now try to find...
+	AC_TRY_CPP([#include "/usr/local/include/iconv.h"],
+	    irc_iconv_includes=/usr/local/include,
+	    irc_iconv_includes=no
+    )])
+    if test "x$irc_iconv_includes" != xno ; then
+	irc_save_CFLAGS="$CFLAGS"
+	if test "x$irc_iconv_includes" != x ; then
+	    CFLAGS="-I$irc_iconv_includes ${CFLAGS}"
+	fi
+	# check if no library need...
+	AC_TRY_LINK([#include <iconv.h>], [
+iconv_open("","");
+], [irc_iconv_libs= irc_iconv_libpath=],
+	    [# we need -liconv
+	    irc_iconv_libs=iconv
+	    irc_save_LIBS="$LIBS"
+	    LIBS="${LIBS} -liconv"
+	    # check for default library path first...
+	    AC_TRY_LINK([#include <iconv.h>], [
+iconv_open("","");
+], [irc_iconv_libpath=],
+		[# not found, now try to find...
+		LIBS="${LIBS} -L/usr/local/lib"
+		AC_TRY_LINK([#include <iconv.h>], [
+iconv_open("","");
+], irc_iconv_libpath=/usr/local/lib,
+		    irc_iconv_libpath=no
+	    )])
+	    LIBS="$irc_save_LIBS"
+	])
+	CFLAGS="$irc_save_CFLAGS"
+    fi
+    irc_cv_have_iconv="irc_iconv_includes=$irc_iconv_includes irc_iconv_libs=$irc_iconv_libs irc_iconv_libpath=$irc_iconv_libpath"
+  fi
+
+  eval "$irc_cv_have_iconv"
+
+  if test "x$irc_iconv_libpath" = xno -o "x$irc_iconv_includes" = xno ; then
+    AC_MSG_RESULT(no)
+    AC_MSG_ERROR(you have no libiconv but you cannot compile ircd without it)
+  fi
+  AC_MSG_RESULT(yes)
+  if test "x$irc_iconv_includes" != x ; then
+    CFLAGS="-I$irc_iconv_includes ${CFLAGS}"
+  fi
+  if test "x$irc_iconv_libs" != x ; then
+    LIBS="-l$irc_iconv_libs ${LIBS}"
+  else
+    LIBS="$irc_iconv_alib ${LIBS}"
+  fi
+  if test "x$irc_iconv_libpath" != x ; then
+    LDFLAGS="-L$irc_iconv_libpath -R$irc_iconv_libpath ${LDFLAGS}"
+  fi
+
+  AC_MSG_CHECKING(for russian translit)
+  if test "x$irc_iconv_bin" = x; then
+    irc_iconv_bin=iconv
+  fi
+  if test x`echo проба| LC_ALL= LC_CTYPE=uk_UA.KOI8-U ${irc_iconv_bin} -t ascii//translit -f koi8-u 2>/dev/null` != xproba; then
+    AC_MSG_RESULT(no)
+    AC_MSG_RESULT()
+    AC_MSG_RESULT(Warning! Your iconv has no support for the Cyrillic translit so you cannot)
+    AC_MSG_RESULT(have it in ircd.  It may be not what you want.  Press Ctrl+C to abort now or)
+    if which bash >/dev/null 2>&1; then
+	bash -c 'read -sn1 -p "any other key to continue..."' <&7
+	echo
+    else
+	read -p "Enter to continue..." __ <&7
+    fi
+  else
+    AC_MSG_RESULT(yes)
+  fi
+
+  AC_MSG_CHECKING(for order of //ignore and //translit)
+  if test x`echo proba|iconv -t ascii//translit//ignore 2>/dev/null` != xproba; then
+    AC_MSG_RESULT(//ignore//translit)
+    AC_DEFINE([TRANSLIT_IGNORE], ["//IGNORE//TRANSLIT"],
+		[Order ot //ignore and //translit on iconv setup])
+  else
+    AC_MSG_RESULT(//translit//ignore)
+    AC_DEFINE([TRANSLIT_IGNORE], ["//TRANSLIT//IGNORE"])
+  fi
+
+  newconvobjs="conversion.o"
+  oldconvobjs=""
+else
+  AC_MSG_RESULT(not required)
+  newconvobjs=""
+  oldconvobjs="rusnet_codepages.o rusnet_init.o"
+  AC_DEFINE([USE_OLD8BIT], [1], [Define to disable unicode support via iconv()])
+fi
+AC_SUBST(newconvobjs)
+AC_SUBST(oldconvobjs)
+])
+
+dnl ----
+dnl main
+dnl ----
+
+AC_INIT([rusnet-ircd],[1.5.13],[rusnet-devel@rusnet.org.ru])
+AC_REVISION([$Id: configure.in,v 1.20 2010-11-10 13:38:40 gvs Exp $])
+AC_PREREQ(2.61)
+AC_PREFIX_DEFAULT(/usr/local/rusnet)
+AC_CONFIG_HEADERS(setup.h:../support/setup.h.in)
+AC_CONFIG_AUX_DIR(../support)
+
+IRC_PROG_CC
+AC_CANONICAL_HOST
+AC_PROG_CPP
+AC_PROG_AWK
+
+AC_PROG_GCC_TRADITIONAL
+
+if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
+        CFLAGS="$CFLAGS -Wall -Wpointer-arith -Wno-uninitialized"
+fi
+
+AC_ARG_WITH(rpath,
+        [  --without-rpath         Disable auto-added -R linker paths],
+        [
+                if test "x$withval" = "xno" ; then
+                        need_dash_r=""
+                fi
+                if test "x$withval" = "xyes" ; then
+                        need_dash_r=1
+                fi
+        ]
+)
+
+# Check for some target-specific stuff
+case "$host" in
+*-*-aix3.2*)
+	AC_AIX
+	AC_DEFINE([AIX_3_2], [1], [Define if the OS is AIX 3.2.*])
+	if test "x$CC"="xcc"; then
+	    CFLAGS="$CFLAGS -O3 -qstrict"
+	fi
+	;;
+*-*-aix*)
+	AC_AIX
+	if test "x$CC"="xcc"; then
+	    CFLAGS="$CFLAGS -O3 -qstrict"
+	fi
+	;;
+*-*-cygwin*)
+        check_for_libcrypt_later=1
+	;;
+*-*-hpux10.26)
+        if test -z "$CC"; then
+                CFLAGS="$CFLAGS -Ae"
+        fi
+        CFLAGS="$CFLAGS -D_HPUX_SOURCE -D_XOPEN_SOURCE -D_XOPEN_SOURCE_EXTENDED=1"
+	LIBS="$LIBS -lsec -lsecpw"
+	;;
+*-*-hpux10*)
+        if test -z "$CC"; then
+                CFLAGS="$CFLAGS -Ae"
+        fi
+        CFLAGS="$CFLAGS -D_HPUX_SOURCE -D_XOPEN_SOURCE -D_XOPEN_SOURCE_EXTENDED=1"
+	LIBS="$LIBS -lsec"
+	;;
+*-*-hpux11*)
+        CPPFLAGS="$CPPFLAGS -D_HPUX_SOURCE -D_XOPEN_SOURCE -D_XOPEN_SOURCE_EXTENDED=1"
+	LIBS="$LIBS -lsec"
+	;;
+*-*-linux*)
+        check_for_libcrypt_later=1
+	CFLAGS="$CFLAGS -DOPENSSL_NO_KRB5"
+	AC_CACHE_VAL(irc_cv_linux,
+	[
+	    IRC_EGREP_RMLF_CPP(
+	    [
+		struct( |  )+hostent( |    )+\{.*const.*h_name
+	    ],
+	    [
+#include <netdb.h>
+	    ],
+	    irc_cv_linux=bad,
+	    irc_cv_linux=good)
+	])
+	if test "$irc_cv_linux" = "bad"; then
+	    AC_DEFINE([BAD___CONST_NETDB_H], [1], [Define if <netdb.h> contains bad __const usages (Linux).])
+	fi
+	;;
+*-*-minix)
+	AC_MINIX
+	;;
+*-*-netbsd*)
+        check_for_libcrypt_before=1
+        if test "x$withval" != "xno" ; then
+                need_dash_r=1
+        fi
+        ;;
+*-*-freebsd*)
+        check_for_libcrypt_later=1
+        ;;
+*-sgi-*)
+        if test -z "$CC"; then
+                CFLAGS="$CFLAGS -cckr"
+        fi
+	;;	
+*-*-solaris*)
+        if test "x$withval" != "xno" ; then
+                need_dash_r=1
+        fi
+	AC_DEFINE([SOLARIS_2], [1], [Define if the operating system is Solaris 2.x (SunOS 5.x).])
+	AC_MSG_CHECKING(for obsolete solaris2.x versions)
+	sol2ver=`echo "$host"| sed -e 's/.*[[0-9]]\.//'`
+	if test "$sol2ver" -le 2; then
+	    AC_MSG_RESULT(yes)
+	    AC_DEFINE([SOLARIS_2_0_2_1_2_2], [1], [Define if the operating system is Solaris 2.[0-2] (SunOS 5.[0-2]).])
+	elif test "$sol2ver" -eq 3; then
+	    AC_MSG_RESULT(yes)
+	    AC_DEFINE([SOLARIS_2_3], [1], [Define if the operating system is Solaris 2.3 (SunOS 5.3).])
+	elif test "$sol2ver" -ge 8; then
+	    AC_MSG_RESULT(no)
+	    check_for_libcrypt_before=1
+	fi
+	if test "$sol2ver" -ge 10; then
+	    AC_DEFINE([SOLARIS_10UP], [1], [Define if the operting system is Solaris 10 or newer (SunOS 5.10+).])
+	else
+	    AC_DEFINE([NEED_FILEIO_C], [1], [Define if operating system has limited number of FILE descriptors])
+	fi
+	;;
+*-*-sunos4*)
+        CFLAGS="$CFLAGS -DSUNOS4"
+        AC_DEFINE(NEED_FILEIO_C)
+	;;
+*-ncr-sysv*)
+        LIBS="$LIBS -lc89"
+	;;
+*-sni-sysv*)
+        # /usr/ucblib MUST NOT be searched on ReliantUNIX
+        AC_CHECK_LIB(dl, dlsym, ,)
+        # -lresolv needs to be at then end of LIBS or DNS lookups break
+        AC_CHECK_LIB(res_query, resolv, [ LIBS="$LIBS -lresolv" ])
+	;;
+*-*-sco3.2v5*)
+        if test -z "$CC"; then
+                CFLAGS="$CFLAGS -belf"
+        fi
+        LIBS="$LIBS -lprot -lx -ltinfo -lm"
+	;;
+esac
+
+# Allow user to specify flags
+AC_ARG_WITH(cflags,
+        [  --with-cflags           Specify additional flags to pass to compiler],
+        [
+                if test -n "$withval"  &&  test "x$withval" != "xno"  &&  \
+                    test "x${withval}" != "xyes"; then
+                        CFLAGS="$CFLAGS ${withval}"
+                fi
+        ]
+)
+AC_ARG_WITH(ldflags,
+        [  --with-ldflags          Specify additional flags to pass to linker],
+        [
+                if test -n "$withval"  &&  test "x$withval" != "xno"  &&  \
+                    test "x${withval}" != "xyes"; then
+                        LDFLAGS="$LDFLAGS $withval"
+                fi
+        ]
+)
+AC_ARG_WITH(libs,
+        [  --with-libs             Specify additional libraries to link with],
+        [
+                if test -n "$withval"  &&  test "x$withval" != "xno"  &&  \
+                    test "x${withval}" != "xyes"; then
+                        LIBS="$LIBS $withval"
+                fi
+        ]
+)
+
+
+AC_ARG_WITH(logdir, 
+	[  --with-logdir=DIR       log files in DIR [[rundir/log]]],
+	[
+	    logdir=$with_logdir
+	],
+	[
+	    logdir=$localstatedir'/log'
+	])
+AC_SUBST(logdir)
+AC_ARG_WITH(rundir,
+	[  --with-rundir=DIR       pid and tune files in DIR [[rundir/run]]],
+	[
+	    rundir=$with_rundir
+	],
+	[
+	    rundir=$localstatedir'/run'
+	])
+AC_SUBST(rundir)
+
+AC_PROG_INSTALL
+
+AC_ISC_POSIX
+AC_C_BIGENDIAN
+AC_C_CONST
+AC_C_INLINE
+
+AC_PATH_PROGS(SUM, md5sum md5 sum cksum, true)
+AC_PATH_PROGS(M4_PATH, gm4 gnum4 m4, m4)
+AC_FUNC_ACCEPT_ARGTYPES
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS([limits.h stdio.h stdlib.h sys/types.h sys/bitypes.h stddef.h stdarg.h unistd.h ctype.h memory.h errno.h sys/errno.h sys/syscall.h pwd.h math.h utmp.h fcntl.h signal.h sys/ioctl.h sys/file.h sys/filio.h sys/socket.h sys/stat.h sys/resource.h sys/select.h sys/poll.h stropts.h netdb.h netinet/in.h arpa/inet.h sys/param.h syslog.h sys/syslog.h string.h strings.h sys/time.h time.h sys/times.h netinet/in_systm.h netinfo/ni.h arpa/nameser.h wchar.h])
+
+# autoconf now checks not only inclusion, but also compilation
+AC_CHECK_HEADERS([resolv.h], [], [],
+[#if HAVE_NETINET_IN_H 
+# include <netinet/in.h>
+#endif
+#if HAVE_ARPA_NAMESER_H
+# include <arpa/nameser.h>
+#endif
+])
+
+# Some systems need <sys/socket.h> (and <sys/types.h>?) before <sys/un.h>
+AC_CHECK_HEADERS([sys/un.h], [], [],
+[#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+])
+
+IRC_DECL_SYS_NERR
+IRC_DECL_ERRNO
+IRC_DECL_H_ERRNO
+AC_HEADER_STAT
+AC_HEADER_TIME
+AC_STRUCT_TM
+AC_TYPE_MODE_T
+AC_TYPE_OFF_T
+AC_TYPE_PID_T
+AC_TYPE_SIGNAL
+AC_TYPE_SIZE_T
+AC_TYPE_UID_T
+IRC_UNION_WAIT
+AC_CHECK_TYPES([int8_t, uint8_t, u_int8_t, int16_t, uint16_t, u_int16_t, int32_t, uint32_t, u_int32_t, u_char, u_short, u_int, u_long, socklen_t], [], [], [AC_INCLUDES_DEFAULT
+#if HAVE_SYS_BITYPES_H
+#include <sys/bitypes.h>
+#endif])
+
+AC_CHECK_LIB(crypt, crypt)
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, socket)
+
+
+IRC_MATHLIB
+IRC_PATH_ZLIB
+IRC_PATH_OPENSSL
+IRC_CHECK_ICONV
+
+  IRC_RANDOM_FILE
+  IRC_EGD_SOCKET      
+
+AC_FUNC_SETPGRP
+AC_FUNC_SETVBUF_REVERSED
+AC_FUNC_FORK
+AC_CHECK_FUNCS(setpgrp strchr strrchr memcmp memset memmove memcpy index rindex bcmp bcopy bzero select inet_ntoa inet_aton inet_addr inet_netof getrusage times strerror strtoken strtok sigaction sigset truncate poll vsyslog strlcpy)
+AC_CHECK_FUNCS(towupper)
+
+dnl ---
+dnl Note: additional tests should be performed and used inside the source code
+dnl       for the following functions:
+dnl       gethostname gettimeofday lrand48 mkdir socket
+dnl ---
+
+IRC_DECL_SYS_ERRLIST
+IRC_FUNC_MEMCMP
+IRC_SELECT_POLL
+
+IRC_SIGNAL_IMPLEMENTATION
+IRC_NON_BLOCKING_SYSTEM
+IRC_PATH_RESCONF
+IRC_IP6
+IRC_SHAREDMODULES
+IRC_ALPHA_BETA
+
+
+AC_CONFIG_FILES([Makefile:../support/Makefile.in version.c.SH:../ircd/version.c.SH.in sums:../support/sums.in tkconf.h:../support/tkconf.h.dist])
+AC_CONFIG_COMMANDS([chmod],[[chmod a+x version.c.SH]])
+AC_OUTPUT(../common/conversion.h)
+
+dnl ######################################################################
+dnl Summarize
+dnl ######################################################################
+
+AC_MSG_RESULT( )
+AC_MSG_RESULT(    Summary of options...)
+
+if test $irc_zlib_dir ; then
+  AC_MSG_RESULT( ZLIB:     $irc_zlib_include_message, $irc_zlib_library_message)
+else
+  AC_MSG_RESULT( ZLIB:     Disabled)
+fi
+
+if test x$irc_cv_have_iconv = xyes ; then
+  AC_MSG_RESULT( ICONV:    OK)
+else
+  AC_MSG_RESULT( ICONV:    Disabled)
+fi
+
+if test $irc_openssl_dir ; then
+  AC_MSG_RESULT( SSL:      $irc_openssl_include_message, $irc_openssl_library_message)
+else
+  AC_MSG_RESULT( SSL:      Disabled)
+fi
+

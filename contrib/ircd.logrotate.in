@@ -1,0 +1,12 @@
+@prefix@/var/log/ircd.log {
+    daily
+    rotate 20
+    postrotate
+	kill -HUP `cat @prefix@/var/run/ircd.pid`
+    endscript
+    compress
+    delaycompress
+    missingok
+    notifempty
+    nocreate
+}

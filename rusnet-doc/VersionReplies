@@ -1,0 +1,51 @@
+VERSION reply flags (1.5.0)
+
+Flag           Description
+------------------------------------------------------------------------------------------------
+a              Does ident checking
+c              Server is chrooted
+C              command line config enabled
+D              Server debugmode enabled
+d              the delay for nicks is random
+e              Local and global opers can rehash server
+E              Opers can rehash server
+f              adding an artificial 2 seconds delay for accepting connections
+F              Server checks for rapid connections from a single host
+g              Sun GSO bug detected
+G              Never use mbtowc() call
+H              Compiled as a hub
+h              the channel delay is changed
+i              Shows invisible users in /trace
+I              users will not automatically be attributed with user mode "i"
+j              Local and global opers can use /die
+J              Opers can use /die
+k              restricts KILLs to clients which are connected to the server the Operator is connected to
+K              Opers can use /kill
+L              want summon to look for the least idle tty
+m              Using m4 as a preprocessor on the ircd.conf file
+M              Idle-time nullified only from privmsg
+n              the nick delay is changed
+p              Using crypted passwords for operators in ircd.conf file
+P              Storing encrypted passwords in N-lines for server links
+q              Does replacement of unknown chars with '?'
+r              Local and global opers can restart server
+R              Opers can restart server
+s              Using local services is enabled
+S              local /summon is enabled
+t              O: lines from other networks works as o: lines
+T              Shows when a channel topic was set and who it was set by
+u              Prefixing users if no identd responce was given
+U              local /users is enabled
+v              users could obtain usermode +x directly
+V              Uses valloc()
+w              NOWRITEALARM is defined
+W              Opers see /whoises on them
+x              users will automatically be attributed with user mode "x"
+X              Could use Unix domain socket to connect clients/servers to
+Y              Syslog logging enabled
+y              Logging enabled but no syslog
+z              /stats is restricted or /mode is restricted
+Z              Zip links supported
+6              IPv6 supported
+8              Any unicode chars in nick/channel are allowed
++SSL           SSL supported

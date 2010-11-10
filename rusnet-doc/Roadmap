@@ -1,0 +1,56 @@
+TODO
+-----
+This is a roadmap for features and changes planned in rusnet-ircd, 
+description in short and developers volunteered.
+
+Legend
+------
+[ ] no active work yet
+[*] work in progress
+[$] testers are welcome
+[+] completed
+[R] refused or postponed
+
+
+Version 1.4.3
+-------------
+[+] SSL support for client links - p: lines in ircd.conf
+[R] LazyLinks. We definitely do not need this at the moment -skold
+[R] Move all .h to /include, the same about iauth  -skold
+[+] Chanmode +h (half-ops)  -erra
+[+] Make ircd not runnable from uid 0 (just apply hybrid code)  -skold
+[+] Rewrite dummy m_rehash completely  -skold
+[+] Apply necessary patches from 2.11-release  -skold
+[+] whitelisting for mod_dnsbl  -erra
+[+] port numbers in /stats l or /trace  -erra (actually in /stats P -skold)
+[+] usermode +R (Rusnet Restricted)  -skold
+[+] R-lines (Rusnet Restriction lines) -skold
+[+] TKServ integration with R-lines -skold
+[+] Make tkserv/confserv forking from ircd -silencio
+[+] Introduce iserv instead of tkserv, remove service functionality -skold
+[+] Make reliable K:/R: lines addition/deleting, buffered file operations. 
+    Eliminate kill -HUP, move K/E/R lines fuctionality from tkserv
+    into ircd -skold
+[+] Iserv file/channel logging -skold
+[R] Configure.in sanity checks for iserv files
+[+] open/close listeners on rehash
+[+] flexible logging configuration in ircd.conf  -lost
+[+] disregard bounce (B:) and seek for another I: when server not
+    in a network  -erra
+
+Version 1.5
+-------------
+[+] UTF-8 support, server-to-server UTF-8 connections  -LoSt
+[+] Redefine config charset instead of internal locale setting  -LoSt
+[ ] Topic burst on connect  -skold
+[ ] Make all the configuration parsing by yacc  -skold
+[ ] Usermode +I (identified nick) -baron
+[ ] Usermode +R (registered nicks only) -baron
+[ ] Chanmode +R (registered nicks only) -baron
+[ ] Add nick-user-host and timestamp to b/e/I modelists  -erra
+[ ] Re-write iauth, add sendheaders[], etc -skold
+[ ] STATS l to show l:lines (logging) -baron
+[ ] Implement EOB protocol commands -skold
+[ ] Masked server groups support with EOB -skold
+[+] Reopen ircd.log (debug log file) on SIGHUP  -LoSt
+[ ] Make real iconv and locale check via setlocale in configure

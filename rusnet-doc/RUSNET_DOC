@@ -1,0 +1,374 @@
+$Id: RUSNET_DOC,v 1.18 2010-11-10 13:38:40 gvs Exp $
+
+1.5.x RUSNET-IRC REFERENCE
+=======================================================================
+1. Extended codepage support
+    Starting from 1.5.0 ircd supports any of the charsets defined in iconv.
+    Libiconv library must be installed in the operating system where you 
+    compile your ircd for this feature to work (most if not any libiconv
+    versions do not have a cyrillic translit support so in case of FreeBSD
+    you must apply the translit patch from contrib/ directory and in other
+    cases just wish to be happy enough). When you run configure script,
+    apply --enable-iconv to let it work and watch closely for any errors,
+    if you get a message that your system does not support cyrillic translit
+    then it's the case when you need to rebuild your libiconv. Also it need
+    to mention that you always have to have locale LOCALE.CHARSET_8BIT in
+    your system (in case of RusNet it is uk_UA.KOI8-U)! And if you want to
+    use full unicode for your clients then you want LOCALE.CHARSET_UNICODE
+    locale too (for RusNet it's uk_UA.UTF-8). Check presence of those
+    locales before you continue.
+    When you enable iconv support you do not need rusnet.conf and codepages/
+    directory any more so they will not be installed. Don't panic if
+    you haven't found them after the installation.
+
+    Configuration before compiling:
+    1. config.h definitions
+	LOCALE* and CHARSET*: DO NOT EVEN THINK TO CHANGE! (global rusnet 
+	    definitions)
+	IRCD_CHANGE_LOCALE - change the way how the strings are converted
+	    to the uppercase. Having internal UTF8 encoding and uk_UA.UTF-8
+	    locale presense in the system this can increase ircd performance.
+	    That's why it is defined by default. If any problems with 
+	    the system libraries when running this locale come up, try 
+	    to undef.
+	DO_TEXT_REPLACE - if defined, any symbol that can not be converted
+	    into the current client's codepage, will be replaced with the
+	    symbol defined by TEXT_REPLACE_CHAR. Otherwise such symbols
+	    will be skipped when sending to the client.
+    
+    Configuration after the installation:
+    1. P:lines now make use of the field which was previously empty.
+	Now this field is required to be filled in with the default charset
+	for those who connects to this port.
+	P: and p: lines with incorrect/empty charset will be ignored.
+	P:lines examples:
+    	    P::koi8-u::6667:
+    	    P::ascii::6668:
+    	    P::cp1251::6669:
+    	    P::cp866::7772:
+    	    P::iso-8859-5::7773:
+    	    P::MacCyrillic::7774:
+    2. M:line last field where port is defined has a special meaning now:
+	P:line that defines this port must have the charset which you want
+	the ircd to use as its internal charset to store the data in memory.
+	- No client can send the symbols that this charset does not contain.
+	  That's why this charset must have at least all the symbols that
+	  CHARSET_8BIT has - for RusNet network it can be koi8-u, cp1251, utf-8;
+	- All the log files (and kills.conf) are stored using this charset
+	- ircd attains a maximum performance when the most of the clients use
+	  this charset.
+	Attention: make use of utf8 as the internal charset will let you support
+	  the maximum symbols that unicode has, including all the well-known
+	  codepages, but this may cause the UTF fragmentation in the network
+	  and as the result many client complaints. You have to confirm this
+	  with your network committee before setup utf8 as the internal charset.
+    3. Internal charset can be changed on-the-fly with the /rehash command or
+	by sending the ircd HUP signal. But if you try to change it to the
+	something incompatible with CHARSET_8BIT the result is unpredictable.
+	So never do that on the server that is a part of the network.
+    4. ircd.conf and ircd.motd default encoding can be defined by
+	'-e' startup parameter. By default it is the same as CHARSET_8BIT and
+	can not be changed in runtime.
+    5. /stats e will show the charsets usage statistics. Every listening port,
+	connected client or server adds 1 to the current number of the 
+	corresponding line. Internal charset adds its 1 cent as well.
+
+    Turning on the internal koi8-u encoding and compiling with iconv support
+    also makes sense because of:
+	- some increase in performance due to the optimized nicks/channels storage
+	  and search algorythm.
+	- proper transliteration in iconv
+
+    CODEPAGE command was replaced with CHARSET. CODEPAGE is still supported for
+    backward compatibility.
+
+2. IPv6 support.
+
+    For the best result you should properly select either --disable-ipv6 or
+    --enable-ipv6 parameter when you run configure script. If you selected
+    to support IPv6 then you have to change ALL delimiters in your ircd.conf
+    from ':' to '%' because character ':' used in IPv6 notation. Be careful
+    to not miss that!
+	
+1.4.3 RUSNET-IRC REFERENCE
+=======================================================================
+
+1. Rusnet umode +b (R-Mode) description
+   No NICK change, no PRIVMSG/NOTICE to users except irc operators/services, 
+   no PRIVMSG/NOTICE to more than one nick at a time or to the #channel,
+   no custom quit/part messages, no AWAY, no UMODE -b, no UMODE +x, 
+   no VERSION, no INFO, no LINKS, no TRACE, no STATS, no HELP, no LUSERS, 
+   no MOTD, penalty for all attempts, bigger penalti for ADMIN, TIME, 
+   no MODE, no getting +o/+v on channels, no JOIN on several channels 
+   at a time, bigger penalti for JOIN, no JOIN on &/! channels.
+   Clonelimit for +b clients is independent from I:lines and is equal to 2.
+   
+2. Rusnet configuration R:lines
+   Rusnet R-lines are syntactically identical to K-lines but instead of 
+   client disconnection they apply Rusnet umode +b to the client. Note 
+   that R-lined user would have leading % character in ident to be easily 
+   banned on channels or searched by WHO %*. You may define reasons in 
+   R-lines like you do in K-lines. This reason will show up when client 
+   connects right before MOTD (MOTD is special short one). 
+   When R-line expires, client should reconnect for get rid of restriction
+   (R-mode can not be taken off within one session).
+   
+   R-lines are highly appreciated way to deal with abusers, spammers or 
+   flooders which are real clients. R-lines still allow client to connect 
+   and  join channels  but make abuse  almost impossible and  eliminate 
+   kill/connect flood from these clients.
+   For trojans/spambots K-lines still do their best but you may also use 
+   R-lines for these, especially if your server suffers high reconnection 
+   load from these trojans, because their presence on channels will abuse no one.
+    
+3. SSL features
+   To get SSL working first you have to install OpenSSL libraries.
+   Run configure and make sure that it found headers and libs. Use
+   --openssl-prefix or --openssl-include and --openssl-lib command
+   line options when configure fails to detect installed OpenSSL.
+   Run support/ssl_cert script and answer the questions about your 
+   server location, hostname, and so on. Note that server hostname must 
+   be the one users use to connect to. This script will generate ircd.crt 
+   and ircd.key files. Place these in your ircd configuration directory 
+   (generally etc/). You need not change anything in config.h file.
+   Add the following lines to your ircd.conf:
+   p::::9997:
+   p::::9998:
+   p::::9999:
+   
+   Add the following lines to your rusnet.conf:
+   codepage none port 9997;
+   codepage translit incoming TRN2UNI outgoing UNI2TRN port 9998;
+   codepage cp1251 incoming WIN2UNI outgoing UNI2WIN port 9999;
+   
+4. Rehash command
+   Rehash routine was completely re-designed in this version since it
+   was CPU-consuming and buggy. Now when you change one line in ircd.conf
+   you need not to rehash everything but instead you may supply the 
+   additional parameter for REHASH command and re-read only this part.
+   Valid parameters are:
+   /rehash b   [will re-read bounce lines B:]
+   /rehash c   [will re-read C: and Y: lines]
+   /rehash dns [will flush DNS cache and re-read /etc/resolv.conf]
+   /rehash e   [will re-read E: lines (K: exempts)]
+   /rehash h   [will re-read H: C: and Y: lines]
+   /rehash i   [will re-read I: and Y: lines]
+   /rehash k   [will re-read K: lines]
+   /rehash l   [will re-read L: C: and Y: lines]
+   /rehash motd[will re-read server motd]
+   /rehash o   [will re-read O: and Y: lines]
+   /rehash p   [will re-read P: and p: lines]
+   /rehash r   [will re-read R: lines (Rusnet R-mode)]
+   /rehash ssl [will re-read p: lines and re-initialize SSL]
+   /rehash y   [will re-read Y: lines]
+   /rehash     [will re-read the whole file]
+   kill -HUP is equal to /rehash
+   
+5. New K/R/E lines syntax and how to dynamically add these.
+
+   This version of ircd provides new easy way to add these lines for oper.
+   Command syntax:
+   KLINE <nick!user@host> <duration> [:reason]
+   where duration is the number of hours
+   reason is the string with leading colon ':'
+   any other colons within reason will be replaced with ',' (guess why)
+   UNKLINE <nick!user@host>
+   
+   ELINE and RLINE commands have exactly the same syntax.
+   If reason is not supplied it would appear as "No reason".
+   
+   Any Oper may use these commands to maintain K/R/E lines on his/her server
+   instead of manually edit configuration file.
+   
+   (!) You need not to rehash your server since these commands produce
+   immediate result.
+   (!) Note that new syntax allows you to place the line for hostmasks of
+   any kind and you may include both nick and user pattern in the mask.
+   (!) You may watch these commands tracing in &ISERV channel
+      
+   You can view these lines using:
+   STATS k
+   STATS e
+   STATS r
+   commands.
+   
+   Mind the following simple rules:
+
+   For K and R lines:
+   1. If you add line with mask more precise than already exists and its
+      expiration is also earlier than of the existing line, this line will
+      not be added.
+   2. If you add line with mask that is more wide than one already added
+      and it would expire later than the existing one, all those matching
+      lines will be removed and this new one added.
+   3. The same logic is correct for lines deletion.      
+
+   For E: lines
+   1. E:lines now also have expiration time and reason. Don't forget about
+      that.
+   2. No matter if the new mask is more precise or less, if it matches with
+      the existing one, existing line will be replaced.
+      
+6. What do we use now instead of TkServ?
+   As it was mentioned in RELEASE_NOTES there is no TkServ in rusnet-ircd
+   from 1.4.3p8, ircd now uses iserv module to control dynamic lines. 
+
+   You need NOT:
+   -------------
+   S:line in your ircd.conf
+   Any pre-compile/post-compile configuration.
+   Any kind of passwords settings.
+   Any additional make/make install commands.
+   
+   You NEED:
+   -------------
+   #include kills.conf 
+   
+   in your ircd.conf file AND
+   (!) files create-delete permissions on the directory where your ircd.conf
+   and kills.conf reside for ircd user. 
+
+7. How to show all ports we listen to?
+    
+    STATS P now shows all ports ircd listens on, with user count information, 
+    port status and bytes sent/received
+
+8. Rusnet configuration l:lines (LOGGING)
+
+    l-line in ircd.conf is the way how to have your ircd dump any &CHANNEL to 
+    the log file. If you want to log some of local ircd channels like &ERRORS
+    and so on, you have to enable LOG_EVENTS in config.h at compile time and
+    include appropriate l:line in your ircd.conf:
+
+    l:<Channel Name|USER|CONN>:<Log Filename>:<SysLog level>
+
+    <Channel Name> (do not include leading '&') and <SysLog level> are case 
+    insensitive. You may define <Log Filename> and <SysLog level> in the same 
+    line. 
+    SysLog level may be one of: EMERG, ALERT, CRIT, ERR, WARNING, NOTICE, INFO, DEBUG.
+    
+    Examples:
+    l:ERRORS:error.log: /* write all errors from &ERRORS in error.log */
+    l:AUTH:auth.log: 	/* all auth events from &UATH in auth.log */
+    l:KILLS:kill.log:	/* all kills from &KILLS in kills.log */
+    l:CONN:reject.log: 	/* all unregistered clients rejections */
+    l:USER:user.log: 	/* all registered client events */
+    
+    l:ERRORS::ERR	/* send all errors from &ERRORS to syslog with level ERR */
+    l:KILLS::INFO	/* all kills from &KILLS send to syslog with level INFO */
+    l:HASH:debug.log:DEBUG /* log &HASH channel to debug.log and to syslog with DEBUG level */
+
+9. New CONN/USER logfiles format
+    You should undef LOG_OLDFORMAT (default undef) to get it working.
+    <date> <exitc> <time_connected> <username> <hostname> <ident> <remote ip> <remote port>
+	    <msgs sent><[Kbytes sent]> <msgs rcvd><[Kbytes rcvd]>
+	     
+    exitc -s one of the following:
+    
+UNDEF     '-'     /* unregistered client */
+REG       '0'     /* normal exit */
+AUTHFAIL  'A'     /* Authentication failure (iauth problem) */
+AUTHTOUT  'a'     /* Authentication time out */
+CLONE     'C'     /* CLONE_CHECK */
+DIE       'd'     /* server died */
+DEAD      'D'     /* socket died */
+ERROR     'E'     /* socket error */
+FLOOD     'F'     /* client flooding */
+FAILURE   'f'     /* connect failure */
+GHMAX     'G'     /* global clients per host max limit */
+GUHMAX    'g'     /* global clients per user@host max limit */
+NOILINE   'I'     /* No matching I:line */
+KLINE     'k'     /* K-lined */
+KILL      'K'     /* KILLed */
+LHMAX     'L'     /* local clients per host max limit */
+LUHMAX    'l'     /* local clients per user@host max limit */
+MBUF      'M'     /* mem alloc error */
+PING      'P'     /* ping timeout */
+BADPASS   'p'     /* bad password */
+SENDQ     'Q'     /* send queue exceeded */
+RLINE     'r'     /* R-lined */
+REF       'R'     /* Refused */
+AREF      'U'     /* Unauthorized by iauth */
+AREFQ     'u'     /* Unauthorized by iauth, be quiet */
+VIRUS     'v'     /* joined a channel used by PrettyPark virus */
+YLINEMAX  'Y'     /* Y:line max clients limit */
+
+time connected: connect duration in seconds
+ident: response from remote auth port
+remote ip: real ip address client was connected from
+remote port: port client was connected from
+
+1.4.2 RUSNET-IRC REFERENCE
+=======================================================================
+
+1. How to organize autoconnects? What may cause connections to wrong 
+uplinks or no connections at all?
+
+   Pay your closest attention to connection classes. All links to your 
+   HUBs must belong to the same class (say, 1), and MaxLinks field must 
+   be set to 1 in this class. 
+   All links to your LEAVES must NOT belong to this uplink class. They 
+   should be in another class with MaxLinks greater than 1 (more precisely
+   this value should be no less than the number of leaves you may have at 
+   the same time).
+   Remember that server reads C/N lines in reverse order from the last 
+   one to the first, so the last autoconnect line will be activated first.
+   NOTE: Don't forget to add appropriate H: line for each C: line.
+   NOTE: Tkserv (or other services) using S: line MUST NOT belong to 
+   your uplinks class, otherwise your autoconnect will be broken.
+
+2. Autoconnection priorities
+   If you feel that one of your uplinks is better than the other you may 
+   assign greater priority to this one and your server will try to connect
+   to it with more diligence. To get it working place administrative 
+   preference (integer) as the next value after the class number in your 
+   c/C: line. The higher number, the higher preference.
+   Syntax:
+   c:<ip address>:<password>:<hostname>:<port>:<class>:<priority>
+   NOTE: this is RusNet IRCd feature.
+
+3. K:line extensions
+   You may K-line someone not only by ident/host but also by nick/host 
+   combination. Note that you may not K-line someone by nick/ident pair.
+   Place the nick into "ident" field of K:line. Of course, such an ident
+   will be killed, too. 
+   NOTE: Again, DO NOT combine nick and ident in one K-line.
+   NOTE: this is again RusNet IRCd feature only.
+
+4. What is the difference between /quote RESTART command and actual server 
+   restart by killing ircd process?
+   In this version restart command is fixed and works smoothly.
+   /quote RESTART flushes all send buffers and closes all active connections
+   exactly as process kill (catching SIGINT) does. But in case of RESTART
+   command ircd process performs execv and respawing itself (not by external
+   wrapper!) keeping back the same PPID but loading the new code from disk.
+   RESTART command is much more fast than manual restart.
+
+5. Problems with DNS resolving.
+
+   #define RESTRICT_HOSTNAMES has been added to config.h for RFC1123
+   resolving conformance. If you have a lot of tipical DNS errors like
+   underscores, you will see IP numbers instead of these hostnames. If
+   you are unable to fix that, try to define HOSTNAMES_UNDERSCORE.
+
+6. Special settings for busy game robots sending a lot of messages and
+   getting disconnected.
+   RusNet offers one extra field to i/I:lines: custom client_flood value
+   (in bytes). The higher value - the bigger dbuf attached.
+
+   Syntax:
+   I:<TARGET Host Addr>:<Password>:<TARGET Hosts NAME>:<Port>:<Class>:<Client_Flood>
+
+7. Special feature for servers with several IP addresses and different
+   routing policies for different IPs: RusNet F: (fasten) line. It allows
+   one to establish a server connection using the IP address other than
+   primary interface address or the address specified in M: line.
+
+   Syntax: F:<Target IP>:<link description>:<IP to bind>:
+
+   Whenever the "IP to bind" requested is impossible to bind, a fallback
+   to the default IP will be issued while connecting to target host. The
+   "Target IP" field must contain the IP address of the server you wish
+   to connect.
+
+   Currently only target IP is supported, not hostname.

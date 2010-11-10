@@ -1,0 +1,149 @@
+any version: JUPE may cause infinite splits if c/N lines for the jupitered server 
+	    still exist and this uplink splits from services.
+
+any version: *ident@host mask in O: will not work unless GOTID = 1
+Reported by baron
+
+any version: Compilation errors on AMD 64-bit platform, due to absence of long long type
+Fixed
+
+any version: coredump on any hosts like domain.[0-9] (Yes, there are such domains in local nets)
+Reported by Local
+Fixed in 1.4.3p12
+
+=======================================================================================
+any version: in configuration with several autoconnections disconnect from first 
+	    one when second is unavailable  may cause autoconnect block permanently
+Fixed by skold in 1.4.3_009
+
+any version: configure script fails to detect math library on FreeBSD5.3, looks 
+	    like gcc-3.4.2 bug. Solution: add "-lm" to LIBS definition in i386*/Makefile.
+Fixed in 1.4.3_010
+=========================================================================================
+
+1.4.3_006: [IMPORTANT] penalties for normal users are too high?? 
+Reported by cj
+Fixed by skold in 1.4.3_007
+
+1.4.3_006: [DEFECT] R-line не прилепляет '%' в начало юзера на лету
+Reported by cj
+Fixed by skold in 1.4.3_007
+
+1.4.3-006: [DEFECT] И где обещанное перечитывание resolv.conf при rehash??
+Reported by Local
+Fixed by skold in 1.4.3_007
+=========================================================================================
+
+1.4.3_007: [IMPORTANT] +R посылает PONG от юзера в /dev/null. Это фича или бага?
+Reported by Silencio
+Fixed by skold
+
+1.4.3_007: [IMPORTANT] Кто-то сломал umode +x, не берется..
+Reported by hayenne
+Fixed by witch in 1.4.3_008
+
+1.4.3_007: [DEFECT] Для GOTID прилепляет столько '%', сколько раз выставить TRLINE ;)
+Reported by Silencio
+Fixed by cj
+
+1.4.3_007: [DEFECT] Теперь % отрезает первую букву, если GOTID == 1, на всех серверах, кроме 
+родительского. Где у меня ошибка? :)
+Reported by cj
+
+1.4.3_007: [IMPORTANT] Сервисы тоже не могут переименовать +R. Глюки сказочные. То же верно и для +r.
+Reported by Local
+Fixed by cj in 1.4.3_008
+
+1.4.3_007: [TRIVIAL] А это что вообще? "Your nick [cj] is owned by %cj@my.host.com" ? 
+В честь чего мне напоминают, что я имею свой ник?
+Not a bug
+==========================================================================================
+
+1.4.3_008: [IMPORTANT] iserv размножается, если убивать
+Reported by Local
+Fixed by silencio
+
+1.4.3_008: [DEFECT] &ISERV пустой
+Reported by silencio
+Fixed by skold
+
+1.4.3_008: [DEFECT] входящий буфер в iserv позволяет дубликаты и конфликтующие записи.
+Reported by cj
+Fixed by cj
+
+1.4.3_008: [IMPORTANT] коредамп в iserv с полным сносом крыши (стэка нет)
+Reported by cj
+Fixed by silencio
+
+1.4.3_008: [CRITICAL] коредамп в ircd с неполным сносом крыши (где-то в районе econf)
+Reported by Local
+Fixed by cj
+
+1.4.3_008: [CRITICAL] зверский memleak в iserv, мегабайт на 500 записей
+Reported by Local
+Fixed by silencio
+
+1.4.3_008: [IMPORTANT] маленькая утечечка байтиков в iserv, 2 байтика на операцию
+Reported by Local
+Fixed by silencio
+
+1.4.3_008: [DEFECT] K/R вида 1.2.3.4/mask не пашут в принципе. Они когда-нибудь работали?
+Reported by cj
+
+1.4.3_008: [DEFECT] Старый экземпляр iserv зомбируется при рестарте. По каким причином и когда - неясно. Повторить не удается.
+Reported by cj
+
+1.4.3_008: [DEFECT] Permanent K-line will be replaced by the identical permanent. Waste of resource, it should be untouched.
+Reported by slcio
+
+1.4.3_008: [DEFECT] Если iserv не был запущен, то первую команду он пропускает с сообщением Starting iserv...
+Reported by cj
+
+=======================================================================================
+1.4.3_009: [IMPORTANT] rehash P will not work for SSL ports, stats P shows incorrect duplicated data
+Reported by baron
+Fixed by slcio in 1.4.3_010
+
+1.4.3_009: [CRITICAL] после команды /restart, ircd перестартовывает, но на него зайти нельзя.
+Пишет: "Welcome to Rusnet" и все.. помогает только: killall ircd && ircd
+Repoted by baron
+Fixed by skold in 1.4.3_010
+
+=======================================================================================
+1.4.3_010: [IMPORTANT] Заходим на любой порт с xmode и получаем в канале
+MartCat [~amokk@ns.sevsky.net] has joined #test
+хотя в /whois на самого себя показывает шифрованный хост. Причем это видно
+только если сидишь на SSL портах.
+А если клиент наоборот без xmode то у него получается шифрованный хост.
+Reported by MartCat
+Fixed in 1.4.3_011
+
+1.4.3_010: [CRITICAL] coredump in new logging schema, if any &channel l:lines are enabled:
+buffer overrun in sendto_log()
+Reported by anarxi.st
+Fixed in 1.4.3_012
+
+=======================================================================================
+1.4.3_011: [REJECTED] ./ircd: error: unable to find "/usr/local/rusnet/sbin/iauth".
+When using --prefix=not_default and ROOT_PATH=not_default
+Reported by <ozzy@renome-i.net>
+Rejected
+
+========================================================================================
+1.4.3_012: [CRITICAL] Coredump in try_connections()->make_server()
+Reported by GadskyPapa
+Fixed
+
+1.4.3_012: [CRITICAL] Coredump floating somewhere in channel lps
+Reported by GadskyPapa
+Fixed
+
+========================================================================================
+1.4.3_013: [FATAL] Coredump in who_find introduced in p13
+Reported by GadskyPapa
+Fixed by skold
+
+1.4.3_013: [DEFECT] 1.4.3_007: [IMPORTANT] +R посылает PONG от юзера в /dev/null. Это фича или бага?
+Опять проявилось.
+Reported by Local
+

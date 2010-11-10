@@ -1,0 +1,10 @@
+#!/bin/sh
+#$Id: ssl_cert,v 1.4 2010-11-10 13:38:40 gvs Exp $
+PATH=$PATH:/usr/local/ssl/bin
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/ssl/lib
+OPENSSL_CONF=$0.conf
+export OPENSSL_CONF PATH LD_LIBRARY_PATH
+openssl genrsa -out ircd.key 1024
+openssl req -new -x509 -text -days 3650 -key ircd.key -out ircd.crt
+
+cat ircd.crt ircd.key >ircd.pem

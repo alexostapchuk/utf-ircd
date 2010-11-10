@@ -1,0 +1,31 @@
+
+Thanks for opening this one.
+
+To configure your rusnet-1.5 server please do the following steps
+after unpacking:
+
+1. Read rusnet-doc/RUSNET_DOC and rusnet-doc/RELEASE_NOTES carefully.
+2. configure, tune config.h, make server and make install-server. If something
+   goes wrong, read rusnet-doc/BUGS as well.
+3. cd to server's directory (/usr/local/rusnet by default).
+4. Inspect etc/example.* and create etc/ircd.conf (and etc/rusnet.conf
+   when you don't use unicode support, edit "prefix" string there, it must
+   match server's codepages directory).
+5. Check these files permissions. The ircd must have read/write permissions for
+   kills.conf and read permissions for the rest.
+   Also ircd must have write permissions to etc/ directory (create/delete files).
+   Check if you have #include kills.conf line in your ircd.conf file.
+6. If you want SSL, run support/ssl_cert script and answer all questions.
+   Put the files it generated into the directory where your ircd.conf resides.
+7. Again, read RUSNET_DOC if you are not familiar with how to configure
+   SSL, auto-connections, dynamic Klines, logging, UTF support or other 
+   special features.
+
+Never run ircd compiled with #define DEBUGMODE in production.
+Never change the settings in config.h that are not required to change.
+Do not change MAXCONNECTIONS to the value that your server will never be close to,
+because ircd reserves all its static buffers according to this value.
+
+So far so good. If you're reading this line you should be okay.
+
+Adel, erra.

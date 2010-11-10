@@ -1,0 +1,925 @@
+/************************************************************************
+ *   IRC - Internet Relay Chat, support/config.h
+ *   Copyright (C) 1990 Jarkko Oikarinen
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 1, or (at your option)
+ *   any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *   $Id: config.h.dist,v 1.43 2010-11-10 13:38:40 gvs Exp $
+ */
+
+/*
+ *  Global directory & file path section
+ */
+
+#define IRCDM4_PATH IRCDCONF_DIR "/ircd.m4"
+#define IRCDCONF_PATH IRCDCONF_DIR "/ircd.conf"
+#define KILLSCONF_PATH IRCDCONF_DIR "/kills.conf"
+#define RUSNETCONF_PATH IRCDCONF_DIR "/rusnet.conf"
+#define IRCDMOTD_PATH IRCDCONF_DIR "/ircd.motd"
+#define IAUTHCONF_PATH IRCDCONF_DIR "/iauth.conf"
+
+
+
+/*
+ *  ircdwatch configuration options.
+ */
+
+/* how often (in seconds) should we check that ircd runs? */
+#define IRCDWATCH_POLLING_INTERVAL  30
+
+/* 
+ * should we check for config file changes and HUP the server
+ * if a change is detected?
+ */
+#undef IRCDWATCH_HUP_ON_CONFIG_CHANGE
+
+/* 
+ * although you may not want to log ircd-messages to syslog you
+ * may want to log when ircdwatch reloads the config or when
+ * ircd croaks and ircdwatch has to restart it
+ */
+#undef IRCDWATCH_USE_SYSLOG
+
+#ifdef IRCDWATCH_USE_SYSLOG
+# define IRCDWATCH_SYSLOG_IDENT     "ircdwatch"
+# define IRCDWATCH_SYSLOG_OPTIONS   (LOG_PID)
+# define IRCDWATCH_SYSLOG_FACILITY  LOG_DAEMON
+#endif
+
+
+/*
+ *  irc[d] configuration options.
+ *
+ *  Most of the following defines are related to the server,
+ *  some apply to the client.
+ *
+ */
+
+/*
+ * Configure rusnet extensions. Russian codepages per ports support,
+ * russian nicks and channels, channel mode +z (latin nicks only) etc
+ */
+#define RUSNET_IRCD
+#define NETWORKNAME "RusNet"
+
+#ifdef RUSNET_IRCD
+#define RUSNET_RLINES
+#define IRCDRMOTD_PATH IRCDCONF_DIR "/ircd.rmotd"
+#else
+#undef RUSNET_RLINES
+#undef IRCDRMOTD_PATH IRCDCONF_DIR
+#endif
+
+/*
+ * Define if you want wallops to be directed to &WALLOPS channel.
+ * When in RusNet - define this.
+ */
+ 
+#define WALLOPS_TO_CHANNEL
+
+/*
+ * use numeric 005 for 'I support' response. This breaks RFC but heck,
+ * now most clients break RFC the same way. They use numeric 010 as
+ * RPL_BOUNCE, so be it  -erra
+ */
+#define SEND_ISUPPORT
+
+/*
+ * Define this to see when a channel topic was set and who it was set by.
+ */
+#define TOPICWHOTIME
+
+/* CHROOTDIR
+ *
+ * Define for value added security if you are a rooter.
+ *
+ * CPATH, MPATH, LPATH, PPATH, TPATH, QPATH, OPATH
+ * must have RPATH as root directory! Set them in Makefile
+ *
+ * You may want to define IRC_UID and IRC_GID
+ */
+#undef CHROOTDIR
+
+#if defined(CHROOTDIR)
+  #define ROOT_PATH	"/where/to/change/root/dir"
+#endif
+
+/* ENABLE_SUMMON
+ *
+ * The SUMMON command requires the ircd to be run as group tty in order
+ * to work properly in many cases.  If you are on a machine where it
+ * won't work, or simply don't want local users to be summoned, undefine
+ * this.
+ */
+#undef	ENABLE_SUMMON	/* local summon */
+#undef	ENABLE_USERS	/* enables local /users (same as who/finger output) */
+
+/* SHOW_INVISIBLE_LUSERS
+ *
+ * As defined this will show the correct invisible count for anyone who does
+ * LUSERS on your server. On a large net this doesnt mean much, but on a
+ * small net it might be an advantage to undefine it.
+ */
+#define	SHOW_INVISIBLE_LUSERS
+
+/* NO_DEFAULT_INVISIBLE
+ *
+ * When defined, your users will not automatically be attributed with user
+ * mode "i" (i == invisible). Invisibility means people dont showup in
+ * WHO or NAMES unless they are on the same channel as you.
+ */
+#undef	NO_DEFAULT_INVISIBLE
+
+#ifdef RUSNET_IRCD
+/* NO_DEFAULT_VHOST
+ *
+ * When defined, your users will not automatically be attributed with user
+ * mode "x" (x == virtual host). Virtual host means people won't see the
+ * actual host of an user (except IRC operators on /whois)
+ */
+#define	NO_DEFAULT_VHOST
+
+/* NO_DIRECT_VHOST
+ *
+ * When defined, your users could not obtain usermode +x directly
+ * (except IRC operators). The IRC services are supposed to set this
+ * mode for registered nicks only. This method has its own disadvantages.
+ *
+ * RUSNET: This option should be set to undef in RusNet. Different states of this 
+ * option are not compatible in the same network!
+ */
+#undef	NO_DIRECT_VHOST
+
+#endif
+
+/* STATS_RESTRICTED
+ *
+ * When defined, only /stats c, h, o and u will be allowed for ordinary
+ * users. This breaks RFC 2812 requirements (/stats m and l) but saves
+ * the server from possible abuse.
+ */
+#define	STATS_RESTRICTED
+
+/* MODES_RESTRICTED
+ *
+ * When defined, only /mode #channel +b will be allowed outside the
+ * channel for ordinary users. Also, only channel (or IRC) ops can
+ * get /mode #channel +I
+ */
+#define	MODES_RESTRICTED
+
+/* OPER_KILL
+ *
+ * If you dont believe operators should be allowed to use the /KILL command
+ * or believe it is uncessary for them to use it, then leave OPER_KILL
+ * undefined. This will not affect other operators or servers issuing KILL
+ * commands however.  OPER_REHASH and OPER_RESTART allow operators to
+ * issue the REHASH and RESTART commands when connected to your server.
+ * Left undefined they increase the security of your server from wayward
+ * operators and accidents.  Defining OPER_REMOTE removes the restriction
+ * that O-lines only become fully effective for people on the 'same network'
+ * as the server.  Undefined, it increases the security of the server by
+ * placing restrictions on where people can use operator powers from.
+ * The 'LOCOP_' #defines are for making the respective commands available
+ * to 'local' operators. Note that the 'OPER_' #defines affect both global
+ * (big O) and local (little o) operators.  Defining 'LOCOP_x' has no effect
+ * if 'OPER_x' is undefined so you can't give local operators more rights
+ * than global ones.
+ */
+#define	OPER_KILL
+#define	OPER_REHASH
+#define	OPER_RESTART
+#define	OPER_DIE
+#define	OPER_REMOTE
+#define OPER_TLINE
+#undef	LOCOP_REHASH
+#undef	LOCOP_RESTART
+#undef	LOCOP_DIE
+/*
+ * Define if you want locops to be able to add/remove temporary K/R/E-lines
+ */
+#undef	LOCOP_TLINE
+
+/*
+ * Maximum number of network connections your server will allow.  This should
+ * never exceed max. number of open file descrpitors and wont increase this.
+ * Should remain LOW as possible. Most sites will usually have under 50 or so
+ * connections.
+ * if you have a lot of server connections, it may be worth splitting the load
+ * over 2 or more servers.
+ * 1 server = 1 connection, 1 user = 1 connection.
+ * This should be at *least* 4: 2 listen ports (1 tcp, 1 udp)
+ *				1 dns port, 1 client
+ */
+#define MAXCONNECTIONS  256	
+
+/* MAXIMUM LINKS
+ *
+ * This define is useful for leaf nodes and gateways. It keeps you from
+ * connecting to too many places. It works by keeping you from
+ * connecting to more than "n" nodes which you have C:blah::blah:6667
+ * lines for.
+ *
+ * Note that any number of nodes can still connect to you. This only
+ * limits the number that you actively reach out to connect to.
+ *
+ * Leaf nodes are nodes which are on the edge of the tree. If you want
+ * to have a backup link, then sometimes you end up connected to both
+ * your primary and backup, routing traffic between them. To prevent
+ * this, #define MAXIMUM_LINKS 1 and set up both primary and
+ * secondary with C:blah::blah:6667 lines. THEY SHOULD NOT TRY TO
+ * CONNECT TO YOU, YOU SHOULD CONNECT TO THEM.
+ *
+ * Gateways such as the server which connects Australia to the US can
+ * do a similar thing. Put the American nodes you want to connect to
+ * in with C:blah::blah:6667 lines, and the Australian nodes with
+ * C:blah::blah lines. Have the Americans put you in with C:blah::blah
+ * lines. Then you will only connect to one of the Americans.
+ *
+ * This value is only used if you don't have server classes defined, and
+ * a server is in class 0 (the default class if none is set).
+ *
+ */
+#define MAXIMUM_LINKS 32 
+
+/*
+ * A pure non-routing leaf server can undefine HUB for best performance.
+ * If your server is running as a a HUB Server then define this.
+ * A HUB Server has many servers connect to it at the same as opposed
+ * to a leaf which just has 1 server (typically the uplink).
+ */
+#define	HUB 1 
+
+#ifdef HUB
+/*
+ * MAXSERVERS is the maximum number of servers that will be linked
+ * to your server at the same time.  This number is not a limit,
+ * it is used to allocate memory when ircd is started.
+ */
+# define	MAXSERVERS 32 
+#else
+# define	MAXSERVERS 1
+#endif
+
+
+/*
+ * NOTE: defining CMDLINE_CONFIG and installing ircd SUID or SGID is a MAJOR
+ *       security problem - they can use the "-f" option to read any files
+ *       that the 'new' access lets them. Note also that defining this is
+ *       a major security hole if your ircd goes down and some other user
+ *       starts up the server with a new conf file that has some extra
+ *       O-lines. So don't use this unless you're debugging.
+ */
+#undef	CMDLINE_CONFIG /* allow conf-file to be specified on command line */
+
+/*
+ * To use m4 as a preprocessor on the ircd.conf file, define M4_PREPROC.
+ * The server will then call m4 each time it reads the ircd.conf file,
+ * reading m4 output as the server's ircd.conf file.
+ */
+#undef	M4_PREPROC
+
+/*
+ * If you wish to have the server log 'vital' messages about server,
+ * define this.
+ */
+#define	LOG_EVENTS
+
+#ifdef LOG_EVENTS
+/*
+ * If you wish to have the server send 'vital' messages about server
+ * through syslog, define USE_SYSLOG. It is not recommended that
+ * this option is used unless you tell the system administrator beforehand
+ * and obtain their permission to send messages to the system log files.
+ */
+#undef	USE_SYSLOG
+
+#ifdef	USE_SYSLOG
+/*
+ * If you want to log to a different facility than DAEMON, change
+ * this define.
+ */
+#define LOG_FACILITY LOG_DAEMON
+
+#endif /* USE_SYSLOG */
+
+#endif /* LOG_EVENTS */
+
+/*
+ * LOG_OLDFORMAT
+ *
+ * Define this if you want old format of logs. (Mind, you will lose
+ * additional information, like remote ip, port, etc.)
+ */
+#undef	LOG_OLDFORMAT
+
+
+#ifdef RUSNET_IRCD
+
+#undef	OPER_RCPAGE	/* Opers can remotely change user's codepage */
+
+#undef  EXTRA_NOTICES	/* Extra notices for Opers */
+
+#ifdef EXTRA_NOTICES
+#undef  CLIENT_NOTICES  /* Opers see clients connecting/exiting */
+#undef  NCHANGE_NOTICES /* Opers see nick changes by users */
+#undef  WHOIS_NOTICES   /* Opers see /whoises on them */
+#undef  JOIN_NOTICES	/* Mind your clients privacy before defining this */
+#endif /* EXTRA_NOTICES */
+
+#endif
+
+/*
+ * define this if you want to use crypted passwords for operators in your
+ * ircd.conf file. See contrib/mkpasswd/README for more details on this.
+ */
+#define	CRYPT_OPER_PASSWORD
+
+/*
+ * If you want to store encrypted passwords in N-lines for server links,
+ * define this.  For a C/N pair in your ircd.conf file, the password
+ * need not be the same for both, as long as hte opposite end has the
+ * right password in the opposite line.  See INSTALL doc for more details.
+ */
+#undef	CRYPT_LINK_PASSWORD
+
+/*
+ * define this if you enable summon and if you want summon to look for the
+ * least idle tty a user is logged in on.
+ */
+#undef	LEAST_IDLE
+
+/*
+ * IDLE_FROM_MSG
+ *
+ * Idle-time nullified only from privmsg, if undefined idle-time
+ * is nullified from everything except ping/pong.
+ * Added 3.8.1992, kny@cs.hut.fi (nam)
+ */
+#define	IDLE_FROM_MSG
+
+/*
+ * use these to setup a Unix domain socket to connect clients/servers to.
+ */
+#undef	UNIXPORT
+
+/*
+ * IRC_UID
+ *
+ * If you start the server as root but wish to have it run as another user,
+ * define IRC_UID to that UID.  This should only be defined if you are running
+ * as root and even then perhaps not.
+ */
+#undef	IRC_UID
+#undef	IRC_GID
+
+#ifdef	notdef
+#define	IRC_UID	65534	/* eg for what to do to enable this feature */
+#define	IRC_GID	65534
+#endif
+
+/*
+ * CLIENT_FLOOD
+ *
+ * this controls the number of bytes the server will allow a client to
+ * send to the server without processing before disconnecting the client for
+ * flooding it.  Values greater than 8000 make no difference to the server.
+ *
+ * Note: custom values may be defined in I:lines, this is system-wide  -erra
+ */
+#define	CLIENT_FLOOD	4096
+
+/* Remote query flood protection. */
+#define	CHREPLLEN	8192
+
+/*
+ * This will give some extra statistics, such as highest usercount,
+ * connection duration and local client incrementation.
+ *
+ * Note: will also show local/global max in /lusers - jv
+ */
+#define        EXTRA_STATISTICS
+
+#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+/*
+ * Locale stuff:
+ * 1. LOCALE* and CHARSET* must be network global settings.
+ * 2. Your internal ircd charset must be defined in one of P: lines of your
+ * config. It must be selected then by defining default ping port in M: line
+ * as appropriate port of that P: line. If your operating system doesn't
+ * have a locale LOCALE.$charset where $charset is internal ircd charset
+ * name then locale name will be assumed LOCALE.CHARSET_8BIT.
+ * 3. You may undefine LOCALE_STRICT_NAMES only if all servers in your IRC
+ * network have internal ircd charset CHARSET_UNICODE (and certainly can
+ * work in that charset). IRCD_CHANGE_LOCALE must be defined in that case.
+ * 4. Until you have LOCALE_STRICT_NAMES undefined, all nicks and channels
+ * names will be validated with locale LOCALE.CHARSET_8BIT.
+ * 5. CHARSET_UNICODE may be only UTF-8 or UTF-2 (see support.c, etc.).
+ *
+ * In any case you MUST have the locale LOCALE.CHARSET_8BIT in your OS!
+ * CHARSET_UNICODE is for full unicode serverlinks, it may be used only if
+ * internal ircd charset is CHARSET_UNICODE (note: see comment above).
+ * CHARSET_8BIT is for 8bit serverlinks.
+ *
+ * undef IRCD_CHANGE_LOCALE if your UTF-8 locale is broken to avoid desync
+ * caused by upper/lowercase letters mismatch
+ */
+#define	LOCALE			"uk_UA"
+#define	LOCALE_STRICT_NAMES	1
+
+#define	CHARSET_UNICODE		"UTF-8"
+#define	CHARSET_8BIT		"KOI8-U"
+
+#define	IRCD_CHANGE_LOCALE	1
+
+/* define it if you want to replace unconverted characters with some chars */
+#define	DO_TEXT_REPLACE		1
+#define	TEXT_REPLACE_CHAR	'?'
+#endif /* not USE_OLD8BIT */
+
+#ifndef HAVE_UTF_LOCALE
+# undef IRCD_CHANGE_LOCALE
+#endif
+
+/*
+ * If you wish to run services, define USE_SERVICES. 
+ * This can make the server noticeably bigger and slower.
+ * services are not fully implemented yet, so don't use it unless you really
+ * know what you are doing.
+ * We DO NOT define this in RusNet any more.
+ */
+#undef USE_SERVICES
+
+/*
+ * Configure this if you want to start with TkServ and Services.
+ * Of course, you'll need to configure and build tkserv, too.
+ */
+#ifdef RUSNET_IRCD
+#define SERVICES_SERV	"*.RusNet"
+#define SERVICES_IDENT	"Service"
+#define SERVICES_HOST	"RusNet"
+#define	NICKSERV_NICK	"NickServ"
+#define	CHANSERV_NICK	"ChanServ"
+#define	MEMOSERV_NICK	"MemoServ"
+#define	OPERSERV_NICK	"OperServ"
+# ifdef USE_TKSERV
+#define	TK_USER		OPERSERV_NICK "!" SERVICES_IDENT "@" SERVICES_HOST
+#define TK_PASS		"check_your_tkserv.access"
+#define TK_REASON	"Banned by services"
+# endif
+#endif
+
+/*
+ * Use conservative mechanisms of NDELAY array management.
+ * Strongly not recommended on medium and big IRC networks. -kmale
+ */
+#undef CONSERVATIVE_NDELAY_MALLOC
+
+/*
+ * Define the following to make the delay for nicks random.
+ * Some people believe a bot can exactly time the delay and don't like it,
+ * I think this is a useless concern. -krys
+ */
+#undef RANDOM_NDELAY
+
+/*
+ * You've read the BOFH saga and you liked it, then define the following.
+ *
+ * The two following will change the nick delay and channel delay features
+ * making them totally user unfriendly but more efficient.
+ */
+#undef BETTER_NDELAY
+#undef BETTER_CDELAY
+
+/*
+ * Defining this will enable the use of compressed server-server links.
+ * In order to have it work, you must have the zlib version 1.0 or higher.
+ * The library and the include files must have been found by configure,
+ * if you have installed the zlib after running configure, run it again.
+ */
+#define ZIP_LINKS
+
+/*
+ * Defining this will enable the use of SSL-encrypted client-server links.
+ * In order to have it work you must have the openssl version 0.9.6e or higher.
+ * The library and the include files must have been found by configure.
+ * For using SSL encryption you should define p:lines in ircd.conf
+ * You definitely need the files below to have it work.
+ */
+#define USE_SSL
+
+#ifdef USE_SSL
+# define IRCD_CRT IRCDCONF_DIR "/ircd.crt"
+# define IRCD_KEY IRCDCONF_DIR "/ircd.key"
+#endif
+
+/*
+ * Defining this will enable immediate local users scan against each incoming temporary 
+ * configuration line, instead of waiting for the next main loop iteration.
+ * This is reasonable to define in small/medium networks where temporary lines list (K-lines
+ * for instance) is often bigger than userbase.
+ * Define this in RusNet.
+ */
+#define TLINES_SCAN_INSTANT
+
+
+/*
+ * Defining this will add an artificial 2 seconds delay for accepting
+ * connections.  This is the OLD behaviour of the server.
+ *
+ * NOTE: Undefining this leads to a significant increase in CPU usage if
+ * you reject client which keeps connecting.
+ */
+#undef	SLOW_ACCEPT
+
+/*
+ * Defining this will make the server check for rapid connections from a single
+ * host and reject new connections from this host if the limit is reached.
+ *
+ * NOTE: Enabling this feature will significantly increase the CPU usage
+ * for servers carrying several hundred clients and getting many connections.
+ *
+ * IMPORTANT: This **MUST** defined if SLOW_ACCEPT is NOT defined
+ */
+#define	CLONE_CHECK
+
+/*
+** This defines the message that is sent to clients upon connect.
+** Keep it short.
+*/
+#define HELLO_MSG "You are connected to RusNet. Please wait..."
+
+/*
+ * Connections rejected by check_clones() will be delayed for this many seconds
+ * before final error is sent to them and their socket is closed.
+ * This effectively reduces bouncing (fast reconnecting clients).
+ * CLONE_CHECK must be defined for this to work.
+ *
+ * Note: it may lead to file descriptors exhaustion. ("All connections in use"
+ * error message.)
+ */
+#define DELAY_CLOSE     15       /* Recommended value: 15 */
+
+/*
+ * Because ip6.arpa is still not delegated for the 6bone (3ffe::/16)
+ * this options allows you to still resolve it using ip6.int.
+ */
+#define SIXBONE_HACK
+
+/*   STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP  */
+/*   STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP  */
+/*   STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP STOP  */
+
+/* You shouldn't change anything below this line, unless absolutely needed. */
+
+#ifdef	OPER_KILL
+/* LOCAL_KILL_ONLY
+ *
+ * To be used, OPER_KILL must be defined.
+ * LOCAL_KILL_ONLY restricts KILLs to clients which are connected to the
+ * server the Operator is connected to (ie lets them deal with local
+ * problem users or 'ghost' clients
+ */
+#undef	LOCAL_KILL_ONLY
+#endif
+
+/* Maximum length the queue of pending connections to one port may grow to. */ 
+#define LISTENQUEUE 128
+
+/* define DEBUGMODE to enable debugging mode.*/
+#undef	DEBUGMODE
+
+/*
+ * Time interval to wait and if no messages have been received, then check for
+ * PINGFREQUENCY and CONNECTFREQUENCY 
+ */
+#define TIMESEC  60		/* Recommended value: 60 */
+
+/*
+ * If daemon doesn't receive anything from any of its links within
+ * PINGFREQUENCY seconds, then the server will attempt to check for
+ * an active link with a PING message. If no reply is received within
+ * (PINGFREQUENCY * 2) seconds, then the connection will be closed.
+ */
+#define PINGFREQUENCY    120	/* Recommended value: 120 */
+
+/*
+ * If the connection to to uphost is down, then attempt to reconnect every 
+ * CONNECTFREQUENCY  seconds.
+ */
+#define CONNECTFREQUENCY 90	/* Recommended value: 600 */
+
+/*
+ * Often net breaks for a short time and it's useful to try to
+ * establishing the same connection again faster than CONNECTFREQUENCY
+ * would allow. But, to keep trying on bad connection, we require
+ * that connection has been open for certain minimum time
+ * (HANGONGOODLINK) and we give the net few seconds to steady
+ * (HANGONRETRYDELAY). This latter has to be long enough that the
+ * other end of the connection has time to notice it broke too.
+ */
+#define HANGONRETRYDELAY 30	/* Recommended value: 30 seconds */
+#define HANGONGOODLINK 900	/* Recommended value: 15 minutes */
+
+/*
+ * Number of seconds to wait for write to complete if stuck.
+ */
+#define WRITEWAITDELAY     15	/* Recommended value: 15 */
+
+/*
+ * Number of seconds to wait for DNS/authentication to complete.
+ * Note that iauth's default timeout per module is 30 seconds, so this value
+ * should be at least 30 * number of modules.  Extra time should really be
+ * given to be safe.
+ */
+#define	ACCEPTTIMEOUT      90	/* Recommended value: 90 */
+
+/*
+ * number of collision map entries to allocate per request  -erra
+ */
+#ifdef RUSNET_IRCD
+#define COLLMAPCHUNK       16
+#endif
+
+/*
+ * Max time from the nickname change that still causes KILL
+ * automaticly to switch for the current nick of that user. (seconds)
+ */
+#define KILLCHASETIMELIMIT 90   /* Recommended value: 90 */
+
+/*
+ * the period of time collision maps are checked for expiry (seconds)
+ */
+#define CMAPCHECKEVERY		10   /* Recommended value: 10 */
+
+/*
+ * Max time the nick collision is being kept mapped (seconds)
+ */
+#define COLLMAP_HOLDTIME	30   /* Recommended value: 30 */
+
+/*
+ * Max time for the channel history and nick delay to be effective.
+ * It should be the same value on all servers of a same net, and
+ * be greater than the split durations usually seen.
+ * DELAYCHASETIMELIMIT is the default.
+ */
+#define DELAYCHASETIMELIMIT	1800	/* Recommended value: 1800 */
+
+/*
+ * Max time for !channel history, this *MUST* be fairly long (usually
+ * much longer than the value above) to ensure shortname unicity.
+ * It makes very little sense to use a short time limit here.
+ */
+#define LDELAYCHASETIMELIMIT	5400	/* Recommended value: 5400 */
+
+/*
+ * Min NDELAY nick locks array size. -kmale
+*/
+#define MINLOCKS        6144     /* This value depends on the minimal
+				  * user activity in your network
+				  */
+
+/*
+ * Max allowed number of nick locks due to NDELAY before lock array
+ * will be rewrited. -kmale
+*/
+
+#define MAXLOCKS        24576     /*
+				  * This value should be higher than
+				  * the maximum number of users
+				  * in your network
+				  */
+/*
+ * Reallocate memory if MAXLOCKS threshold broken. If undefined simply
+ * set index to zero and begin to rewrite array. -kmale
+ */
+#define REALLOC_IF_MAX_BROKEN	1
+
+/*
+ * Whether to lock recently changed nick to protect from
+ * nick collision or if KILL is in place. Causes falsely
+ * locked nicks, so try to keep it off and see  -erra
+ */
+#undef LOCKRECENTCHANGE
+
+/*
+ * Size of memory block allocating per one step to store NDELAY locks if
+ * array is full. -kmale
+*/
+#define LOCKMEMORYALLOCATIONSTEP        512      /*Recommended value: 16 or greater*/
+
+/*
+ * Max age (in seconds) of NDELAY lock before it will be deleted. -kmale
+*/
+#define MAXLOCKAGE      DELAYCHASETIMELIMIT    /*Recommended value: DELAYCHASETIMELIMIT*/
+/*
+** If you have problems with two servers autoconnecting to each other
+** all the time and thus squitting, define this. It will eat a little
+** CPU during AC and it will not allow to try to connect to server that
+** is trying to connect to you.
+*/
+/* #undef DISABLE_DOUBLE_CONNECTS */
+
+/*
+
+/*
+** Define delimiter of fields in ircd.conf.
+*/
+#ifdef INET6
+# define IRCDCONF_DELIMITER '%'
+#else
+# define IRCDCONF_DELIMITER ':'
+#endif
+
+/*
+ * Max number of channels a user is allowed to join.
+ */
+#define MAXCHANNELSPERUSER  20	/* Recommended value: 10 */
+
+/*
+ * USE_IAUTH makes ircd use the iauth program for authentication.
+ * it can always be overriden by using the -s switch
+ */
+#define USE_IAUTH
+
+/*
+ * USE_ISERV makes ircd use the iserv program for remote administration.
+ * If RUSNET_IRCD is defined USE_ISERV is mandatory
+ */
+#define USE_ISERV
+ 
+#ifdef ZIP_LINKS
+/*
+ * the compression level used. (Suggested values: 3, 4, 5)
+ * Above 5 will only give a *very* marginal increase in compression for a
+ * *very* large increase in CPU usage.
+ */ 
+# define	ZIP_LEVEL	5
+#endif
+
+#ifdef	CLONE_CHECK
+/*
+ * If CLONE_CHECK has been defined, these control how the checks are performed,
+ * and how the alarm is triggered.
+ */
+# define	CLONE_MAX	10
+# define	CLONE_PERIOD	2
+#endif
+
+/*
+ * define NO_IDENT if you don't want to support ident (RFC1413).
+ * it is a VERY bad idea to do so, since this will make it impossible to
+ * efficientely track abusers.
+ * NO_PREFIX should always be undefined.
+ */
+/* #undef	NO_IDENT */
+/* #undef	NO_PREFIX */
+
+/*
+** LISTENER_DELAY, if defined, adds an artificial delay between checking
+** listeners for new connections. If undefined, it accepts clients faster
+** but the CPU load increases.
+** LISTENER_MAXACCEPT defines how many clients will be accepted during one
+** listener check.
+*/
+#ifdef SLOW_ACCEPT
+#define LISTENER_DELAY 2
+#define LISTENER_MAXACCEPT 1
+#else
+#define LISTENER_DELAY 1
+#define LISTENER_MAXACCEPT 10
+#endif
+
+/* ------------------------- END CONFIGURATION SECTION -------------------- */
+#ifndef ENABLE_SUMMON
+#  undef LEAST_IDLE
+#endif
+
+#define SEQ_NOFILE    128	/* For Dynix (sequent OS) users : 
+				 * set to your current kernel impl,
+				 * max number of socket connections;
+				 * ignored on other OS.	
+				 */
+/*
+ * safety margin so we can always have one spare fd, for motd/authd or
+ * whatever else.  -5 allows "safety" margin of 1 and space reserved.
+ */
+#define	MAXCLIENTS	(MAXCONNECTIONS-5)
+
+#if defined(CLIENT_FLOOD)
+# if	(CLIENT_FLOOD > 8000) || (CLIENT_FLOOD < 512)
+error CLIENT_FLOOD needs redefining.
+# endif
+#else
+error CLIENT_FLOOD undefined
+#endif
+
+/* sanity check */
+#if defined(DELAY_CLOSE)
+#  if defined(SLOW_ACCEPT) || !defined(CLONE_CHECK)
+#    error define CLONE_CHECK and undefine SLOW_ACCEPT to use DELAY_CLOSE.
+#  endif
+#  if (DELAY_CLOSE < 1)
+#    error DELAY_CLOSE needs redefining.
+#  endif
+#endif
+
+#if defined(ZIP_LINKS)
+# if	(ZIP_MINIMUM > ZIP_MAXIMUM)
+error ZIP_MINIMUM needs redefining.
+# endif
+#endif
+
+#if !defined(SLOW_ACCEPT) && !defined(CLONE_CHECK)
+# define	CLONE_CHECK
+# define	CLONE_MAX       2                                     
+# define	CLONE_PERIOD    10       
+#endif
+
+/*
+** you wouldn't want to compress messages one by one.. would you?
+** (it's not implemented anyways)
+*/
+#ifdef	ZIP_LINKS
+# define	SENDQ_ALWAYS
+#endif
+
+#if ! defined(USE_POLL)
+# if (MAXCONNECTIONS > FD_SETSIZE)
+error FD_SETSIZE must be bigger than MAXCONNECTIONS
+# endif
+#endif
+
+/*
+** buffer used for iauth-ircd communication
+** very big servers might consider increasing it
+*/
+#ifdef USE_IAUTH
+# define       IAUTH_BUFFER    65535
+#endif
+
+#ifdef USE_ISERV
+# define	ISERV_BUFFER	65535
+#endif
+/*
+** Make sure that if zlib isn't found, or you don't want to use it, that you
+** don't define ZIP_LINKS
+*/
+#ifndef	USE_ZLIB
+#undef	ZIP_LINKS
+#endif
+
+#if !defined(HELLO_MSG)
+#error HELLO_MSG must be defined
+#endif
+
+/*
+** Make sure that if openssl lib was not found, by configure or we don't want to use it, that we
+** undefine USE_SSL
+*/
+#if !defined(USE_OPENSSL)
+#undef	USE_SSL
+#endif
+
+/*
+** Make sure that USE_ISERV is defined if RUSNET_IRCD is.
+*/
+#ifdef RUSNET_IRCD
+# define USE_ISERV
+# undef USE_TKSERV
+#endif
+
+/*
+** You should not want to change this. ;)
+*/
+#define	NOWRITEALARM	1
+
+/*
+** Accept only hostnames conforming to RFC1034/1035/1123.
+** Conformance of the internal resolver to RFC1123.
+*/
+#define	RESTRICT_HOSTNAMES	1
+
+/*
+** If your local DNS contains a lot of typical DNS errors and under some
+** circumstances you cannot fix that, try to define this
+*/
+#undef	HOSTNAMES_UNDERSCORE
+
+/*
+** Until FreeBSD jail bug is fixed we need JAIL_RESOLVER_HACK defined
+*/
+#ifdef RUSNET_IRCD
+# define JAIL_RESOLVER_HACK	1
+#endif
