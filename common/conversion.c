@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: conversion.c,v 1.1 2010-11-10 13:39:22 gvs Exp $
  */
 
 #include "os.h"
@@ -50,11 +49,20 @@ conversion_t *conv_get_conversion(const char *charset)
   else if (internal)
   {
 #ifdef DO_TEXT_REPLACE
-    snprintf(name, sizeof(name), "%s//TRANSLIT", internal->charset);
+# ifdef HAVE_ICONV_TRANSLIT
+	snprintf(name, sizeof(name), "%s//TRANSLIT", internal->charset);
+# else
+	strncpy(name, internal->charset, sizeof(name));
+# endif
 #else
-    snprintf(name, sizeof(name), "%s" TRANSLIT_IGNORE, internal->charset);
+# ifdef HAVE_ICONV_TRANSLIT
+	snprintf(name, sizeof(name), "%s" TRANSLIT_IGNORE, internal->charset);
+# else
+	snprintf(name, sizeof(name), "%s//IGNORE", internal->charset);
+# endif
 #endif
-    cd = iconv_open(name, charset);
+
+	cd = iconv_open(name, charset);
   }
   else /* internal isn't set yet so check only */
     cd = iconv_open(charset, "ascii");

@@ -1,4 +1,4 @@
-$Id: RUSNET_DOC,v 1.18 2010-11-10 13:38:40 gvs Exp $
+$Id$
 
 1.5.x RUSNET-IRC REFERENCE
 =======================================================================
@@ -88,8 +88,8 @@ $Id: RUSNET_DOC,v 1.18 2010-11-10 13:38:40 gvs Exp $
     --enable-ipv6 parameter when you run configure script. If you selected
     to support IPv6 then you have to change ALL delimiters in your ircd.conf
     from ':' to '%' because character ':' used in IPv6 notation. Be careful
-    to not miss that!
-	
+    to not miss that! Perhaps, you'd want to --enable-vhost6 as well.
+
 1.4.3 RUSNET-IRC REFERENCE
 =======================================================================
 

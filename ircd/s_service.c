@@ -19,7 +19,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_service.c,v 1.15 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -132,13 +131,7 @@ void	check_services_butone(long action, char *server, aClient *cptr, char *fmt, 
 				vsprintf(buf, fmt+3, va);
 				va_end(va);
 				sprintf(nbuf, "%s!%s@%s", cptr->name,
-					cptr->user->username,
-#ifdef RUSNET_IRCD
-					cptr->sockhost
-#else
-					cptr->user->host
-#endif
-							);
+					cptr->user->username, cptr->sockhost);
 
 				sendto_one(sp->bcptr, ":%s%s", nbuf, buf);
 			    }
@@ -173,11 +166,7 @@ int	wants;
 			   sptr->hopcount + 1,
 			   (wants & SERVICE_WANT_USER) ? sptr->user->username
 			   : ".",
-#ifdef RUSNET_IRCD
-			   (wants & SERVICE_WANT_USER) ? sptr->sockhost :".",
-#else
-			   (wants & SERVICE_WANT_USER) ? sptr->user->host :".",
-#endif
+			   (wants & SERVICE_WANT_USER) ? sptr->sockhost : ".",
 			   (wants & SERVICE_WANT_USER) ?
 			   ((wants & SERVICE_WANT_TOKEN) ?
 			    sptr->user->servp->tok : sptr->user->server) : ".",
@@ -192,13 +181,7 @@ int	wants;
 		if (wants & SERVICE_WANT_PREFIX)
 		    {
 			sprintf(nbuf, "%s!%s@%s", sptr->name,
-				sptr->user->username,
-#ifdef RUSNET_IRCD
-				sptr->sockhost
-#else
-				sptr->user->host
-#endif
-							);
+				sptr->user->username, sptr->sockhost);
 			prefix = nbuf;
 		    }
 		else
@@ -209,12 +192,7 @@ int	wants;
 				   sptr->hopcount+1);
 		if (wants & SERVICE_WANT_USER)
 			sendto_one(cptr, ":%s USER %s %s %s :%s", prefix, 
-				   sptr->user->username,
-#ifdef RUSNET_IRCD
-				   sptr->sockhost,
-#else
-				   sptr->user->host,
-#endif
+				   sptr->user->username, sptr->sockhost,
 				   (wants & SERVICE_WANT_TOKEN)?
 				   sptr->user->servp->tok : sptr->user->server,
 				   sptr->info);
@@ -386,7 +364,7 @@ char	*parv[];
 		metric = 0;
 		server = ME;
 		sp = me.serv;
-#if defined(RUSNET_IRCD) && !defined(NO_DIRECT_VHOST)
+#ifndef NO_DIRECT_VHOST
 		/*
 		** wrap around lose check in do_nick_name  -erra
 		** there is something else you lose here :) -skold
@@ -728,12 +706,7 @@ char	*parv[];
 		    (acptr->service->wants & SERVICE_WANT_PREFIX))
 			sendto_one(acptr, ":%s!%s@%s SQUERY %s :%s", parv[0],
 				   sptr->user->username,
-#ifdef RUSNET_IRCD
-				   sptr->sockhost,
-#else
-				   sptr->user->host,
-#endif
-				   acptr->name, parv[2]);
+				   sptr->sockhost, acptr->name, parv[2]);
 		else
 			sendto_one(acptr, ":%s SQUERY %s :%s",
 				   parv[0], acptr->name, parv[2]);

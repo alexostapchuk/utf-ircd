@@ -8,10 +8,14 @@
 ** hope that it will be useful, but without any warranty. Without even the 
 ** implied warranty of merchantability or fitness for a particular purpose. 
 ** See the GNU General Public License for details.
-** $Id: rusnet.h,v 1.9 2010-11-10 13:38:39 gvs Exp $
  */
 #ifndef _RUSNET_H_
 #define _RUSNET_H_
+
+/* RusNet extensions */
+#if	defined(INET6) && defined(USE_VHOST6)
+#define	VHOST6_SUFFIX	".ip"
+#endif	/* INET6 && VHOST6 */
 
 #ifdef USE_OLD8BIT
 #define RUSNET_DIR_INCOMING 1
@@ -39,14 +43,11 @@ struct Codepage *rusnet_getptrbyport(unsigned port);
 struct Codepage *rusnet_getptrbyname(char *);
 
 int  rusnet_isvalid(unsigned int);
-void rusnet_changecodepage(struct Client *, char *, char *);
 
 void initialize_rusnet(char *);
 #else
 #include "conversion.h"
 #endif
-
-aChannel *rusnet_isagoodnickname(struct Client *cptr, char *);
 
 void rusnet_add_route(char *, char *, char *);
 void rusnet_free_routes(void);

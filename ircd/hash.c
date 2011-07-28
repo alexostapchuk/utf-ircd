@@ -1,6 +1,7 @@
 /************************************************************************
  *   IRC - Internet Relay Chat, ircd/hash.c
  *   Copyright (C) 1991 Darren Reed
+ *   Copyright (C) 2011 RusNet ircd team
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -15,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: hash.c,v 1.18 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -35,7 +35,6 @@ int	_HASHSIZE = 0;
 int	_CHANNELHASHSIZE = 0;
 int	_SERVERSIZE = 0;
 
-#ifdef RUSNET_IRCD
 static	aCollMap	*collmap = NULL;
 static	unsigned int	collnum = 0, collsize = 0;
 static unsigned long crc_table[256];
@@ -304,7 +303,6 @@ void transcode_collmaps(conversion_t *old)
     conv_transcode(old, collmap[i].collnick, buff);
   }
 }
-#endif
 #endif
 
 /*
@@ -590,7 +588,7 @@ aClient	*cptr;
 {
 	Reg	u_int	hashv;
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	rfcstrtoupper(cptr->ucname, name, sizeof(cptr->ucname));
 	hashv = hash_nick_name(cptr->ucname, &cptr->hashv);
 #else
@@ -615,7 +613,7 @@ aChannel	*chptr;
 {
 	Reg	u_int	hashv;
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	if (chptr->ucname == NULL)
 	{
 		char	ucname[MB_LEN_MAX*CHANNELLEN+1]; /* see the aChannel->ucname */
@@ -727,7 +725,7 @@ aChannel	*chptr;
 			else
 				channelTable[hashv].list=(void *)tmp->hnextch;
 			tmp->hnextch = NULL;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 			MyFree(chptr->ucname);
 			chptr->ucname = NULL;
 #endif
@@ -796,10 +794,9 @@ char	*name;
 aClient	*cptr;
 {
 	Reg	aClient	*tmp;
-	Reg	aClient	*prv = NULL;
 	Reg	aHashEntry	*tmp3;
 	u_int	hashv, hv;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	ucname[HOSTLEN+1]; /* see the aClient->ucname */
 
 	rfcstrtoupper(ucname, name, sizeof(ucname));
@@ -812,34 +809,14 @@ aClient	*cptr;
 	/*
 	 * Got the bucket, now search the chain.
 	 */
-	for (tmp = (aClient *)tmp3->list; tmp; prv = tmp, tmp = tmp->hnext)
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+	for (tmp = (aClient *)tmp3->list; tmp; tmp = tmp->hnext)
+#ifndef USE_OLD8BIT
 		if (hv == tmp->hashv && strcmp(ucname, tmp->ucname) == 0)
 #else
 		if (hv == tmp->hashv && strcasecmp(name, tmp->name) == 0)
 #endif
 		    {
 			clhits++;
-			/*
-			 * If the member of the hashtable we found isnt at
-			 * the top of its chain, put it there.  This builds
-			 * a most-frequently used order into the chains of
-			 * the hash table, giving speadier lookups on those
-			 * nicks which are being used currently.  This same
-			 * block of code is also used for channels and
-			 * servers for the same performance reasons.
-			 */
-			/* I think this is useless concern --Beeth
-			if (prv)
-			    {
-				aClient *tmp2;
-
-				tmp2 = (aClient *)tmp3->list;
-				tmp3->list = (void *)tmp;
-				prv->hnext = tmp->hnext;
-				tmp->hnext = tmp2;
-			    }
-			*/
 			return (tmp);
 		    }
 	clmiss++;
@@ -926,7 +903,7 @@ aChannel *chptr;
 	Reg	aChannel	*tmp, *prv = NULL;
 	Reg	aHashEntry	*tmp3;
 	u_int	hashv, hv;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char    ucname[MB_LEN_MAX*CHANNELLEN+1]; /* see the aChannel->ucname */
 
 	rfcstrtoupper(ucname, name, sizeof(ucname));
@@ -937,7 +914,7 @@ aChannel *chptr;
 	tmp3 = &channelTable[hashv];
 
 	for (tmp = (aChannel *)tmp3->list; tmp; prv = tmp, tmp = tmp->hnextch)
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		if (hv == tmp->hashv && strcmp(ucname, tmp->ucname) == 0)
 #else
 		if (hv == tmp->hashv && strcasecmp(name, tmp->chname) == 0)
@@ -972,7 +949,7 @@ aChannel *chptr;
 {
 	aChannel	*tmp;
 	u_int	hashv, hv;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	ucname[MB_LEN_MAX*CHANNELLEN+1]; /* see the aChannel->ucname */
 
 	rfcstrtoupper(ucname, name, sizeof(ucname));
@@ -996,7 +973,7 @@ aChannel *chptr;
 		return NULL;
 	for (tmp = chptr; tmp; tmp = tmp->hnextch)
 		if (hv == tmp->hashv && *tmp->chname == '!' &&
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		    strcmp(name, tmp->ucname + CHIDLEN + 1) == 0)
 #else
 		    strcasecmp(name, tmp->chname + CHIDLEN + 1) == 0)

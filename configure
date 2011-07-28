@@ -1,26 +1,14 @@
 #! /bin/sh
 
-quick_fwd=
-no_rusnet=
-default_locale=uk_UA.KOI8-U
-for arg
+for arg in "$@"
 do
   case "$arg" in
-    -help | --help | --hel | --he)
+    -help | --help | --hel | --he | -version | --version | --versio | --versi | --vers)
       quick_fwd=yes
-      break ;;
-    -version | --version | --versio | --versi | --vers)
-      quick_fwd=yes
-      break ;;
-    # --no-rusnet should be first option, it disables rusnet-specific tests
-    -no-rusnet | --no-rusnet | --no-rus)
-      no_rusnet=yes
-      shift
-      ;;
-    *)
-      ;;
+     ;;
   esac
 done
+
 if test "x$quick_fwd" = xyes
 then
   support/configure "$@"
@@ -29,8 +17,16 @@ else
   rev=`support/config.guess`
   if test "${rev}" 		# test for no output
   then
+    # let SunOS chance to find sed etc
+    case `uname` in
+	SunOS)	PATH=/usr/sfw/bin:/usr/xpg4/bin:$PATH
+		export PATH
+	;;
+	FreeBSD) echo_opt=-e
+	;;
+    esac
     echo "  your system seems to be ${rev}."
-    if test ! -d "${rev}"
+    if test ! -d "${rev}/."
     then
       echo "creating directory ${rev}..."
       mkdir "${rev}"
@@ -43,40 +39,17 @@ else
      echo "copying config.h from config.h.dist..."
      cp -p ../support/config.h.dist config.h
    fi
-    add_to_configure=
-    NO_UTF_LOCALE=
-    if test x$no_rusnet = x
-    then
-	# test for desired locale support
-	if (export LC_ALL=$default_locale; echo "ðòï³í" | \
-				grep -i "ÐÒÏ£Í" >/dev/null); then
-		# test for uk_UA.UTF-8
-		(export LC_ALL=uk_UA.UTF-8; echo "ÐŸÐ ÐžÐÐœ" | \
-						grep -i "Ð¿Ñ€Ð¾Ñ‘Ð¼" >/dev/null) || {
-			echo -e "
-WARNING: UTF locale doesn't work, disabling IRCD_CHANGE_LOCALE
-"
-			NO_UTF_LOCALE=yes
-		}
-	else
-		echo -e "
-ERROR: Cannot find working locale, disabling iconv in ircd!
-"
-		add_to_configure="--enable-iconv=no"
-	fi
-    fi
-    export NO_UTF_LOCALE
-    ./configure "$@" $add_to_configure
+    sh configure "$@"
     if test $? = 0
     then
-      echo -e "
+      echo $echo_opt "
 ******************************************************
 Have you ever read \033[1mrusnet-doc/RUSNET_DOC\033[0m?
 Do not proceed before thorough reading of this file.
 
 Your next step is: 
 cd ${rev}
-edit \"config.h\"
+edit \"config.h\" to fit your needs
 run \"make\" to build and
 run \"make install\" to install.
 

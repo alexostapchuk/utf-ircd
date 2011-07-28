@@ -285,6 +285,9 @@
 /* Define if you have working UTF locale in OS */
 #undef HAVE_UTF_LOCALE
 
+/* Define if you need to use custom locale and redefine LOCPATH */
+#undef LOCALE_PATH
+
 /* Define to 1 if you have the <utmp.h> header file. */
 #undef HAVE_UTMP_H
 
@@ -332,6 +335,9 @@
 
 /* Define to enable IPv6 support */
 #undef INET6
+
+/* Define to enable vhosts support for IPv6 */
+#undef USE_VHOST6
 
 /* Define as the resolver configuration file. */
 #undef IRC_RESCONF
@@ -414,6 +420,9 @@
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 #undef TM_IN_SYS_TIME
 
+/* translit support in iconv */
+#undef HAVE_ICONV_TRANSLIT
+
 /* Order ot //ignore and //translit on iconv setup */
 #undef TRANSLIT_IGNORE
 
@@ -422,6 +431,9 @@
 
 /* Define to disable unicode support via iconv() */
 #undef USE_OLD8BIT
+
+/* Define to compile with libidn so as to enable UTF domain names */
+#undef USE_LIBIDN
 
 /* Define if openssl package must be used for compilation/linking. */
 #undef USE_OPENSSL

@@ -8,24 +8,13 @@
 ** hope that it will be useful, but without any warranty. Without even the 
 ** implied warranty of merchantability or fitness for a particular purpose. 
 ** See the GNU General Public License for details.
-** $Id: rusnet_virtual.c,v 1.8 2010-11-10 13:38:39 gvs Exp $
  */
 
-/*#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <signal.h>
-#include <stdio.h>
-#include <sys/time.h>
-#include <netdb.h>
-#include <sys/fcntl.h>
-#include <sys/ioctl.h>
-*/
+#ifndef RUSNET_VIRTUAL_C
+#define RUSNET_VIRTUAL_C
+
 #include "os.h"
 #include "s_defines.h"
-
-#ifdef RUSNET_IRCD
 
 #ifdef	INET6
 	/* A macro to fill an address structure */

@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_defines.h,v 1.5 2005/08/23 22:28:22 skold Exp $
  */
 
 /*  This file includes all files defining constants, macros and types
@@ -41,6 +40,4 @@
 #include "resolv_def.h"
 #include "nameser_def.h"
 
-#ifdef RUSNET_IRCD
 #include "rusnet.h"
-#endif

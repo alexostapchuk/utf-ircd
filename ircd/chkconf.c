@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: chkconf.c,v 1.16 2010-11-10 13:38:39 gvs Exp $
  */
 
 
@@ -48,7 +47,7 @@ static	void	showconf(void);
 static	int	numclasses = 0, *classarr = (int *)NULL, debugflag = 0;
 static	char	nullfield[] = "";
 static	char	maxsendq[12];
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 int	UseUnicode = 0;	/* for match() */
 #endif
 
@@ -331,12 +330,10 @@ static	aConfItem 	*initconf(void)
 			case 'e':
 			        aconf->status = CONF_EXEMPT;
 		        	break;
-# ifdef RUSNET_IRCD
 			case 'F': /* virtual interface to fasten to when  */
 			case 'f': /* connecting to the server mentioned */
 			        aconf->status = CONF_INTERFACE;
 		        	break;
-#endif
 			case 'H': /* Hub server line */
 			case 'h':
 				aconf->status = CONF_HUB;
@@ -558,7 +555,6 @@ static	aConfItem 	*initconf(void)
 				(void)free(aconf->host);
 				aconf->host = newhost;
 			    }
-#ifdef RUSNET_IRCD
 		if (aconf->status & CONF_INTERFACE)
 		    {
 			if (!aconf->host)
@@ -572,7 +568,6 @@ static	aConfItem 	*initconf(void)
 				continue;
 			    }
 		    }
-#endif
 		if (!aconf->class)
 			aconf->class = get_class(0, nr);
 		(void)sprintf(maxsendq, "%d", aconf->class->class);

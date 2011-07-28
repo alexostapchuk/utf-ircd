@@ -8,14 +8,14 @@
 ** hope that it will be useful, but without any warranty. Without even the 
 ** implied warranty of merchantability or fitness for a particular purpose. 
 ** See the GNU General Public License for details.
-** $Id: rusnet_init.c,v 1.8 2010-11-10 13:38:39 gvs Exp $
  */
+
+#ifndef RUSNET_INIT_C
+#define RUSNET_INIT_C
 
 #include "os.h"
 #include "s_defines.h"
 #include "match_ext.h"
-
-#ifdef RUSNET_IRCD
 
 #define	BUFLEN	255
 #define CFG_COMMENT	'#'
@@ -92,9 +92,6 @@ void initialize_rusnet(char *path)
 
 
     	if (i == 0) continue;	/* Umka: handle empty command	*/
-#if 0
-	if (ptr != NULL && i < 16 && *ptr == CFG_COMMENT) continue; 
-#endif	
 	while (i < 16) parm[i++] = NULL; /* finalize parameters	*/
 
       /*
@@ -137,43 +134,7 @@ void initialize_rusnet(char *path)
 						intable, outtable);
            }
            else
-/*
-           if (strcasecmp(parm[0],"interface") == 0)
-	   {
-		rusnet_vaddr = inet_addr(parm[1]);
-           }
-	   else
-	   if (strcasecmp(parm[0],"connect") == 0)
-	   {
-	        if (strcasecmp(parm[2],"thru") == 0)
-	        {
-			rusnet_add_route(parm[1],parm[3],(parm[4] == NULL) ?
-						"[Unnamed]" : parm[4]);
-                }
-	   }
- 	   else
- 	   if( strcasecmp(parm[0],"forbid" ) == 0 )
- 	   {
- 		if( parm[1][0] == 0 ) continue;
- 		
- 		rusnet_add_forbid_mask(parm[1]);
- 	   }
- 	   else
- 	   if( strcasecmp(parm[0],"services" ) == 0 )
- 	   {
- 		if( parm[1][0] == 0 ) continue;
- 		
- 		if( servicesname != NULL ) MyFree( servicesname );
- 		
- 		servicesname = (char *) mystrdup( parm[1] );		
- 	   }
-*/
- 	   
-	   r = p;		/* prepare for next clause	*/
-	   
-/*	   while (isspace(*r)) r++;
-	   if (*r == '#') break; */
-	   
+		   r = p;		/* prepare for next clause	*/
       }
 
      fclose(finit);

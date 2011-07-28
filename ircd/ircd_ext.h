@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: ircd_ext.h,v 1.15 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -36,7 +35,7 @@ extern int rehashed;
 extern int portnum;
 extern int serverbooting;
 extern char *configfile;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 extern char *config_charset;
 #endif
 extern int debuglevel;
@@ -56,9 +55,7 @@ extern time_t nextping;
 extern time_t nextdnscheck;
 extern time_t nextexpire;
 extern aClient *ListenerLL;
-#if defined(RUSNET_IRCD)
 extern unsigned long invincible;
-#endif
 #endif /* IRCD_C */
 
 /*  External definitions for global functions.

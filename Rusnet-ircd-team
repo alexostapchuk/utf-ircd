@@ -10,7 +10,7 @@ If you are interested in current rusnet-ircd development you are encouraged
 to participate in the rusnet development mailing list.  To subscribe to this
 list, send email to majordomo@rinet.ru with the line:
 
-subscribe rusnet-devel@rusnet.org.ru
+subscribe rusnet-devel@rus-net.org
 
 in the body.
 
@@ -40,4 +40,4 @@ be sure to let us know about that.  Many others have contributed to
 previous versions of this ircd, too many to list here.
 
 
-Send your bug-fixes, patches or suggestions to rusnet-devel@rusnet.org.ru.
+Send your bug-fixes, patches or suggestions to rusnet-devel@rus-net.org

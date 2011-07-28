@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_bsd.c,v 1.28 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -42,6 +41,9 @@ static	int	check_init (aClient *, char *);
 static	int	check_ping (char *, int);
 static	void	do_dns_async (void);
 static	int	set_sock_opts (int, aClient *);
+#ifdef USE_IAUTH
+static	void	send_hostp_to_iauth(struct hostent *, int);
+#endif
 #ifdef	UNIXPORT
 static	struct	SOCKADDR *connect_unix (aConfItem *, aClient *, int *);
 static	void	add_unixconnection (aClient *, int);
@@ -314,7 +316,7 @@ aConfItem *aconf;
 {
 	aClient	*cptr;
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	/* make sure if there is no similar aconf line already opened */
 	if ((cptr = find_listener (aconf->port)))
 	    {				/* there is such opened port already */
@@ -467,7 +469,7 @@ void	close_listeners()
 			}
 			else
 			{
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 				conv_free_conversion(acptr->conv);
 #endif
 				close_connection(acptr);
@@ -477,7 +479,7 @@ void	close_listeners()
 }
 
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 /* find listener in open fds */
 aClient *find_listener(int port)
 {
@@ -523,7 +525,7 @@ void	open_listener(aClient *cptr)
 	else
 #endif
 	{
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		if (!aconf->passwd || !*aconf->passwd ||
 		    !(cptr->conv = conv_get_conversion(aconf->passwd)))
 		{
@@ -907,7 +909,26 @@ void	write_pidfile(void)
 			IRCDPID_PATH));
 # endif
 }
-		
+
+/*
+ * send cptr->hostp host names and aliases to iauth
+ */
+#if defined(USE_IAUTH)
+static	void	send_hostp_to_iauth(hostp, fd)
+Reg	struct	hostent *hostp;
+Reg	int	fd;
+{
+	int i = 0;
+
+	while (hostp->h_aliases[i])
+		sendto_iauth("%d A %s", fd, hostp->h_aliases[i++]);
+	if (hostp->h_name)
+		sendto_iauth("%d N %s", fd, hostp->h_name);
+	else if (hostp->h_aliases[0])
+		sendto_iauth("%d n", fd);
+}
+#endif
+
 /*
  * Initialize the various name strings used to store hostnames. This is set
  * from either the server's sockhost (if client fd is a tty or localhost)
@@ -919,6 +940,9 @@ Reg	char	*sockn;
 {
 	struct	SOCKADDR_IN sk;
 	SOCK_LEN_TYPE len = sizeof(struct SOCKADDR_IN);
+#if	defined(INET6) && defined(USE_VHOST6)
+	const char	*suffix = VHOST6_SUFFIX;
+#endif	/* INET6 && USE_VHOST6 */
 
 #ifdef	UNIXPORT
 	if (IsUnixSocket(cptr))
@@ -942,6 +966,12 @@ Reg	char	*sockn;
 	    }
 #ifdef INET6
 	inetntop(AF_INET6, (char *)&sk.sin6_addr, sockn, MYDUMMY_SIZE);
+#ifdef	USE_VHOST6
+	if ((strchr(sockn, ':') != NULL) &&
+		(MYDUMMY_SIZE - strlen(sockn) > strlen(suffix)))
+		strcat(sockn, suffix);
+	/* otherwise this client will be killed */
+#endif	/* USE_VHOST6 */
 	Debug((DEBUG_DNS,"sockn %x",sockn));
 	Debug((DEBUG_DNS,"sockn %s",sockn));
 #else
@@ -963,7 +993,7 @@ Reg	char	*sockn;
 int	check_client(cptr)
 Reg	aClient	*cptr;
 {
-	static	char	sockname[HOSTLEN+1];
+	static	char	sockname[MYDUMMY_SIZE];
 	Reg	struct	hostent *hp = NULL;
 	Reg	int	i;
  
@@ -1330,28 +1360,22 @@ aClient	*cptr;
 	if (!BadPtr(aconf->passwd))
 		sendto_one(cptr, "PASS %s %s IRC|%s %s"
 #ifdef	ZIP_LINKS
-			"%s"
+				"%s"
 #endif
-#ifdef RUSNET_IRCD
-			"%c%c%c"
 #ifndef USE_OLD8BIT
-			"%s"
-#endif
+				"%s"
 #endif
 			, aconf->passwd, pass_version, serveropts,
 #ifdef	ZIP_LINKS
 			   (aconf->status == CONF_ZCONNECT_SERVER) ? "Z" : "",
 #endif
 				   (bootopt & BOOT_STRICTPROT) ? "P" : ""
-#ifdef RUSNET_IRCD				   
-				   , PROTO_CAPS_K, PROTO_CAPS_RL, PROTO_CAPS_R
 #ifndef USE_OLD8BIT
 				   , UseUnicode ? "U" : ""
 #endif
-#endif
 				   );
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	/* A problem: when remote server confirm unicode negotiation my
 	   UseUnicode flag may be already unset
 	   So we set FLAGS_UNICODE to forse that flag in check_version() */
@@ -1979,20 +2003,9 @@ ssl_refuse:
 	start_auth(acptr);
 #if defined(USE_IAUTH)
 	if (!isatty(fd) && !DoingDNS(acptr))
-	    {
-		int i = 0;
-		
-		while (acptr->hostp->h_aliases[i])
-			sendto_iauth("%d A %s", acptr->fd,
-				     acptr->hostp->h_aliases[i++]);
-		if (acptr->hostp->h_name)
-			sendto_iauth("%d N %s",acptr->fd,acptr->hostp->h_name);
-		else if (acptr->hostp->h_aliases[0])
-			sendto_iauth("%d n", acptr->fd);
-	    }
+		send_hostp_to_iauth(acptr->hostp, acptr->fd);
 #endif
 
-#ifdef RUSNET_IRCD
 #ifndef USE_OLD8BIT
 	if (cptr->conv) /* conversion table for listener is already set */
 	    conv_inherit(cptr->conv, acptr->conv);
@@ -2001,7 +2014,6 @@ ssl_refuse:
 #else
 	acptr->transptr = rusnet_getptrbyport(
 				rusnet_getclientport(acptr->acpt->fd));
-#endif
 #endif
 
 	return acptr;
@@ -2221,7 +2233,7 @@ int	msg_ready;
 			length, errno, strerror(errno),
 			cptr->fd, get_client_name(cptr, TRUE)));
 
-#if defined(RUSNET_IRCD) && defined(USE_OLD8BIT)
+#ifdef USE_OLD8BIT
 		/* Something came from the client */
                 rusnet_translate(cptr->transptr, RUSNET_DIR_INCOMING, 
                                  readbuf, length);
@@ -2267,13 +2279,8 @@ int	msg_ready;
 			return exit_client(cptr, cptr, &me, "dbuf_put fail");
 
 		if (IsPerson(cptr) &&
-		    DBufLength(&cptr->recvQ) >
-#ifdef RUSNET_IRCD
-			(cptr->flood ? cptr->flood : CLIENT_FLOOD)
-#else
-							CLIENT_FLOOD
-#endif
-									)
+			    DBufLength(&cptr->recvQ) >
+				(cptr->flood ? cptr->flood : CLIENT_FLOOD))
 		    {
 			cptr->exitc = EXITC_FLOOD;
 			return exit_client(cptr, cptr, &me, "Excess Flood");
@@ -2768,10 +2775,8 @@ struct	hostent	*hp;
 	Reg	aClient *cptr, *c2ptr;
 	Reg	char	*s;
 	int	i, len;
-#ifdef RUSNET_IRCD
 	extern struct	sockaddr_in		virtual_addr;
 	static char	interface_name[256] =	"[Default]";
-#endif
 
 #ifdef INET6
 	Debug((DEBUG_NOTICE,"Connect to %s[%s] @%s",
@@ -2855,9 +2860,11 @@ free_client:
 	    }
 
 	set_non_blocking(cptr->fd, cptr);
-#ifdef RUSNET_IRCD	/*RusNet PL3*/
-/* Let's check the number and try to bind to a valid interface.
-   Non-zero return code means the failed attempt */
+
+	/*
+	 * Let's check the number and try to bind to a valid interface.
+	 * Non-zero return code means the failed attempt
+	 */
 
 	if (!rusnet_bind_interface_address(cptr->fd, (struct sockaddr_in *)svp,
 					interface_name, sizeof(interface_name)))
@@ -2865,7 +2872,7 @@ free_client:
 		sendto_flag(SCH_NOTICE, "Binding to %s to connect", 
 				interface_name);
 	}
-	else /* binding virtual interface from rusnet.conf failed. Fallback */
+	else /* binding virtual interface failed. Falling back */
 	{
 	    if (bind(cptr->fd, (SAP)&mysk, sizeof(mysk)) == -1)
 	    {
@@ -2873,7 +2880,7 @@ free_client:
 		goto free_client;
 	    }
 	}
-#endif
+
 	(void)set_sock_opts(cptr->fd, cptr);
 	(void)signal(SIGALRM, dummy);
 	(void)alarm(4);
@@ -2930,9 +2937,8 @@ free_client:
 		(void)strcpy(cptr->serv->by, "AutoConn.");
 	cptr->serv->up = &me;
 	cptr->serv->nline = aconf;
-#ifdef RUSNET_IRCD
 	cptr->serv->crc = gen_crc(cptr->name);
-#endif
+
 	if (cptr->fd > highest_fd)
 		highest_fd = cptr->fd;
 	add_fd(cptr->fd, &fdall);
@@ -2974,30 +2980,13 @@ int	*lenp;
 	bzero((char *)&server, sizeof(server));
 	server.SIN_FAMILY = AFINET;
 	get_sockhost(cptr, aconf->host);
-
-#ifndef RUSNET_IRCD
 	memcpy(&outip, &mysk, sizeof(mysk));		
-#endif
+
 	if (cptr->fd == -1)
 	    {
 		report_error("opening stream socket to server %s:%s", cptr);
 		return NULL;
 	    }
-
-#ifndef RUSNET_IRCD	/* RusNet PL3 and higher needs to perform bind later */
-	/*
-	** Bind to a local IP# (with unknown port - let unix decide) so
-	** we have some chance of knowing the IP# that gets used for a host
-	** with more than one IP#.
-	** With VIFs, M:line defines outgoing IP# and initialises mysk.
-	*/
-
-	if (bind(cptr->fd, (SAP)&outip, sizeof(outip)) == -1)
-	    {
-		report_error("error binding to local port for %s:%s", cptr);
-		return NULL;
-	    }
-#endif
 
 	/*
 	 * By this point we should know the IP# of the host listed in the
@@ -3162,15 +3151,10 @@ char	*namebuf, *linebuf, *chname;
 			   who->name);
 		sendto_one(who,"NOTICE %s :enter the twilight zone... ",
 			   who->name);
-#ifdef RUSNET_IRCD
+
 		Debug((0, "%s (%s@%s, nick %s, %s)",
 		      "FATAL: major security hack. Notify Administrator !",
 		      who->username, who->sockhost, who->name, who->info));
-#else
-		Debug((0, "%s (%s@%s, nick %s, %s)",
-		      "FATAL: major security hack. Notify Administrator !",
-		      who->username, who->user->host, who->name, who->info));
-#endif
 		      
 		return;
 	    }
@@ -3214,14 +3198,9 @@ Chat on\n\r");
 		return;
 	    }
 	(void)alarm(0);
-#ifdef RUSNET_IRCD
 	sprintf(line, "ircd: Channel %s, by %s@%s (%s) %s\n\r", chname,
 		who->user->username, who->sockhost, who->name, who->info);
-#else
-	sprintf(line, "ircd: Channel %s, by %s@%s (%s) %s\n\r", chname,
-		who->user->username, who->user->host, who->name, who->info);
-#endif
-		
+
 	(void)alarm(5);
 	if (write(fd, line, strlen(line)) != strlen(line))
 	    {
@@ -3677,21 +3656,9 @@ static	void	do_dns_async(void)
 				del_queries((char *)cptr);
 				ClearDNS(cptr);
 				cptr->hostp = hp;
-#if defined(USE_IAUTH)
+#ifdef USE_IAUTH
 				if (hp)
-				    {
-					int i = 0;
-
-					while (hp->h_aliases[i])
-						sendto_iauth("%d A %s",
-							     cptr->fd,
-							hp->h_aliases[i++]);
-					if (hp->h_name)
-						sendto_iauth("%d N %s",
-							cptr->fd, hp->h_name);
-					else if (hp->h_aliases[0])
-						sendto_iauth("%d n", cptr->fd);
-				    }
+					send_hostp_to_iauth(hp, cptr->fd);
 				else
 					sendto_iauth("%d d", cptr->fd);
 				if (iauth_options & XOPT_EXTWAIT)

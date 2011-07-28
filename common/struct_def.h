@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: struct_def.h,v 1.26 2010-11-10 13:38:39 gvs Exp $
  */
 
 
@@ -48,7 +47,6 @@ typedef struct        Syslog  aSyslog;
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
 
-#ifdef RUSNET_IRCD
 #define	NICKLEN		31	/* Necessary to put 31 here instead of 32
 				** This preserves compatibility with services
 				** --erra
@@ -62,16 +60,6 @@ typedef struct        Syslog  aSyslog;
 #endif
 #define	TOPICLEN	255
 #define	MAXBANS		60
-#else
-#define	NICKLEN		9	/* Necessary to put 9 here instead of 10
-				** if s_msg.c/m_nick has been corrected.
-				** This preserves compatibility with old
-				** servers --msa
-				*/
-#define	UNINICKLEN	NICKLEN
-#define	TOPICLEN	80
-#define	MAXBANS		30	
-#endif
 #define	USERLEN		10
 #define	REALLEN	 	50
 #define	CHANNELLEN	50
@@ -180,10 +168,8 @@ typedef struct        Syslog  aSyslog;
 #define	FLAGS_ZIP         0x00400000 /* link is zipped */
 #define	FLAGS_ZIPRQ       0x00800000 /* zip requested */
 #define	FLAGS_ZIPSTART    0x01000000 /* start of zip (ignore any CRLF) */
-#ifdef RUSNET_IRCD
 #define FLAGS_COLLMAP     0x02000000 /* nick has collided and mapped */
 #define FLAGS_XMODE       0x04000000 /* user requested usermode +x at connect */
-#endif
 #ifdef USE_SSL
 #define FLAGS_SSL         0x10000000 /* SSL-connection requested */
 #endif /* USE_SSL */
@@ -194,20 +180,21 @@ typedef struct        Syslog  aSyslog;
 #define FLAGS_UNICODE     0x40000000 /* it's UTF-8 connection */
 #endif
 
-#define	FLAGS_OPER        0x0001	/* Operator */
+#define	FLAGS_OPER        0x0001 /* Operator */
 #define	FLAGS_LOCOP       0x0002 /* Local operator -- SRB */
 #define	FLAGS_WALLOP      0x0004 /* send wallops to them */
 #define	FLAGS_INVISIBLE   0x0008 /* makes user invisible */
 #define FLAGS_RESTRICTED  0x0010 /* Restricted user */
 #define FLAGS_AWAY        0x0020 /* user is away */
-#ifdef RUSNET_IRCD
+#define FLAGS_IDENTIFIED  0x0040 /* User is identified (by Services) */
 #define FLAGS_VHOST       0x0080 /* user @ masked host */
-#endif
+#define FLAGS_REGISTERED  0x0100 /* user accepts PRIVMSG/NOTICE from */
+				 /* registered nicks only */
 #ifdef USE_SSL
-#define FLAGS_SMODE	  0x0100 /* User is using SSL connection*/
+#define FLAGS_SMODE	  0x0200 /* User is using SSL connection*/
 #endif
 #ifdef RUSNET_RLINES
-#define FLAGS_RMODE	  0x0200 /* User mode +b (Rusnet restriction)*/
+#define FLAGS_RMODE	  0x0400 /* User mode +b (RusNet restriction)*/
 #endif
 
 /* Rehash flags */
@@ -227,19 +214,11 @@ typedef struct        Syslog  aSyslog;
 #define REHASH_B	0x0800
 #define REHASH_E	0x1000
 
-#ifdef RUSNET_IRCD
 # ifdef USE_SSL
-# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY|FLAGS_VHOST|FLAGS_RMODE|FLAGS_SMODE)
+# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY|FLAGS_IDENTIFIED|FLAGS_REGISTERED|FLAGS_VHOST|FLAGS_RMODE|FLAGS_SMODE)
 # else /* USE_SSL */
-# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY|FLAGS_VHOST|FLAGS_RMODE)
+# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY|FLAGS_IDENTIFIED|FLAGS_REGISTERED|FLAGS_VHOST|FLAGS_RMODE)
 # endif /* USE_SSL */
-#else /* RUSNET_IRCD */
-# ifdef USE_SSL
-# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY|FLAGS_SMODE)
-# else /* USE_SSL */
-# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY)
-# endif /* USE_SSL */
-#endif /* RUSNET_IRCD */
 #define ALL_UMODES	(SEND_UMODES|FLAGS_LOCOP|FLAGS_RESTRICTED)
 
 /*
@@ -250,6 +229,8 @@ typedef struct        Syslog  aSyslog;
 #define	IsInvisible(x)		((x)->user->flags & FLAGS_INVISIBLE)
 #define IsRestricted(x)         ((x)->user && \
 				 (x)->user->flags & FLAGS_RESTRICTED)
+#define Identified(x)		((x)->user && \
+				 (x)->user->flags & FLAGS_IDENTIFIED)
 #define	IsAnOper(x)		((x)->user && \
 				 (x)->user->flags & (FLAGS_OPER|FLAGS_LOCOP))
 #define	IsPerson(x)		((x)->user && IsClient(x))
@@ -259,7 +240,9 @@ typedef struct        Syslog  aSyslog;
 #else
 #define	SendWallops(x)		((x)->user->flags & FLAGS_WALLOP)
 #endif
+#ifdef UNIXPORT
 #define	IsUnixSocket(x)		((x)->flags & FLAGS_UNIX)
+#endif
 #define	IsListener(x)		((x)->flags & FLAGS_LISTEN)
 #define	IsLocal(x)		(MyConnect(x) && (x)->flags & FLAGS_LOCAL)
 #define	IsDead(x)		((x)->flags & FLAGS_DEADSOCKET)
@@ -280,8 +263,11 @@ typedef struct        Syslog  aSyslog;
 #define	SetLocOp(x)    		((x)->user->flags |= FLAGS_LOCOP)
 #define	SetInvisible(x)		((x)->user->flags |= FLAGS_INVISIBLE)
 #define SetRestricted(x)        ((x)->user->flags |= FLAGS_RESTRICTED)
+#define SetIdentified(x)	((x)->user->flags |= FLAGS_IDENTIFIED)
 #define	SetWallops(x)  		((x)->user->flags |= FLAGS_WALLOP)
+#ifdef UNIXPORT
 #define	SetUnixSock(x)		((x)->flags |= FLAGS_UNIX)
+#endif
 #define	SetDNS(x)		((x)->flags |= FLAGS_DOINGDNS)
 #define	SetDoneXAuth(x)		((x)->flags |= FLAGS_XAUTHDONE)
 #ifdef USE_SSL
@@ -303,19 +289,18 @@ typedef struct        Syslog  aSyslog;
 #define	ClearOper(x)		((x)->user->flags &= ~FLAGS_OPER)
 #define	ClearInvisible(x)	((x)->user->flags &= ~FLAGS_INVISIBLE)
 #define ClearRestricted(x)      ((x)->user->flags &= ~FLAGS_RESTRICTED)
+#define ClearIdentified(x)      ((x)->user->flags &= ~FLAGS_IDENTIFIED)
 #define	ClearWallops(x)		((x)->user->flags &= ~FLAGS_WALLOP)
 #define	ClearDNS(x)		((x)->flags &= ~FLAGS_DOINGDNS)
 #define	ClearAuth(x)		((x)->flags &= ~FLAGS_AUTH)
 #define	ClearXAuth(x)		((x)->flags &= ~FLAGS_XAUTH)
 #define	ClearWXAuth(x)		((x)->flags &= ~FLAGS_WXAUTH)
 
-#ifdef RUSNET_IRCD
 #define	HasVHost(x)		((x)->user && (x)->user->flags & FLAGS_VHOST)
 #define	SetVHost(x)		(!IsRMode(x) && ((x)->user->flags |= FLAGS_VHOST))
 #define	ClearVHost(x)		((x)->user->flags &= ~FLAGS_VHOST)
 #define IsRusnetServices(x)	((x)->user && (x)->user->servp && \
 				    ((x)->user->servp->crc == invincible))
-#endif
 
 #ifdef WALLOPS_TO_CHANNEL
 #define	ClearWallop(x)		((x)->user->flags &= ~FLAGS_WALLOP)
@@ -343,7 +328,7 @@ typedef struct        Syslog  aSyslog;
 #undef isalpha
 #undef isdigit
 #undef isxdigit
-#if !defined(RUSNET_IRCD) || defined(USE_OLD8BIT) /* may be multibyte! */
+#ifdef USE_OLD8BIT /* may be multibyte! */
 #undef isalnum
 #endif
 #undef isprint
@@ -366,7 +351,7 @@ typedef struct        Syslog  aSyslog;
 			    (u_char)(c) <= (u_char)'f') || \
 		    	    ((u_char)'A' <= (u_char)(c) && \
 		    	    (u_char)(c) <= (u_char)'F'))
-#if !defined(RUSNET_IRCD) || defined(USE_OLD8BIT)
+#ifdef USE_OLD8BIT /* may be multibyte! */
 #define isalnum(c)	(char_atribs[(u_char)(c)] & (DIGIT_CHAR | ALPHA_CHAR))
 #endif
 #define isprint(c)	(char_atribs[(u_char)(c)] & PRINT_CHAR)
@@ -448,9 +433,7 @@ struct	ConfItem	{
 	char	*name;
 	int	port;
 	u_int	pref;		/* preference value */
-#ifdef RUSNET_IRCD
 	u_int	localpref;	/* administrative preference value */
-#endif
 	struct	CPing	*ping;
 	time_t	hold;	/* Hold action until this time (calendar time) */
 #ifndef VMSP
@@ -482,9 +465,7 @@ struct	ConfItem	{
 #define	CONF_BOUNCE		0x0040000
 #define	CONF_DENY		0x0100000
 
-#ifdef 	RUSNET_IRCD
 #define	CONF_INTERFACE		0x0200000
-#endif
 #define	CONF_EXEMPT		0x0400000
 
 #ifdef USE_SSL
@@ -588,9 +569,7 @@ struct	Server	{
 	aClient	*bcptr;
 	char	by[HOSTLEN+1];	/* see Client::name */
 	char	tok[5];
-#ifdef RUSNET_IRCD
 	unsigned long	crc;	/* CRC32 from server name, or any unique ID */
-#endif
 	time_t	lastload;	/* penalty like counters, see s_serv.c
 				** should be in the local part, but..
 				*/
@@ -624,8 +603,7 @@ struct Client	{
 				  ** and after which the connection was
 				  ** accepted.
 				  */
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
-	struct	conversion *conv; /* charset conversion structure pointer */
+#ifndef USE_OLD8BIT
 	char	ucname[HOSTLEN+1]; /* uppercase version of name */
 #endif
 	/*
@@ -636,10 +614,12 @@ struct Client	{
 	** these fields, if (from != self).
 	*/
 	int	count;		/* Amount of data in buffer */
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	buffer[MB_LEN_MAX*BUFSIZE]; /* Incoming message buffer */
+	struct	conversion *conv; /* charset conversion structure pointer */
 #else
-	char	buffer[BUFSIZE]; /* Incoming message buffer */
+	char	buffer[BUFSIZE];   /* Incoming message buffer */
+	struct Codepage *transptr; /* Translation table structure pointer */
 #endif
 #ifdef	ZIP_LINKS
 	aZdata	*zip;		/* zip data */
@@ -665,18 +645,12 @@ struct Client	{
 	struct	hostent	*hostp;
 	char	passwd[PASSWDLEN+1];
 	char	exitc;
-
-#ifdef RUSNET_IRCD
-#ifdef USE_OLD8BIT
-	struct Codepage *transptr; /* Translation table structure pointer */
-#endif
-	u_int	flood;  /* client flood allowed (from I:line)  --erra */
-#endif
+	u_int	flood;		/* client flood allowed (from I:line)  --erra */
 #ifdef USE_SSL
 	struct SSL *ssl;
 	struct X509 *client_cert;
 #endif /* USE SSL */
-	
+	time_t	held;		/* prohibit instant nick change after SVSNICK */
 };
 
 #define	CLIENT_LOCAL_SIZE sizeof(aClient)
@@ -785,7 +759,7 @@ struct	SLink	{
 		char	*cp;
 		int	i;
 	} value;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	*ucp;	/* uppercase value */
 #endif
 	int	flags;
@@ -797,7 +771,7 @@ struct Channel	{
 	struct	Channel *nextch, *prevch, *hnextch;
 	u_int	hashv;		/* raw hash value */
 	Mode	mode;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	/* utf-8 char may have 1 to 6 bytes, assume average is 2  -LoSt */
 	char    topic[2*TOPICLEN+1];
 #else
@@ -815,7 +789,7 @@ struct Channel	{
 	time_t	history;	/* channel history (aka channel delay) */
 	time_t	reop;		/* server reop stamp for !channels */
 	char	*chname;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	*ucname;
 #endif
 };
@@ -828,53 +802,42 @@ struct Channel	{
 
 #define	CHFL_UNIQOP     0x0001 /* Channel creator */
 #define	CHFL_CHANOP     0x0002 /* Channel operator */
-#define	CHFL_VOICE      0x0004 /* the power to speak */
-#define	CHFL_BAN	0x0008 /* ban channel flag */
-#define	CHFL_EXCEPTION	0x0010 /* exception channel flag */
-#define	CHFL_INVITE	0x0020 /* invite channel flag */
-#ifdef RUSNET_IRCD
-#define	CHFL_HALFOP	0x80000 /* Channel half-operator */
-#endif
+#define	CHFL_HALFOP	0x0004 /* Channel half-operator */
+#define	CHFL_VOICE      0x0008 /* the power to speak */
+#define	CHFL_BAN	0x0010 /* ban channel flag */
+#define	CHFL_EXCEPTION	0x0020 /* exception channel flag */
+#define	CHFL_INVITE	0x0040 /* invite channel flag */
 
 /* Channel Visibility macros */
 
 #define	MODE_UNIQOP	CHFL_UNIQOP
 #define	MODE_CHANOP	CHFL_CHANOP
+#define	MODE_HALFOP	CHFL_HALFOP
 #define	MODE_VOICE	CHFL_VOICE
-#define	MODE_PRIVATE	0x0008
-#define	MODE_SECRET	0x0010
-#define	MODE_MODERATED  0x0020
-#define	MODE_TOPICLIMIT 0x0040
-#define	MODE_INVITEONLY 0x0080
-#define	MODE_NOPRIVMSGS 0x0100
-#define	MODE_KEY	0x0200
-#define	MODE_BAN	0x0400
-#define	MODE_LIMIT	0x0800
+#define	MODE_BAN	CHFL_BAN
+#define	MODE_EXCEPTION	CHFL_EXCEPTION
+#define	MODE_INVITE	CHFL_INVITE
+#define	MODE_KEY	0x0080
+#define	MODE_PRIVATE	0x0100
+#define	MODE_SECRET	0x0200
+#define	MODE_MODERATED  0x0400
+#define	MODE_TOPICLIMIT 0x0800
 #define	MODE_ANONYMOUS	0x1000
 #define	MODE_QUIET	0x2000
-#define	MODE_EXCEPTION	0x4000
-#define	MODE_INVITE	0x8000
+#define	MODE_INVITEONLY 0x4000
+#define	MODE_NOPRIVMSGS 0x8000
 #define	MODE_REOP	0x10000
-
-#ifndef RUSNET_IRCD
-#define	MODE_FLAGS	0x1ffff
-#else
-#define	MODE_HALFOP	CHFL_HALFOP
 #define	MODE_7BIT	0x20000
 #define	MODE_NOCOLOR	0x40000
-#define	MODE_FLAGS	0xfffff
-#endif
+#define	MODE_LIMIT	0x80000
+#define	MODE_RECOGNIZED	0x100000
+#define	MODE_FLAGS	0x1fffff
 
 /*
  * mode flags which take another parameter (With PARAmeterS)
  */
-#ifndef RUSNET_IRCD
-#define	MODE_WPARAS	(MODE_UNIQOP|MODE_CHANOP|MODE_VOICE|MODE_BAN|MODE_KEY\
-			 |MODE_LIMIT|MODE_INVITE|MODE_EXCEPTION)
-#else
-#define	MODE_WPARAS	(MODE_UNIQOP|MODE_CHANOP|MODE_VOICE|MODE_BAN|MODE_KEY\
-			 |MODE_LIMIT|MODE_INVITE|MODE_EXCEPTION|MODE_HALFOP)
-#endif
+#define	MODE_WPARAS	(MODE_UNIQOP|MODE_CHANOP|MODE_HALFOP|MODE_VOICE|\
+			MODE_BAN|MODE_KEY|MODE_LIMIT|MODE_INVITE|MODE_EXCEPTION)
 /*
  * Undefined here, these are used in conjunction with the above modes in
  * the source.
@@ -1003,25 +966,9 @@ typedef	struct	{
 
 /* used for sendto_serv */
 
-#define	SV_OLD		0x0000
-#define	SV_29		0x0001	/* useless, but preserved for coherence */
-#define	SV_NJOIN	0x0002	/* server understands the NJOIN command */
-#define	SV_NMODE	0x0004	/* server knows new MODEs (+e/+I) */
-#define	SV_NCHAN	0x0008	/* server knows new channels -????name */
-				/* ! SV_NJOIN implies ! SV_NCHAN */
-#define	SV_2_10		(SV_29|SV_NJOIN|SV_NMODE|SV_NCHAN)
-#define	SV_OLDSQUIT	0x1000	/* server uses OLD SQUIT logic */
-
-#ifdef RUSNET_IRCD
-#define	SV_FORCE	0x0100	/* FORCE protocol command */
-#define	SV_RMODE	0x0200	/* RMODE and RCPAGE protocol command */
-#define	SV_KLINE	0x0400	/* KLINE protocol command */
-#define SV_RLINE	0x0800	/* RLINE protocol command */
-#define SV_RUSNET_1_5	0x1000	/* full RusNet 1.5 */
-#define	PROTO_CAPS_K	'K' 	/* KLINE handshake */
-#define	PROTO_CAPS_R	'R' 	/* RMODE and RCPAGE handshake */
-#define PROTO_CAPS_RL	'L'	/* RLINE hs */
-#endif
+#define	SV_UNKNOWN	0x0000
+#define	SV_RUSNET2	0x0001	/* RusNet 2.0 and later */
+#define	SV_RUSNET1	0x0002	/* RusNet 1.4.10 and later */
 
 
 /* used for sendto_flag */

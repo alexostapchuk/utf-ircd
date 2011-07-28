@@ -16,7 +16,7 @@
 #*   along with this program; if not, write to the Free Software
 #*   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #*
-#*   $Id: Makefile.in,v 1.19 2010-11-10 13:38:40 gvs Exp $
+#*   $Id$
 #*
 #*/
 
@@ -65,7 +65,6 @@ SERVER = ircd
 IAUTH = iauth
 ISERV = iserv
 IRCDWATCH = ircdwatch
-TKSERV = tkserv
 #
 # Directories definitions
 #
@@ -83,6 +82,8 @@ ircd_var_dir = @rundir@
 ircd_log_dir = @logdir@
 # Directory where codepage files live (only for USE_OLD8BIT).
 ircd_codepage_dir = @prefix@/codepages
+# Directory where custom locale lives (iconv and Linux only).
+ircd_locale_dir = @datadir@
 
 #
 # Most of these PATHs are hardcoded in the binaries.
@@ -119,18 +120,6 @@ irc_mode = 755
 
 # Access mode for ircd.
 ircd_mode = 711
-
-#
-# TK line service configuration
-#
-# TK line service binary
-TKSERV = tkserv
-# TK line service logfile
-TKSERV_LOGFILE = $(ircd_log_dir)/$(TKSERV).log
-# TK line service access file 
-TKSERV_ACCESSFILE = $(ircd_conf_dir)/$(TKSERV).access
-# IRCD config file without path (from CPATH)
-TKSERV_IRCD_CONF = ircd.conf
 
 # End of system configuration section.
 # ------------------------------------------------------------------------
@@ -177,10 +166,8 @@ help:
 	@echo "                chkconf		: build the configuration file checker"
 	@echo "                ircd-mkpasswd	: build ircd-mkpasswd"
 	@echo "                $(IRCDWATCH)	: build ircdwatch"
-	@echo "        $(TKSERV)	: build tkserv"
 	@echo
 	@echo "        install        : build and install server programs except contrib"
-	@echo "        install-tkserv : build and install tkserv"
 
 
 server: $(SERVER) $(IAUTH) $(ISERV) $(CHKCONF) ircd-mkpasswd $(IRCDWATCH)
@@ -214,29 +201,25 @@ ircd-mkpasswd: mkpasswd.o
 	$(RM) ircd-mkpasswd
 	$(CC) $(LDFLAGS) -o ircd-mkpasswd mkpasswd.o $(LIBS)
 
-$(TKSERV): tkserv.o
-	$(RM) $(TKSERV)
-	$(CC) $(LDFLAGS) -o $(TKSERV) tkserv.o $(LIBS)
-
-install: install-server
+install: install-server @install_locale@
 
 install-server: server
-	-@if [ ! -d $(server_bin_dir) ]; then \
+	-@if [ ! -d $(server_bin_dir)/. ]; then \
 		$(MKDIRHIER) $(server_bin_dir); \
 	fi
-	-@if [ ! -d $(server_man_dir) ]; then \
+	-@if [ ! -d $(server_man_dir)/. ]; then \
 		$(MKDIRHIER) $(server_man_dir); \
 	fi
-	-@if [ ! -d $(conf_man_dir) ]; then \
+	-@if [ ! -d $(conf_man_dir)/. ]; then \
 		$(MKDIRHIER) $(conf_man_dir); \
 	fi
-	-@if [ ! -d $(ircd_conf_dir) ]; then \
+	-@if [ ! -d $(ircd_conf_dir)/. ]; then \
 		$(MKDIRHIER) $(ircd_conf_dir); \
 	fi
-	-@if [ ! -d $(ircd_var_dir) ]; then \
+	-@if [ ! -d $(ircd_var_dir)/. ]; then \
 		$(MKDIRHIER) $(ircd_var_dir); \
 	fi
-	-@if [ ! -d $(ircd_log_dir) ]; then \
+	-@if [ ! -d $(ircd_log_dir)/. ]; then \
 		$(MKDIRHIER) $(ircd_log_dir); \
 	fi
 	-@if [ -n "@oldconvobjs@" ]; then \
@@ -257,7 +240,6 @@ install-server: server
 	$(INSTALL_DATA) ../doc/iauth.conf.5 $(conf_man_dir)
 	$(INSTALL_DATA) ../contrib/ircdwatch/ircdwatch.8 $(server_man_dir)
 	$(INSTALL_DATA) ../doc/example.conf $(ircd_conf_dir)
-	$(INSTALL_DATA) ../doc/example.tkserv.access $(ircd_conf_dir)
 	-@if [ -n "@oldconvobjs@" ]; then \
 		$(INSTALL_DATA) ../doc/example.rusnet.conf $(ircd_conf_dir); \
 		$(INSTALL_DATA) ../codepages.universal/*UNI* $(ircd_codepage_dir); \
@@ -266,15 +248,8 @@ install-server: server
 	$(INSTALL_DATA) ../support/iauth.conf $(ircd_conf_dir)/example.iauth.conf
 	@echo "installation of server done."
 
-install-tkserv: $(TKSERV)
-	-@if [ ! -d $(server_bin_dir) ]; then \
-	$(MKDIRHIER) $(server_bin_dir); \
-	fi
-	-@if [ ! -d $(ircd_conf_dir) ]; then \
-	$(MKDIRHIER) $(ircd_conf_dir); \
-	fi
-	$(INSTALL_PROGRAM) -m $(ircd_mode) $(TKSERV) $(server_bin_dir)
-	@echo "installation of tkserv done."
+install-locale: @irc_cv_locale@
+	/bin/cp -r locale $(ircd_locale_dir)
 
 cldbuf.o: ../common/dbuf.c $(CLIENT_DEPS)
 	$(CC) $(C_CFLAGS) -c -o $@ ../common/dbuf.c
@@ -338,6 +313,7 @@ hash.o: ../common/struct_def.h ../common/os.h ../ircd/hash_def.h \
 ircd.o: ../ircd/ircd.c $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" \
 	-DIRCDTUNE_PATH="\"$(IRCDTUNE_PATH)\"" \
+	-DLOCPATH="\"$(ircd_locale_dir)/locale\"" \
 	-DIRCD_PATH="\"$(IRCD_PATH)\"" -DIAUTH_PATH="\"$(IAUTH_PATH)\"" \
 	-DIAUTH="\"$(IAUTH)\"" -DISERV_PATH="\"$(ISERV_PATH)\"" \
 	-DISERV="\"$(ISERV)\"" -DIRCDDBG_PATH="\"$(IRCDDBG_PATH)\"" -c -o $@ ../ircd/ircd.c
@@ -486,13 +462,6 @@ ircdwatch.o: ../contrib/ircdwatch/ircdwatch.c
 
 mkpasswd.o: ../contrib/mkpasswd/mkpasswd.c
 	$(CC) $(O_CFLAGS) -c -o $@ ../contrib/mkpasswd/mkpasswd.c
-
-tkserv.o: ../contrib/tkserv/tkserv.c tkconf.h
-	$(CC) $(O_CFLAGS) -DTKSERV_LOGFILE="\"$(TKSERV_LOGFILE)\"" \
-	-DTKSERV_ACCESSFILE="\"$(TKSERV_ACCESSFILE)\"" \
-	-DTKSERV_IRCD_CONF="\"$(TKSERV_IRCD_CONF)\"" \
-	-DCPATH="\"$(KILLSCONF_PATH)\"" \
-	-DPPATH="\"$(IRCDPID_PATH)\"" -c -o $@ ../contrib/tkserv/tkserv.c
 
 clean:
 	$(RM) $(CLIENT) $(SERVER) $(IAUTH) $(ISERV) $(CHKCONF) ircd-mkpasswd \

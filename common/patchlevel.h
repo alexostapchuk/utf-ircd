@@ -14,10 +14,9 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: patchlevel.h,v 1.72 2010-11-10 13:38:39 gvs Exp $
  */
 
 #ifndef	PATCHLEVEL
-#define PATCHLEVEL "021003151300"		/* for server identification */
+#define PATCHLEVEL "021003200023"		/* for server identification */
 #endif
 

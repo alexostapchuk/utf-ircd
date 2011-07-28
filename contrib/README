@@ -1,5 +1,3 @@
-$Id: README,v 1.4.2.1 2003/09/30 14:23:20 chourf Exp $
-
 **********************************************************************
 DISCLAIMER:
 This directory contains programs or patches that have been contributed
@@ -17,6 +15,15 @@ If you want to submit a package for this directory, see the RULES file.
 
 mkpasswd	utility to crypt a password.
 ircdwatch	utility to keep ircd running (eventually restarting it).
-tkserv		stupid toy to manage "temporary" klines.
 mod_passwd	example of DSM module for iauth
-antispoof.diff	diff file to add extra code to ircd to prevent TCP spoofing
+
+uk_UA		translit capable locale for iconv operations on Linux.
+		To use it instead your system locale simply import locale
+		to your /usr/lib/locale/locale-archive using the following
+		command:
+
+localedef --replace -i uk_UA
+
+		If you have no superuser privileges, add --with-locpath to
+		configure options, so that it creates custom locale path
+		and points ircd to read locale data from there.

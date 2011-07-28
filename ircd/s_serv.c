@@ -19,7 +19,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_serv.c,v 1.55 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -28,7 +27,7 @@
 #include "s_externs.h"
 #undef S_SERV_C
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 static	char	buf[MB_LEN_MAX*BUFSIZE];
 #else
 static	char	buf[BUFSIZE];
@@ -217,7 +216,6 @@ char	*parv[];
 		sendto_one(sptr, err_str(ERR_NOPRIVILEGES, parv[0]));
 		return 1;
 	    }
-#ifdef RUSNET_IRCD
 	if ((cptr != acptr->from)  && IsServer(cptr) &&
 		cptr->serv->nline->localpref) {
 #ifdef WALLOPS_TO_CHANNEL
@@ -237,43 +235,20 @@ char	*parv[];
 		*/
 		return exit_client(cptr, cptr, &me, "Unauthorized remote squit from test server");
 	}
-#endif	
 
 	if (!MyConnect(acptr) && (cptr != acptr->from))
 	    {
-		/*
-		** The following is an awful kludge, but I don't see any other
-		** way to change the pre 2.10.3 behaviour.  I'm probably going
-		** to regret it.. -kalt
-		*/
-		if ((acptr->from->serv->version & SV_OLDSQUIT) == 0)
-		    {
-			/* better server: just propagate upstream */
-			sendto_one(acptr->from, ":%s SQUIT %s :%s", parv[0],
-				   acptr->name, comment);
-			sendto_flag(SCH_SERVER,
-				    "Forwarding SQUIT %s from %s (%s)",
-				    acptr->name, parv[0], comment);
-			sendto_flag(SCH_DEBUG,
-				    "Forwarding SQUIT %s to %s from %s (%s)",
-				    acptr->name, acptr->from->name, 
-				    parv[0], comment);
-			return 1;
-		    }
-		/*
-		** ack, bad server encountered!
-		** must send back to other good servers which were trying to
-		** do the right thing, and fake the yet to come SQUIT which
-		** will never be received from the bad servers.
-		*/
-		if (IsServer(cptr) && 
-		    (cptr->serv->version & SV_OLDSQUIT) == 0)
-		    {
-			sendto_one(cptr, ":%s SQUIT %s :%s (Bounced for %s)",
-				   ME, acptr->name, comment, parv[0]);
-			sendto_flag(SCH_DEBUG, "Bouncing SQUIT %s back to %s",
-				    acptr->name, acptr->from->name);
-		    }
+		/* propagate SQUIT to upstream */
+		sendto_one(acptr->from, ":%s SQUIT %s :%s", parv[0],
+			   acptr->name, comment);
+		sendto_flag(SCH_SERVER,
+			    "Forwarding SQUIT %s from %s (%s)",
+			    acptr->name, parv[0], comment);
+		sendto_flag(SCH_DEBUG,
+			    "Forwarding SQUIT %s to %s from %s (%s)",
+			    acptr->name, acptr->from->name, 
+			    parv[0], comment);
+		return 1;
 	    }
 	/*
 	**  Notify all opers, if my local link is remotely squitted
@@ -308,13 +283,19 @@ char	*parv[];
 	sendto_flag(SCH_SERVER, "Received SQUIT %s from %s (%s)",
 		    acptr->name, parv[0], comment);
 
+	/*
+	 * The following code seems pretty useless, but we'll keep it
+	 * for a while just in case if something happens  --erra
+	 */
+#if 0
 	if (MyConnect(acptr) && 
-	    IsServer(cptr) && (cptr->serv->version & SV_OLDSQUIT) == 0)
+	    IsServer(cptr) && (cptr->serv->version & SV_UNKNOWN) == 0)
 	    {
 		sendto_one(cptr, ":%s SQUIT %s :%s", ME, acptr->name, comment);
 		sendto_flag(SCH_DEBUG, "Issuing additionnal SQUIT %s for %s",
 			    acptr->name, acptr->from->name);
 	    }
+#endif
 	return exit_client(cptr, acptr, sptr, comment);
     }
 
@@ -334,8 +315,8 @@ aClient	*cptr;
 
 	if (cptr->info == DefInfo)
 	    {
-		cptr->hopcount = SV_OLD;
-		return 1; /* no version checked (e.g. older than 2.9) */
+		cptr->hopcount = SV_UNKNOWN;
+		return 1; /* no version checked (e.g. older than RusNet 1.4) */
 	    }
 	if (id = index(cptr->info, ' '))
 	    {
@@ -353,26 +334,12 @@ aClient	*cptr;
 	else
 		id = "";
 
-	if (!strncmp(cptr->info, "021", 3))
+	if (!strncmp(cptr->info, "021", 3) && cptr->info[6] >= '1')
 	{
-		cptr->hopcount = SV_29|SV_NJOIN|SV_NMODE|SV_NCHAN; /* SV_2_10*/
+		cptr->hopcount = SV_RUSNET1;
 
-#ifdef RUSNET_IRCD
-		if (cptr->info[8] >= '3' || cptr->info[7] >= '5' ||
-		    cptr->info[6] >= '2')	/* RusNet 1.4.3 and later */
-			cptr->hopcount |= SV_KLINE|SV_RMODE|SV_RLINE;
-		else {
-			cptr->hopcount |= SV_FORCE;	/* RusNet 1.4 */
-
-			if (link && strchr(link, PROTO_CAPS_K))
-				cptr->hopcount |= SV_KLINE;
-
-			if (link && strchr(link, PROTO_CAPS_R))
-				cptr->hopcount |= SV_RMODE;
-
-			if (link && strchr(link, PROTO_CAPS_RL))
-				cptr->hopcount |= SV_RLINE;
-		}
+		if (cptr->info[6] >= '2')	/* RusNet 2.0 and later */
+			cptr->hopcount = SV_RUSNET2;
 #ifndef USE_OLD8BIT
 		conv_free_conversion(cptr->conv); /* was added by add_connection() */
 		/* check if we have to use unicode now:
@@ -387,21 +354,9 @@ aClient	*cptr;
 		else
 			cptr->conv = conv_get_conversion(CHARSET_8BIT);
 #endif
-#endif
 	}
-#ifndef RUSNET_IRCD
-	else if (!strncmp(cptr->info, "0209", 4))
-		cptr->hopcount = SV_29|SV_OLDSQUIT;	/* 2.9+ protocol */
-#endif
 	else
-		cptr->hopcount = SV_OLD; /* uhuh */
-
-#ifndef RUSNET_IRCD
-	if (!strcmp("IRC", id) && !strncmp(cptr->info, "02100", 5) &&
-	    atoi(cptr->info+5) < 20600)
-		/* before 2.10.3a6 ( 2.10.3a5 is just broken ) */
-		cptr->hopcount |= SV_OLDSQUIT;
-#endif
+		cptr->hopcount = SV_UNKNOWN; /* uhuh */
 
 	/* Check version number/mask from conf */
 	sprintf(buf, "%s/%s", id, cptr->info);
@@ -430,11 +385,13 @@ aClient	*cptr;
                 cptr->flags |= FLAGS_ZIPRQ;
 	/*
 	 * If server was started with -p strict, be careful about the
-	 * other server mode.
+	 * other server mode. Isn't it just an old piece of crap? --erra
 	 */
+#if 0
 	if (link && strncmp(cptr->info, "020", 3) &&
 	    (bootopt & BOOT_STRICTPROT) && !strchr(link, 'P'))
 		return exit_client(cptr, cptr, &me, "Unsafe mode");
+#endif
 
 	return 2;
 }
@@ -674,9 +631,8 @@ char	*parv[];
 		(void)make_server(acptr);
 		acptr->hopcount = hop;
 		strncpyzt(acptr->name, host, sizeof(acptr->name));
-#ifdef RUSNET_IRCD
 		acptr->serv->crc = gen_crc(host);
-#endif
+
 		if (acptr->info != DefInfo)
 			MyFree(acptr->info);
 		acptr->info = mystrdup(info);
@@ -798,11 +754,11 @@ Reg	aClient	*cptr;
 		return exit_client(cptr, cptr, &me, "No C line for server");
 	    }
 
-	if (cptr->hopcount == SV_OLD) /* lame test, should be == 0 */
+	if (cptr->hopcount == SV_UNKNOWN) /* lame test, should be == 0 */
 	    {
-		sendto_one(cptr, "ERROR :Server version is too old.");
-		sendto_flag(SCH_ERROR, "Old version for %s", inpath);
-		return exit_client(cptr, cptr, &me, "Old version");
+		sendto_one(cptr, "ERROR :Server version is unknown.");
+		sendto_flag(SCH_ERROR, "Weird version for %s", inpath);
+		return exit_client(cptr, cptr, &me, "Weird version");
 	    }
 
 #ifdef CRYPT_LINK_PASSWORD
@@ -857,22 +813,16 @@ Reg	aClient	*cptr;
 #ifdef	ZIP_LINKS
 			"%s"
 #endif
-#ifdef RUSNET_IRCD
-			"%c%c%c"
 #ifndef USE_OLD8BIT
 			"%s"
-#endif
 #endif
 			, bconf->passwd, pass_version, serveropts,
 #ifdef	ZIP_LINKS
 			   (bconf->status == CONF_ZCONNECT_SERVER) ? "Z" : "",
 #endif
 				   (bootopt & BOOT_STRICTPROT) ? "P" : ""
-#ifdef RUSNET_IRCD				   
-				   , PROTO_CAPS_K, PROTO_CAPS_RL, PROTO_CAPS_R
 #ifndef USE_OLD8BIT
 				   , (cptr->flags & FLAGS_UNICODE) ? "U" : ""
-#endif
 #endif
 				   );
 		/*
@@ -978,9 +928,7 @@ Reg	aClient	*cptr;
 	cptr->hopcount = 1;			/* local server connection */
 	cptr->serv->snum = find_server_num(cptr->name);
 	cptr->serv->stok = 1;
-#ifdef RUSNET_IRCD
 	cptr->serv->crc = gen_crc(cptr->name);
-#endif
 	cptr->flags |= FLAGS_CBURST;
 	(void) add_to_server_hash_table(cptr->serv, cptr);
 	Debug((DEBUG_NOTICE, "Server link established with %s V%X %d",
@@ -1047,7 +995,13 @@ Reg	aClient	*cptr;
 		if (*mlname == '*' && match(mlname, acptr->name) == 0)
 			continue;
 		stok = acptr->serv->tok;
-#ifndef RUSNET_IRCD
+
+		/*
+		 * The following piece of code was marked as ifndef RUSNET_IRCD
+		 * While it is completely safe to remove it, it would be nice
+		 * to check it for something potentially useful first  --erra
+		 */
+#if 0
 		split = (MyConnect(acptr) &&
 			 strcasecmp(acptr->name, acptr->sockhost));
 		if (split)
@@ -1082,16 +1036,8 @@ Reg	aClient	*cptr;
 			send_umode(NULL, acptr, 0, SEND_UMODES, buf);
 			sendto_one(cptr,"NICK %s %d %s %s %s %s :%s",
 				   acptr->name, acptr->hopcount + 1,
-				   acptr->user->username,
-#ifdef RUSNET_IRCD
-				   acptr->sockhost,
-#else
-				   acptr->user->host,
-#endif
-				   stok,
-				   (*buf) ? buf : "+", acptr->info);
-			if ((cptr->serv->version & SV_NJOIN) == 0)
-				send_user_joins(cptr, acptr);
+				   acptr->user->username, acptr->sockhost,
+				   stok, (*buf) ? buf : "+", acptr->info);
 		    }
 		else if (IsService(acptr) &&
 			 match(acptr->service->dist, cptr->name) == 0)
@@ -1120,9 +1066,9 @@ Reg	aClient	*cptr;
 		for (chptr = channel; chptr; chptr = chptr->nextch)
 			if (chptr->users)
 			    {
-				if (cptr->serv->version & SV_NJOIN)
-					send_channel_members(cptr, chptr);
+				send_channel_members(cptr, chptr);
 				send_channel_modes(cptr, chptr);
+				send_channel_topic(cptr, chptr);
 			    }
 	    }
 
@@ -1374,10 +1320,10 @@ char	*parv[];
 **	      it--not reversed as in ircd.conf!
 */
 
-#ifdef RUSNET_IRCD
+#ifdef RUSNET_RLINES
 #define	REP_ARRAY_SIZE	19
 #else
-#define	REP_ARRAY_SIZE	17
+#define	REP_ARRAY_SIZE	18
 #endif
 
 static int report_array[REP_ARRAY_SIZE][3] = {
@@ -1388,7 +1334,7 @@ static int report_array[REP_ARRAY_SIZE][3] = {
 		{ CONF_RCLIENT,		  RPL_STATSILINE, 'i'},
 		{ CONF_KILL,		  RPL_STATSKLINE, 'K'},
 		{ CONF_QUARANTINED_SERVER,RPL_STATSQLINE, 'Q'},
-		{ CONF_LEAF,		  RPL_STATSLLINE, 'L'},
+		{ CONF_LOG,		  RPL_STATSLLINE, 'L'},
 		{ CONF_OPERATOR,	  RPL_STATSOLINE, 'O'},
 		{ CONF_HUB,		  RPL_STATSHLINE, 'H'},
 		{ CONF_LOCOP,		  RPL_STATSOLINE, 'o'},
@@ -1397,12 +1343,10 @@ static int report_array[REP_ARRAY_SIZE][3] = {
 		{ CONF_BOUNCE,		  RPL_STATSBLINE, 'B'},
 		{ CONF_DENY,		  RPL_STATSDLINE, 'D'},
 		{ CONF_EXEMPT,		  RPL_STATSKLINE, 'E'},
-#ifdef RUSNET_IRCD
 		{ CONF_INTERFACE,	  RPL_STATSFLINE, 'F'},
 # ifdef RUSNET_RLINES
 		{ CONF_RUSNETRLINE,	  RPL_STATSRLINE, 'R'},
 # endif
-#endif
 		{ 0, 0, 0}
 	};
 
@@ -1416,11 +1360,8 @@ int	mask;
 	int	*p, port;
 	char	c, *host, *pass, *name;
 	time_t	hold;
+	aClient *acptr = find_client(to, NULL);
 
-#ifdef RUSNET_IRCD
-	aClient *acptr;
-	acptr = find_client(to, NULL);
-#endif		
 	for (tmp = (mask & CONF_KILL) ? kconf : (
 #ifdef RUSNET_RLINES
 	    (mask & (CONF_RUSNETRLINE)) ? rconf :
@@ -1452,14 +1393,12 @@ int	mask;
 					    port, (hold > 0) ? myctime(hold) : "permanent");
 			    
 			else if ( tmp->status == CONF_VER
-#ifdef RUSNET_IRCD
-			    || tmp->status == CONF_INTERFACE
-#endif
-			    || tmp->status == CONF_BOUNCE)
+					    || tmp->status == CONF_INTERFACE
+					    || tmp->status == CONF_BOUNCE)
 				sendto_one(sptr, rpl_str(p[1], to), c, host,
 					   (pass) ? pass : null,
 					   name, port, get_conf_class(tmp));
-#ifdef RUSNET_IRCD
+
 			else if (tmp->status == CONF_CONNECT_SERVER ||
 				tmp->status == CONF_ZCONNECT_SERVER ||
 				tmp->status == CONF_NOCONNECT_SERVER ||
@@ -1474,10 +1413,14 @@ int	mask;
 			else if (tmp->status == CONF_OPERATOR ||
 				tmp->status == CONF_LOCOP)
 				sendto_one(sptr, rpl_str(p[1], to), c, 
-					    (acptr && IsAnOper(acptr)) ? host : "-",
-					   (pass) ? "x" : null,
+					   (acptr && IsAnOper(acptr)) ?
+					   host : "-", (pass) ? "x" : null,
 					   name, port, get_conf_class(tmp));
-#endif
+
+			else if (tmp->status == CONF_LOG)
+				sendto_one(sptr, rpl_str(p[1], to), c,
+								host, pass);
+
 			else
 				sendto_one(sptr, rpl_str(p[1], to), c, host,
 					    (pass) ? "x" : null,
@@ -1629,7 +1572,7 @@ char	*parv[];
 	case 'd' : case 'D' : /* defines */
 		send_defines(cptr, parv[0]);
 		break;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	case 'e' : /* charsets conversion - no conf lines */
 		conv_report(sptr, parv[0]);
 		break;
@@ -1640,11 +1583,11 @@ char	*parv[];
 		report_configured_links(cptr, parv[0],
 					(CONF_EXEMPT));
 		break;
-#ifdef RUSNET_IRCD
+
 	case 'F' : case 'f' : /* F conf lines */
 		report_configured_links(cptr, parv[0], CONF_INTERFACE);
 		break;
-#endif
+
 	case 'H' : case 'h' : /* H, L and D conf lines */
 		report_configured_links(cptr, parv[0],
 					CONF_HUB|CONF_LEAF|CONF_DENY);
@@ -1657,6 +1600,7 @@ char	*parv[];
 		report_configured_links(cptr, parv[0], CONF_KILL);
 		break;
 	case 'L' : case 'l' : /* L lines */
+		report_configured_links(cptr, parv[0], CONF_LOG);
 		break;
 	case 'M' : case 'm' : /* commands use/stats */
 		for (mptr = msgtab; mptr->cmd; mptr++)
@@ -2314,13 +2258,10 @@ char	*parv[];
 	Reg	aClient	*acptr;
 	Reg	int	i;
 	char	killer[HOSTLEN * 2 + USERLEN + 5];
-#ifdef RUSNET_IRCD
+
 	strcpy(killer, get_client_xname(sptr, FALSE));
 	sprintf(buf, "RESTART by %s", get_client_xname(sptr, FALSE));
-#else
-	strcpy(killer, get_client_name(sptr, FALSE));
-	sprintf(buf, "RESTART by %s", get_client_name(sptr, FALSE));
-#endif
+
 	for (i = 0; i <= highest_fd; i++)
 	    {
 		if (!(acptr = local[i]))
@@ -2435,11 +2376,8 @@ char	*parv[];
 			continue;
 		if (!dow && strcasecmp(tname, acptr->name))
 			continue;
-#ifdef RUSNET_IRCD
+
 		name = get_client_xname(acptr, IsAnOper(sptr));
-#else
-		name = get_client_name(acptr,FALSE);
-#endif
 		class = get_client_class(acptr);
 
 		switch(acptr->status)
@@ -2781,7 +2719,7 @@ static void report_listeners(aClient *sptr, char *to)
 	if (IsAnOper(sptr))
 		sendto_one(sptr, ":%s %d %s Port Host DBuf sendM sendB "
 				"rcvM rcvB Uptime State"
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 				" Charset"
 #endif
 				, ME, RPL_STATSLINKINFO, to);
@@ -2806,7 +2744,7 @@ static void report_listeners(aClient *sptr, char *to)
 
 		if (IsAnOper(sptr))
 		    sendto_one(sptr, ":%s %d %s %d %s %d %d %u %d %u %u %d %s"
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 				" %s"
 #endif
 			, ME, RPL_STATSLINKINFO, to,
@@ -2816,19 +2754,19 @@ static void report_listeners(aClient *sptr, char *to)
 			acptr->receiveM, acptr->receiveB,
 			timeofday - acptr->firsttime,
 			tmp->clients, what
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 				, acptr->conv ? conv_charset(acptr->conv) : ""
 #endif
 		    );
 		else
 		    sendto_one(sptr, ":%s %d %s %d %s %s"
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 							" %s"
 #endif
 			, ME, RPL_STATSLINKINFO, to,
 			tmp->port, (*tmp->host == '\0') ? tmp->host : "-",
 			what
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 				, conv_charset(acptr->conv)
 #endif
 		    );
@@ -3028,33 +2966,10 @@ char	*command;
 	 return -1;
 
     for (str = reason; *str; str++)
-	    if (*str == ':')
+	    if (*str == IRCDCONF_DELIMITER)
 		*str = ',';
   
-#ifdef USE_TKSERV
-    if ((acptr = best_service("TkServ", NULL)) == NULL)
-	return -1;
-    if (!MyConnect(acptr))
-	return -1;
-    if (tline_time > now) /* Means we got it in timestamp fmt */
-	tline_time = (time_t)((tline_time - now)/3600);
-	if (tline_time < 1)
-	    tline_time = 1;
-    /*
-     * Call for TkServ:
-     * TKLINE <password> <lifetime> <nick!user@host> <reason>
-     */
-    sendto_one(acptr, ":%s SQUERY TkServ :T%cLINE %s %s %s@%s %s",
-			TK_USER,
-			(*command == 'U') ? command[2] : command[0],
-			TK_PASS,
-			tline_time,
-			/* we use <user> if it is NOT equal to "*", be attentional */
-			(strcmp(user, "*")) ? user : name,
-			host,
-			reason);
-#else
-# ifdef USE_ISERV
+#ifdef USE_ISERV
     /*
     * iserv command:
     * <type>:<user@hostmask|user@ipmask>:<reason>:<nick>:<port>:<expiration_timestamp>
@@ -3166,23 +3081,25 @@ char	*command;
 	return 0;
 	
 single_line: /* never reached in this code -skold */
-	sendto_iserv("%c:%s@%s:%s:%s:%s:%d",
-		    type,
+	sendto_iserv("%c%c%s@%s%c%s%c%s%c%s%c%d",
+		    type, IRCDCONF_DELIMITER,
 		    user,
-		    host,
-		    reason,
-		    name, "",
+		    host, IRCDCONF_DELIMITER,
+		    reason, IRCDCONF_DELIMITER,
+		    name,  IRCDCONF_DELIMITER,
+		    "", IRCDCONF_DELIMITER,
 		    expire);
-	sendto_flag(SCH_ISERV, "%c:%s@%s:%s:%s:%s:%s",
-				type,
+	sendto_flag(SCH_ISERV, "%c%c%s@%s%c%s%c%s%c%s%c%s",
+		type, IRCDCONF_DELIMITER,
 				user,
-				host,
-				reason,
-				name, "",
+		host, IRCDCONF_DELIMITER,
+		reason, IRCDCONF_DELIMITER,
+		name,  IRCDCONF_DELIMITER,
+		"", IRCDCONF_DELIMITER,
 				(expire > 0) ? myctime(expire) : 
 				    ((expire == 0) ? "permanent" : "remove"));
+
     }
-# endif
 #endif
 }
 
@@ -3222,17 +3139,19 @@ int send_tline_one(aConfItem *aconf) {
 	default:
 	    return 0;
     }
-	sendto_iserv("%c:%s:%s:%s:%s:%d",
-		    type,
-		    aconf->host,
-		    aconf->passwd,
-		    aconf->name, "",
+	sendto_iserv("%c%c%s%c%s%c%s%c%s%c%d",
+	    type, IRCDCONF_DELIMITER,
+	    aconf->host, IRCDCONF_DELIMITER,
+	    aconf->passwd, IRCDCONF_DELIMITER,
+	    aconf->name,  IRCDCONF_DELIMITER,
+	    "", IRCDCONF_DELIMITER,
 		    aconf->hold);
-	sendto_flag(SCH_ISERV, "%c:%s:%s:%s:%s:%s",
-				type,
-				aconf->host,
-				aconf->passwd,
-				aconf->name, "",
+	sendto_flag(SCH_ISERV, "%c%c%s%c%s%c%s%c%s%c%s",
+	    type, IRCDCONF_DELIMITER,
+	    aconf->host, IRCDCONF_DELIMITER,
+	    aconf->passwd, IRCDCONF_DELIMITER,
+	    aconf->name,  IRCDCONF_DELIMITER,
+	    "", IRCDCONF_DELIMITER,
 				(aconf->hold > 0) ? myctime(aconf->hold) : 
 				    ((aconf->hold == 0) ? "permanent" : "remove"));
 	return 0;    

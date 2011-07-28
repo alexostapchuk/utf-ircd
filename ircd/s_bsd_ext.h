@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_bsd_ext.h,v 1.9 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -81,7 +80,7 @@ EXTERN int unixport (aClient *cptr, char *path, int port);
 #ifdef DELAY_CLOSE
 EXTERN time_t delay_close (int);
 #endif
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 EXTERN aClient *find_listener (int port);
 #endif
 #undef EXTERN

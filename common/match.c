@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: match.c,v 1.12 2010-11-10 13:38:39 gvs Exp $
  */
 
 
@@ -93,7 +92,7 @@ unsigned char touppertab[] =
 		  0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9,
 		  0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff };
 
-#if !defined(RUSNET_IRCD) || defined(USE_OLD8BIT) || defined(LOCALE_STRICT_NAMES)
+#if defined(USE_OLD8BIT) || defined(LOCALE_STRICT_NAMES)
 unsigned char validtab[256];
 #endif
 
@@ -491,7 +490,7 @@ char	*mask, *name;
 		    {
 			if (*n)
 			{
-#if !defined(CLIENT_COMPILE) && defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#if !defined(CLIENT_COMPILE) && !defined(USE_OLD8BIT)
 			    /* works for utf* only!!! */
 			    if (UseUnicode > 0 && *m == '?')
 			    {
@@ -591,7 +590,7 @@ int     n;
             }
         return (res);
 }
-#if !defined(RUSNET_IRCD) || defined(USE_OLD8BIT) || defined(LOCALE_STRICT_NAMES)
+#if defined(USE_OLD8BIT) || defined(LOCALE_STRICT_NAMES)
 
 void setup_validtab (void)
 {
@@ -600,14 +599,11 @@ void setup_validtab (void)
   for (i = 0; i < 256; i++)
   {
     if ((i >= 'A' && i <= '~') || i == '-' ||
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	isalnum(i))
 #else
-# ifdef RUSNET_IRCD
 	i >= 0xc0 || i == 0xad || i == 0xbd ||
-	(i >= 0xa3 && i <= 0xa7) || (i >= 0xb3 && i <= 0xb7) ||
-# endif
-	isdigit(i))
+	(i >= 0xa3 && i <= 0xa7) || (i >= 0xb3 && i <= 0xb7) || isdigit(i))
 #endif
       validtab[i] = i;
     else

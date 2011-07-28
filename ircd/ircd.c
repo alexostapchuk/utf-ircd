@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: ircd.c,v 1.31 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -25,12 +24,11 @@
 #include "s_externs.h"
 #undef IRCD_C
 
-#ifdef RUSNET_IRCD
 #include <locale.h>
+
 #ifdef USE_OLD8BIT
 
 char	*rusnetfile = RUSNETCONF_PATH;
-#endif
 #endif
 
 aClient me;			/* That's me */
@@ -43,7 +41,7 @@ char	**myargv;
 int	rehashed = 0;
 int	portnum = -1;		    /* Server port number, listening this */
 char	*configfile = IRCDCONF_PATH;	/* Server configuration file */
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 char	*config_charset = CHARSET_8BIT;	/* Default charset for config & motd */
 #endif
 int	debuglevel = -1;		/* Server debug level */
@@ -70,9 +68,7 @@ time_t	nextiarestart = 1;	/* next time to check if iauth is alive */
 time_t	nextisrestart = 1;	/* next time to check if iserv is alive */
 time_t  nextlockscheck = 1;	/* next time to expire NDELAY locks -kmale */
 time_t  nextcmapscheck = 1;	/* next time to expire collision maps -erra */
-#if defined(RUSNET_IRCD)
 unsigned long invincible;	/* prepare crc for SERVICES_SERV */
-#endif
 
 aClient *ListenerLL = NULL;     /* Listeners linked list */
 
@@ -718,9 +714,7 @@ aClient	*mp;
 	istat.is_users++;	/* here, cptr->next is NULL, see make_user() */
 	mp->user->flags |= FLAGS_OPER;
 	mp->serv->up = mp;
-#ifdef RUSNET_IRCD
 	mp->serv->crc = gen_crc(mp->name);
-#endif
 	mp->user->server = find_server_string(mp->serv->snum);
 	strncpyzt(mp->user->username, (p) ? p->pw_name : "unknown",
 		  sizeof(mp->user->username));
@@ -745,7 +739,7 @@ static	int	bad_command()
 #else
 	 "",
 #endif
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	" [-e config_charset]",
 #else
 	 "",
@@ -847,7 +841,7 @@ char	*argv[];
 			configfile = p;
 			break;
 #endif
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		    case 'e':
 			{
 			conversion_t *conv;
@@ -1016,11 +1010,15 @@ char	*argv[];
 	}
 #endif
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
+# ifdef LOCALE_PATH
+	setenv("LOCPATH", LOCPATH, 1);
+# endif
 	setlocale(LC_ALL, LOCALE "." CHARSET_8BIT); /* it's fixed for now */
-	setlocale(LC_TIME, "C");
+	setlocale(LC_TIME, SYS_LOCALE);
+	setlocale(LC_MESSAGES, SYS_LOCALE);
 #endif
-#if !defined(RUSNET_IRCD) || defined(USE_OLD8BIT) || defined(LOCALE_STRICT_NAMES)
+#if defined(USE_OLD8BIT) || defined(LOCALE_STRICT_NAMES)
 	setup_validtab();
 #endif
 	setup_signals();
@@ -1035,7 +1033,7 @@ char	*argv[];
 		exit(-1);
 	    }
 #endif
-#if defined(RUSNET_IRCD) && defined(USE_OLD8BIT)
+#ifdef USE_OLD8BIT
 	initialize_rusnet(rusnetfile);
 #endif
 #ifdef USE_SSL
@@ -1109,11 +1107,9 @@ char	*argv[];
 	read_rmotd(IRCDRMOTD_PATH);
 #endif
 
-#ifdef RUSNET_IRCD
 	gen_crc32table();
 	srand(timeofday ^ me.serv->crc);
 	invincible = gen_crc(SERVICES_SERV);	/* prepare crc for SERVICES_SERV */
-#endif /* RUSNET_IRCD */
 	check_class();
 	ircd_writetune(tunefile);
 	if (bootopt & BOOT_INETD)
@@ -1163,7 +1159,6 @@ char	*argv[];
         daemonize();
 	serverbooting = 0;
 	write_pidfile();
-//	logfiles_open();
 	dbuf_init();
 
 

@@ -1,3 +1,110 @@
+Version 2.0
+--------------
+2011-07-28 erra <erra@ya.ru>
+	* rusnet/rusnet_cmds.c: replace "translit" with "ascii" for iconv calls
+
+2011-07-26 erra <erra@ya.ru>
+	* ircd/s_misc.c: unused libidn support code removed (caused errors)
+
+2011-07-25 erra <erra@ya.ru>
+	* ircd/channel.c, ircd/s_user.c: is_chan_anyop fixed
+
+2011-07-24 erra <erra@ya.ru>
+	* ircd/channel.c, ircd/hash.c: obsoleted pieces of code cleared
+
+2011-07-23 erra <erra@ya.ru>
+	* common/msg_def.h, common/parse.c, ircd/channel.c,
+		ircd/channel_ext.h: NTOPIC added (topic sync on netjoin)
+	* ircd/channel.c, ircd/channel_ext.h, ircd/s_serv.c:
+			send_channel_topic() added (for sending NTOPIC)
+	* ircd/channel.c: is_chan_halfop replaced with is_chan_anyop
+
+2011-07-19 erra <erra@ya.ru>
+	* ircd/ircd.c: setlocale(LC_MESSAGES, SYS_LOCALE) added
+	* support/config.h.dist: SYS_LOCALE definition added (for LC_TIME
+		and LC_MESSAGES, defaults to C)
+
+2011-07-18 erra <erra@ya.ru>
+	* common/numeric_def.h, ircd/s_err.c: ERR_NICKTOOFAST added
+	* common/struct_def.h: held timestamp added for local clients;
+		conversion pointer moved to local clients part
+	* common/send.c: client initializer fixed accordingly;
+		send_message() revised
+	* ircd/list.c: held initialization added; conv moved
+	* ircd/s_user.c: ERR_NICKTOOFAST implemented for forced nicks
+
+2011-07-17 erra <erra@ya.ru>
+	* common/msg_def.h, common/parse.c, rusnet/rusnet_cmds.c,
+		rusnet/rusnet_cmds_ext.h: m_svsmode and m_svsnick implemented
+
+2011-07-08 erra <erra@ya.ru>
+	* ircd/s_user.c: send_umode_out fixed not to pass extra umodes
+		to older servers
+
+2011-07-02 erra <erra@ya.ru>
+	* ircd/res.c: do not perform IDN conversion for T_PTR
+	* ircd/s_bsd.c: send_hostp_to_iauth() added
+
+2011-07-01 erra <erra@ya.ru>
+	* support/configure, support/configure.in: libidn check fixed for SunOS
+
+2011-06-28 erra <erra@ya.ru>
+	* */*: RUSNET_IRCD removed (now mandatory), code cleanup for oldies
+	* common/struct_def.h: usermode identified (+I) and usermode/chanmode
+		recognized (+R) added; SV_RUSNET1 and SV_RUSNET2 added; SV_29
+		and other oldies removed
+	* ircd/channel.c: MODE_RECOGNIZED added
+	* ircd/res.c: libidn support added
+	* ircd/s_user.c: FLAGS_IDENTIFIED and FLAGS_RECOGNIZED added
+	* support/configure.in: libidn test added
+	* support/setup.h.in: USE_LIBIDN added
+
+Version 1.5.16
+--------------
+2011-06-22 erra <erra@ya.ru>
+	* configure: PATH fixed for SunOS, echo -e for FreeBSD only
+	* common/conversion.c: HAVE_ICONV_TRANSLIT applied
+	* ircd/ircd.s: LOCPATH environment variable added for Linux
+	* support/Makefile.in: custom locale installation added for Linux
+	* support/configure.in: iconv detection fixed, message added for IPv6;
+		zlib and ssl include/lib "found by compiler/linker" fixed
+	* support/setup.h.in: USE_VHOST6, LOCALE_PATH added
+
+2011-06-20 erra <erra@ya.ru>
+	* configure: locale tests removed
+	* contrib/uk_UA: proper locale packed for custom usage on Linux
+	* support/locale_tests: patterns for testing locale added
+	* support/setup.h.in: HAVE_ICONV_TRANSLIT added
+	* support/configure.in: zlib, SSL and iconv detection reworked
+
+Version 1.5.15
+--------------
+2011-06-17 erra <erra@ya.ru>
+	* ircd/s_user.c: channel zmode check cancelled for collided nicks
+		to avoid desync because of nickname protection by services
+	* rusnet/rusnet_misc.c: rusnet_isagoodnickname() renamed to
+		rusnet_zmodecheck() and optimized
+	* support/config.h.dist: services nicks definitions reintroduced
+
+Version 1.5.14
+--------------
+2011-02-11 erra <erra@ya.ru>
+	* ircd/s_user.c: VHOST fixed for IPv6 addresses;
+			memleak fixed in m_nick()
+	* tkserv: removed completely (obsoleted by iserv)
+
+2011-02-10 erra <erra@ya.ru>
+	* ircd/s_misc.c: stack overflow fixed in exit_client call
+			with the help from denk
+
+2011-01-10 denk <denis@tambov.ru>
+	* ircd/s_user.c: ISTAT memory leak patch
+
+2010-11-04 denk <denis@tambov.ru>
+	* ircd/s_bsd.c, ircd/s_conf.c, ircd/s_misc.c, ircd/s_serv.c,
+		ircd/s_user.c, iserv/i_io.c, rusnet/rusnet.h,
+		support/configure.in: IPv6 support patch
+
 Version 1.5.13
 --------------
 2010-10-30 erra <erra@ya.ru>

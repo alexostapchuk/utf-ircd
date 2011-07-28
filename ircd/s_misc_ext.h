@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_misc_ext.h,v 1.9 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -44,9 +43,7 @@ EXTERN char *date (time_t clock);
 EXTERN int check_registered_user (aClient *sptr);
 EXTERN int check_registered (aClient *sptr);
 EXTERN int check_registered_service (aClient *sptr);
-#ifdef RUSNET_IRCD
 EXTERN char *get_client_xname (aClient *sptr, int isop);
-#endif
 EXTERN char *get_client_name (aClient *sptr, int showip);
 EXTERN char *get_client_host (aClient *cptr);
 EXTERN void get_sockhost (Reg aClient *cptr, Reg char *host);
@@ -61,7 +58,7 @@ EXTERN void read_motd (char *filename);
 #ifdef RUSNET_RLINES
 EXTERN void read_rmotd (char *filename);
 #endif
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 EXTERN void set_internal_encoding (aClient *cptr, aConfItem *aconf);
 #endif
 #undef EXTERN

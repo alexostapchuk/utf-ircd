@@ -8,8 +8,10 @@
 ** hope that it will be useful, but without any warranty. Without even the 
 ** implied warranty of merchantability or fitness for a particular purpose. 
 ** See the GNU General Public License for details.
-** $Id: rusnet_codepages.c,v 1.6 2005/08/27 16:05:24 skold Exp $
  */
+
+#ifndef RUSNET_CODEPAGES_C
+#define RUSNET_CODEPAGES_C
 
 #include "os.h"
 #include "s_defines.h"
@@ -17,7 +19,6 @@
 #include "s_externs.h"
 #undef S_SERV_C
 
-#ifdef RUSNET_IRCD
 
 struct Codepage *translator_list = NULL;
 unsigned handle = 1;

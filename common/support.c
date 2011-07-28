@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: support.c,v 1.25 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -628,16 +627,13 @@ char	*MyRealloc(char *x, size_t y)
 char *make_version()
 {
 	int ve, re, mi, dv, pl;
-#ifdef RUSNET_IRCD	
-	int rv1, rv2, rv3, rp;
-#endif
+	int rv1, rv2, rv3, rd;
 	char ver[45];
 #ifdef ADD_VERSION
 	char *new_version = NULL;
 #endif
-#ifdef RUSNET_IRCD
 	sscanf(PATCHLEVEL, "%2d%2d%2d%1d%1d%2d%2d",
-				&ve, &re, &mi, &rv1, &rv2, &rv3, &rp);
+				&ve, &re, &mi, &rv1, &rv2, &rv3, &rd);
 	/* RusNet version */
 	sprintf(ver, "%d.%d", rv1, rv2);
 
@@ -645,23 +641,12 @@ char *make_version()
 	if (rv3)
 		sprintf(ver + strlen(ver), ".%d", rv3);
 
-	/* patchlevel, if any */
-	if (rp)
-		sprintf(ver + strlen(ver), "(p%d)", rp);
+	/* debuglevel, if any */
+	if (rd)
+		sprintf(ver + strlen(ver), ".d%d", rd);
 #ifndef USE_OLD8BIT
 	strncat(ver, "/" LOCALE "." CHARSET_8BIT,
 			sizeof(ver) - strlen(ver) - 1);
-#endif
-#else
-	sscanf(PATCHLEVEL, "%2d%2d%2d%2d%2d", &ve, &re, &mi, &dv, &pl);
-
-	/* version & revision */
-	sprintf(ver, "%d.%d", ve, re);
-
-	/* minor revision, if any */
-	if (mi)
-		sprintf(ver + strlen(ver), ".%d", mi);
-
 #endif
 #ifdef ADD_VERSION
 	new_version = MyMalloc(strlen(ADD_VERSION) + strlen(ver) + 1);
@@ -689,14 +674,10 @@ char *make_isupport()
 	p +=4;
 #endif
 	sprintf(p, "PREFIX="
-#ifdef RUSNET_IRCD
 		"(ohv)@%%+ CODEPAGES"
-#else
-		"(ov)@+"
-#endif
 		" MODES=%d CHANTYPES=#&!+ MAXCHANNELS=%d "
 		"NICKLEN=%d TOPICLEN=%d KICKLEN=%d NETWORK=%s "
-		"CHANMODES=beI,k,l,acimnpqrstz", MAXMODEPARAMS,
+		"CHANMODES=beI,k,l,acimnpqrRstz", MAXMODEPARAMS,
 		MAXCHANNELSPERUSER, NICKLEN, TOPICLEN, TOPICLEN, NETWORKNAME);
 
 	return isupport;
@@ -1080,7 +1061,7 @@ size_t unistrcut (char *line, size_t maxchars)
 
   if (len > maxchars)		/* may be it's already ok */
   {
-#if !defined(CLIENT_COMPILE) && defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#if !defined(CLIENT_COMPILE) && !defined(USE_OLD8BIT)
     if (UseUnicode > 0)		/* let's count chars - works for utf* only!!! */
     {
       register size_t chsize = 0;

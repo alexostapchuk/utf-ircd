@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: msg_def.h,v 1.9 2010-11-10 13:38:39 gvs Exp $
  */
 
 #define MSG_PRIVATE  "PRIVMSG"	/* PRIV */
@@ -28,6 +27,7 @@
 #define MSG_SERVER   "SERVER"	/* SERV */
 #define MSG_LIST     "LIST"	/* LIST */
 #define MSG_TOPIC    "TOPIC"	/* TOPI */
+#define MSG_NTOPIC   "NTOPIC"	/* NTOPIC */
 #define MSG_INVITE   "INVITE"	/* INVI */
 #define MSG_VERSION  "VERSION"	/* VERS */
 #define MSG_QUIT     "QUIT"	/* QUIT */
@@ -81,14 +81,15 @@
 #define MSG_UNKLINE	"UNKLINE"	/* UNKLINE */
 #define MSG_UNELINE	"UNELINE"	/* UNELINE (un-EXEMPT) */
 
-#ifdef RUSNET_IRCD
 #define MSG_CODEPAGE	"CODEPAGE"	/* RUSNET CODEPAGE SYSTEM - obsolete */
 #ifndef USE_OLD8BIT
 #define MSG_CHARSET	"CHARSET"	/* IANA CHARSET */
 #endif
-#define MSG_FORCE	"FORCE"		/* RUSNET BROADCAST TRANSIT -- NICKSERV*/
-#define MSG_RMODE	"RMODE"		/* RUSNET SERVER REMOTE USER MODE */
-#define MSG_RCPAGE	"RCPAGE"	/* RUSNET SERVER REMOTE CHANGE CODEPAGE */
+#define MSG_SVSNICK	"SVSNICK"	/* FORCED NICK CHANGE, NEW */
+#define MSG_FORCE	"FORCE"		/* FORCED NICK CHANGE, OLD */
+#define MSG_SVSMODE	"SVSMODE"	/* SERVER REMOTE USER MODE, NEW */
+#define MSG_RMODE	"RMODE"		/* SERVER REMOTE USER MODE, OLD */
+#define MSG_RCPAGE	"RCPAGE"	/* SERVER REMOTE CHANGE CODEPAGE */
 #ifdef RUSNET_RLINES
 # define MSG_RLINE	"RLINE"		/* RUSNET RLINE COMMAND */
 # define MSG_UNRLINE	"UNRLINE"	/* RUSNET UNRLINE COMMAND */
@@ -99,6 +100,5 @@
 #define	MSG_INFOSERV	"INFOSERV"	/* msg to InfoServ service */
 #define	MSG_STATSERV	"STATSERV"	/* msg to StatServ service */
 #define	MSG_OPERSERV	"OPERSERV"	/* msg to OperServ service */
-#endif
 
 #define MAXPARA    15 

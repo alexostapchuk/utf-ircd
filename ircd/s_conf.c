@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_conf.c,v 1.43 2010-11-10 13:38:39 gvs Exp $
  */
  
 /*
@@ -58,7 +57,7 @@
 #define S_CONF_C
 #include "s_externs.h"
 #undef S_CONF_C
-#if defined(RUSNET_IRCD) && defined(USE_OLD8BIT)
+#ifdef USE_OLD8BIT
 extern  char    *rusnetfile;
 #endif
 
@@ -69,11 +68,9 @@ static	int	lookup_confhost(aConfItem *);
 
 aConfItem	*conf = NULL;
 aConfItem	*kconf = NULL;
-#ifdef RUSNET_IRCD
 aConfItem	*econf = NULL;
 #ifdef RUSNET_RLINES
 aConfItem	*rconf = NULL;
-#endif
 #endif
 
 /*
@@ -248,9 +245,9 @@ char	*sockhost;
 attach_iline:
 		if (aconf->status & CONF_RCLIENT)
 			SetRestricted(cptr);
-#ifdef RUSNET_IRCD
+
 		cptr->flood = aconf->localpref;
-#endif
+
 		get_sockhost(cptr, uhost);
 		if ((i = attach_conf(cptr, aconf)) < -1) {
 			if (find_bounce(cptr, ConfClass(aconf), -1) == 0)
@@ -441,11 +438,8 @@ aClient *cptr;
 				    (ConfMaxHLocal(aconf) > 0 ||
 				     ConfMaxUHLocal(aconf) > 0))
 					continue;
-#ifdef RUSNET_IRCD
+
 				if (!strcmp(cptr->sockhost, acptr->sockhost))
-#else
-				if (!strcmp(cptr->sockhost, acptr->user->host))
-#endif
 				    {
 					if (ConfMaxHGlobal(aconf) > 0 &&
 					    ++ghcnt >= ConfMaxHGlobal(aconf)
@@ -791,7 +785,7 @@ u_int	mask;
 	return bconf;
 }
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 static int find_conf_listener (char *charset)
 {
 	Reg	aConfItem *aconf;
@@ -967,10 +961,9 @@ int	status;
 	ircd_res_init(); /* Re-read resolv.conf */
     }
 
-#ifdef RUSNET_IRCD
     if ((status & REHASH_ALL) || (status & REHASH_C))
 	rusnet_free_routes();
-#endif
+
 #ifdef LOG_EVENTS
     if (status & REHASH_ALL)
 	log_closeall();
@@ -1184,7 +1177,7 @@ int	init_flags;
 	char	*line;
 	aConfig	*ConfigTop, *p;
 	FILE	*fdn;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	conversion_t *conv;
 	char	line2[4096];
 	unsigned char *rline;
@@ -1213,7 +1206,7 @@ int	init_flags;
 		}
 		return -1;
 	}
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	conv = conv_get_conversion(config_charset);
 #endif
 	ConfigTop = config_read(fdn, 0, new_config_file(configfile, NULL, 0));
@@ -1267,10 +1260,14 @@ int	init_flags;
 			tmp2 = NULL;
 		    }
 		tmp3 = tmp4 = NULL;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
-		rline = line2;
-		len = conv_do_in(conv, line, strlen(line), &rline, sizeof(line2));
-		rline[len] = '\0';
+#ifndef USE_OLD8BIT
+		if (conv)
+		{
+			rline = line2;
+			len = conv_do_in(conv, line, strlen(line),
+							&rline, sizeof(line2));
+			rline[len] = '\0';
+		}
 		tmp = getfield(rline);
 #else
 		tmp = getfield(line);
@@ -1304,12 +1301,10 @@ int	init_flags;
 			case 'e':
 			        aconf->status = CONF_EXEMPT;
 		        	break;
-#ifdef RUSNET_IRCD
 			case 'F': /* virtual interface to fasten to when  */
 			case 'f': /* connecting to the server mentioned */
 			        aconf->status = CONF_INTERFACE;
 		        	break;
-#endif
 			case 'H': /* Hub server line */
 			case 'h':
 				aconf->status = CONF_HUB;
@@ -1424,10 +1419,7 @@ int	init_flags;
 #ifdef USE_SSL
 				|CONF_SSL_LISTEN_PORT
 #endif
-# ifdef RUSNET_IRCD
-				|CONF_INTERFACE
-# endif /* RUSNET_IRCD */
-				|CONF_SERVICE))
+					|CONF_INTERFACE|CONF_SERVICE))
 				aconf->host = ipv6_convert(tmp);
 			else
 #endif
@@ -1437,7 +1429,7 @@ int	init_flags;
 			DupString(aconf->passwd, tmp);
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
-#if defined( RUSNET_IRCD ) && defined( INET6 )
+#ifdef	INET6
 			if (aconf->status & CONF_INTERFACE)
 				aconf->name = ipv6_convert(tmp);
 			else
@@ -1497,10 +1489,6 @@ int	init_flags;
 		/*
 		** Bounce line fields are mandatory
 		*/
-#ifndef RUSNET_IRCD
-		if (aconf->status == CONF_BOUNCE && aconf->port == 0)
-			continue;
-#endif
 #ifdef LOG_EVENTS
 		if (aconf->status == CONF_LOG)
 			log_open(aconf);
@@ -1557,7 +1545,7 @@ int	init_flags;
 					bconf->class = aconf->class;
 					bconf->class->links += bconf->clients;
 				    }
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 				else if (aconf->status & (CONF_LISTEN_PORT
 #ifdef USE_SSL
 							|CONF_SSL_LISTEN_PORT
@@ -1656,7 +1644,7 @@ int	init_flags;
 			else
 				aconf->ping->port = aconf->port;
 		    }
-#ifdef RUSNET_IRCD
+
 		/* we want autoconnect links prioritized */
 		if (aconf->status & (CONF_CLIENT | CONF_RCLIENT |
 				CONF_CONNECT_SERVER | CONF_ZCONNECT_SERVER |
@@ -1669,7 +1657,6 @@ int	init_flags;
 						(BadPtr(aconf->passwd)) ?
 						"[Unnamed]" : aconf->passwd);
 		    }
-#endif
 		    
 		/*
 		** Name cannot be changed after the startup.
@@ -1726,7 +1713,7 @@ int	init_flags;
 	    }
 	if (aconf)
 		free_conf(aconf);
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	if (UseUnicode == -1) /* didn't set from config, so use default */
 		set_internal_encoding(NULL, NULL);
 	conv_free_conversion(conv);
@@ -1928,7 +1915,11 @@ aConfItem	*aconf;
 	return (0);
     sprintf(userhost, "%s@%s", user, host);
     
+#if	defined(INET6) && defined(USE_VHOST6)
+    if (strstr(host, ip) == host) {
+#else	/* INET6 && USE_VHOST6 */
     if (!strcmp(host, ip)) {
+#endif	/* INET6 && USE_VHOST6 */
 	*userip = '\0'; /* we don't have a name for the ip# */
     } else {
 	sprintf(userip, "%s@%s", user, ip);
@@ -2173,7 +2164,6 @@ int	class, fd;
 			    {
 				char rpl[BUFSIZE];
 
-#ifdef RUSNET_IRCD
 				sprintf(rpl, rpl_str(RPL_BOUNCE,"unknown"),
 					aconf->name, (aconf->port) ?
 					aconf->port :
@@ -2182,10 +2172,6 @@ int	class, fd;
 # else
 					rusnet_getclientport(fd));
 # endif
-#else
-				sprintf(rpl, rpl_str(RPL_BOUNCE,"unknown"),
-					aconf->name, aconf->port);
-#endif
 				strcat(rpl, "\r\n");
 #ifdef INET6
 				sendto(fd, rpl, strlen(rpl), 0, 0, 0);
@@ -2222,14 +2208,12 @@ int	class, fd;
 			return 0;	/* (server not in network)  --erra */
 
 		sendto_one(cptr, rpl_str(RPL_BOUNCE, cptr->name), aconf->name,
-#ifdef RUSNET_IRCD
 				(!aconf->port) ?
 # ifndef USE_OLD8BIT
 				find_conf_listener (conv_charset(cptr->conv)) :
 # else
 				rusnet_getclientport(cptr->acpt->fd) :
 # endif
-#endif
 				aconf->port);
 		return 1;
 	    }

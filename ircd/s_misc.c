@@ -19,7 +19,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_misc.c,v 1.30 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -27,7 +26,7 @@
 #define S_MISC_C
 #include "s_externs.h"
 #undef S_MISC_C
-#if defined(RUSNET_IRCD) && defined(IRCD_CHANGE_LOCALE) && !defined(USE_OLD8BIT)
+#if defined(IRCD_CHANGE_LOCALE) && !defined(USE_OLD8BIT)
 #include <locale.h>
 #endif
 
@@ -151,7 +150,6 @@ aClient	*sptr;
 	return 0;
 }
 
-#ifdef RUSNET_IRCD
 /*
 ** get_client_xname
 **      Return the name of the client for m_trace
@@ -202,7 +200,6 @@ int	isop;
 	    }
 	return sptr->name;
 }
-#endif
 
 /*
 ** get_client_name
@@ -313,6 +310,7 @@ Reg	aClient	*cptr;
 Reg	char	*host;
 {
 	Reg	char	*s;
+
 	if ((s = (char *)index(host, '@')))
 		s++;
 	else
@@ -445,12 +443,7 @@ char	*comment;	/* Reason for the exit */
 		if (IsPerson(sptr))
 		    {
 			sendto_flog(sptr, EXITC_REG, sptr->user->username,
-# ifdef RUSNET_IRCD
-				    sptr->sockhost
-# else
-				    sptr->user->host
-# endif
-							);
+				    sptr->sockhost);
 		    }
                 else if (!IsService(sptr))
                 {
@@ -654,7 +647,7 @@ char	*comment;	/* Reason for the exit */
 			    cptr->name, comment);
 	
 	exit_one_client(cptr, sptr, from, (*comment1) ? comment1 : comment);
-	return cptr == sptr ? FLUSH_BUFFER : 0;
+	return !cptr || cptr == sptr ? FLUSH_BUFFER : 0;
     }
 
 /*
@@ -710,10 +703,10 @@ char	*comment;
 		(void) del_from_server_hash_table(sptr->serv, cptr ? cptr :
 						  sptr->from);
 	} else if (!IsPerson(sptr) && !IsService(sptr))
-				    /* ...this test is *dubious*, would need
-				    ** some thought.. but for now it plugs a
-				    ** nasty hole in the server... --msa
-				    */
+		    /*
+		    ** This is condition for unauthorized and rejected
+		    ** connections (servers and clients) logged elsewhere --erra
+		    */
 		;
 	else if (sptr->name[0] && !IsService(sptr)) /* clean with QUIT... */
 	    {
@@ -863,7 +856,6 @@ char	*comment;
 		istat.is_service--;
 	    }
 
-#ifdef RUSNET_IRCD
 	if (sptr->flags & FLAGS_COLLMAP)
 		if (!MyConnect(sptr) && sptr->from)	/* it can't be local client */
 			del_from_collision_map(sptr->name, sptr->from->serv->crc);
@@ -873,7 +865,6 @@ char	*comment;
 #ifndef USE_OLD8BIT
 	/* conversion was activated so uncount it */
 	conv_free_conversion(sptr->conv);
-#endif
 #endif
 	/* Remove sptr from the client list */
 	if (del_from_client_hash_table(sptr->name, sptr) != 1)
@@ -1087,7 +1078,7 @@ char *filename;
 	struct stat Sb;
 	char line[80];
 	register char *tmp;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	conversion_t *conv;
 	char line2[512];
 	unsigned char *rline;
@@ -1122,7 +1113,7 @@ char *filename;
 	    }
 
 	last = NULL;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	conv = conv_get_conversion(config_charset);
 #endif
 	while (NULL != (fgets(line, sizeof(line), f)))
@@ -1132,7 +1123,7 @@ char *filename;
 		else if ((tmp = strchr(line, '\n')) != NULL)
 			*tmp = (char) 0;
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		rline = line2;
 		len = conv_do_in(conv, line, strlen(line), &rline, sizeof(line2));
 		rline[len] = 0;
@@ -1140,7 +1131,7 @@ char *filename;
 		temp = (aMotd *)MyMalloc(sizeof(aMotd));
 		if (!temp)
 			outofmemory();
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		temp->line = mystrdup(rline);
 #else
 		temp->line = mystrdup(line);
@@ -1153,12 +1144,12 @@ char *filename;
 		last = temp;
 	    }
 	close(fd);
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	conv_free_conversion(conv);
 #endif
 }     
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 void set_internal_encoding(aClient *cptr, aConfItem *aconf)
 {
     conversion_t *old = NULL, *conv;

@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: res.c,v 1.12 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -24,11 +23,15 @@
 #include "s_externs.h"
 #undef RES_C
 
-/* #undef	DEBUG	/* because there is a lot of debug code in here :-) */
+#ifdef USE_LIBIDN
+#include <idna.h>		/* idna_to_unicode_8z8z()	*/
+#endif
 
-static	char	hostbuf[HOSTLEN+1+100]; /* +100 for INET6 */
+#undef	DEBUG	/* because there is a lot of debug code in here :-) */
+
+static	char	hostbuf[HOSTLEN+101]; /* +100 for INET6 */
 /* Second buffer for answers containing more than one hostname -kmale */
-static	char	hostbuf2[HOSTLEN+1+100]; /* +100 for INET6 */
+static	char	hostbuf2[HOSTLEN+101]; /* +100 for INET6 */
 static	char	dot[] = ".";
 static	int	incache = 0;
 static	CacheTable	hashtable[ARES_CACSIZE];
@@ -52,7 +55,11 @@ static	ResRQ	*find_id(int);
 static	int	hash_number(unsigned char *);
 static	void	update_list(ResRQ *, aCache *);
 static	int	hash_name(char *);
-static	int	bad_hostname(char *, int);
+static	int	bad_hostname(char *, int
+#ifdef USE_LIBIDN
+					, int
+#endif
+						);
 
 static	struct cacheinfo {
 	int	ca_adds;
@@ -748,7 +755,11 @@ HEADER	*hptr;
 #endif
 			if (!hp->h_name && len < HOSTLEN)
 			    {
-				if (bad_hostname(hostbuf, len))
+				if (bad_hostname(hostbuf, len
+#ifdef USE_LIBIDN
+								, 1
+#endif
+									))
 					return -1;
 				hp->h_name =(char *)MyMalloc(len+1);
 				(void)strcpy(hp->h_name, hostbuf);
@@ -773,7 +784,11 @@ HEADER	*hptr;
 			    }
 			Debug((DEBUG_INFO, "got host %s (%d vs %d)",
 				hostbuf, len, strlen(hostbuf)));
-			if (bad_hostname(hostbuf, len))
+			if (bad_hostname(hostbuf, len
+#ifdef USE_LIBIDN
+							, 0
+#endif
+								))
 				return -1;
 			/*
 			 * copy the returned hostname into the host name
@@ -810,7 +825,13 @@ HEADER	*hptr;
 			    }
 			cp += dlen;
 			Debug((DEBUG_INFO,"got cname %s for alias %s",hostbuf2,hostbuf));
-			if (bad_hostname(hostbuf, len) || bad_hostname(hostbuf2, len2))
+#ifdef USE_LIBIDN
+			if (bad_hostname(hostbuf, len, 1) ||
+				bad_hostname(hostbuf2, len2, 0))
+#else
+			if (bad_hostname(hostbuf, len) ||
+				bad_hostname(hostbuf2, len2))
+#endif
 				return -3; /* a break would be enough here */
 			if (alias >= &(hp->h_aliases[MAXALIASES-1]))
 				break;
@@ -1815,10 +1836,19 @@ char	*nick;
 	return ts + sm + im + nm;
 }
 
-
-static	int	bad_hostname(name, len)
+/*
+ * here we can use libidn to obtain domain name in UTF-8  --erra
+ */
+static	int	bad_hostname(name, len
+#ifdef USE_LIBIDN
+				, convert
+#endif
+					)
 char *name;
 int len;
+#ifdef USE_LIBIDN
+int convert;
+#endif
 {
 	char	*s, c;
 
@@ -1856,5 +1886,19 @@ int len;
 		    (c == '*') || (c == '?'))
 			return -1;
 #endif /* RESTRICT_HOSTNAMES */
+#ifdef USE_LIBIDN
+	if (strstr(name, IDNA_ACE_PREFIX))	/* "xn--" */
+	{
+		char	*idn;
+		int	rc = idna_to_unicode_8z8z(name, &idn, 0);
+
+		if (rc == IDNA_SUCCESS && convert)
+			strcpy(name, idn);
+
+		free(idn);
+
+		return rc;
+	}
+#endif
 	return 0;
 }

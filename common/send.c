@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: send.c,v 1.29 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -31,7 +30,7 @@ static void	vsendto_prefix_one(aClient *, aClient *, char *, va_list);
 
 
 #ifndef CLIENT_COMPILE
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 /* I hope it's enough since RFC max message size is 512
    note: it may be static until ircd is multithreaded */
 static	char	convbuf[2048];
@@ -112,7 +111,7 @@ char	*str;
     {
 	int	retval;
 	aClient	*acpt = cptr->acpt;
-#if !defined(CLIENT_COMPILE) && defined(RUSNET_IRCD) && defined(USE_OLD8BIT)
+#if !defined(CLIENT_COMPILE) && defined(USE_OLD8BIT)
 	unsigned char *rusnet_buf;	/* RusNet extensions */
 #endif
 
@@ -122,7 +121,7 @@ char	*str;
 #ifndef	NOWRITEALARM
 	(void)alarm(WRITEWAITDELAY);
 #endif
-#if !defined(CLIENT_COMPILE) && defined(RUSNET_IRCD) && defined(USE_OLD8BIT)
+#if !defined(CLIENT_COMPILE) && defined(USE_OLD8BIT)
 	if (cptr->transptr)
 	{
 		rusnet_buf = MyMalloc(len);
@@ -209,7 +208,7 @@ char	*str;
 			me.sendB &= 0x03ff;
 		    }
 	    }
-#if !defined(CLIENT_COMPILE) && defined(RUSNET_IRCD) && defined(USE_OLD8BIT)
+#if !defined(CLIENT_COMPILE) && defined(USE_OLD8BIT)
 	if (cptr->transptr)
 		MyFree (rusnet_buf);	/* Rusnet extensions */
 #endif
@@ -317,23 +316,27 @@ int	len;
 {
 	int i;
 
-	Debug((DEBUG_SEND,"Sending %s %d [%s] ", to->name, to->fd, msg));
-
+	/* replace remote client with its server */
 	if (to->from)
 		to = to->from;
+
+	Debug((DEBUG_SEND,"Sending %s %d [%s] ",
+		to->name, to->fd, msg ? msg : "FLUSH"));
+
+	if (IsDead(to))
+		return 0; /* This socket has already been marked as dead */
+
 	if (to->fd < 0)
 	    {
 		Debug((DEBUG_ERROR,
-		       "Local socket %s with negative fd... AARGH!",
-		      to->name));
+		       "Local socket %s with negative fd... AARGH!", to->name));
 	    }
 	if (IsMe(to))
 	    {
-		sendto_flag(SCH_ERROR, "Trying to send to myself! [%s]", msg);
+		sendto_flag(SCH_ERROR, "Trying to send to myself! [%s]",
+							msg ? msg : "FLUSH");
 		return 0;
 	    }
-	if (IsDead(to))
-		return 0; /* This socket has already been marked as dead */
 	if (DBufLength(&to->sendQ) > get_sendq(to))
 	{
 # ifdef HUB
@@ -367,7 +370,7 @@ int	len;
 				"Max Sendq exceeded");
 		}
 	}
-# if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+# ifndef USE_OLD8BIT
 	if (to->conv) /* do conversion right before compression */
 	{
 	    char *msgs = msg;
@@ -591,8 +594,8 @@ static	anUser	ausr = { NULL, NULL, NULL, NULL, 0, 0, 0, 0, NULL,
 static	aClient	anon = { NULL, NULL, NULL, &ausr, NULL, NULL, 0, 0,/*flags*/
 			 &anon, -2, 0, STAT_CLIENT, "anonymous", "anonymous",
 			 "anonymous identity hider", "anonymous.in.IRC",
-# if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
-			 NULL, "",
+# ifndef USE_OLD8BIT
+			 "",
 # endif
 			 0, "",
 # ifdef	ZIP_LINKS
@@ -618,7 +621,7 @@ static size_t end_line(char *line, size_t len)
 #endif
   if (newlen > len)	/* may be it's already ok */
   {
-#if !defined(CLIENT_COMPILE) && defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#if !defined(CLIENT_COMPILE) && !defined(USE_OLD8BIT)
     if (UseUnicode)	/* let's count chars - works for utf* only!!! */
     {
       register size_t chsize = 0;
@@ -685,14 +688,8 @@ static	int	vsendpreprep_old(aClient *to, aClient *from, char *pattern, va_list v
 				    {
 					(void)strcat(psendbuf, "@");
 					(void)strcat(psendbuf,
-#ifdef RUSNET_IRCD
 						(user->flags & FLAGS_VHOST) ?
-#endif
-							user->host
-#ifdef RUSNET_IRCD
-							: from->sockhost
-#endif
-									);
+						user->host : from->sockhost);
 					flag = 1;
 				    }
 			    }
@@ -703,11 +700,11 @@ static	int	vsendpreprep_old(aClient *to, aClient *from, char *pattern, va_list v
 			if (!flag && MyConnect(from) && *user->host)
 			    {
 				(void)strcat(psendbuf, "@");
-#ifdef RUSNET_IRCD
-				if (user->flags & FLAGS_VHOST)
-#else
-				if (IsUnixSocket(from))
+				if (user->flags & FLAGS_VHOST
+#ifdef UNIXPORT
+							|| IsUnixSocket(from)
 #endif
+				)
 				    (void)strcat(psendbuf, user->host);
 				else
 				    (void)strcat(psendbuf, from->sockhost);
@@ -755,19 +752,15 @@ static	int	vsendpreprep(aClient *to, aClient *from, char *pattern, va_list va)
 
 		if (from == &anon || !mycmp(par, from->name))
 		{
-#ifdef RUSNET_IRCD
 			if (from->user->flags & FLAGS_VHOST)
-			    len = sprintf(psendbuf, ":%s!%s@%s", from->name,
-				from->user->username, from->user->host);
+				len = sprintf(psendbuf, ":%s!%s@%s", from->name,
+					from->user->username, from->user->host);
 			else
-#endif	
-			len = sprintf(psendbuf, ":%s!%s@%s", from->name,
-				from->user->username, from->sockhost);
+				len = sprintf(psendbuf, ":%s!%s@%s", from->name,
+					from->user->username, from->sockhost);
 		}
 		else
-		{
 			len = sprintf(psendbuf, ":%s", par);
-		}
 
 		len += vsprintf(psendbuf+len, pattern+3, va);
 	}
@@ -1103,6 +1096,7 @@ void	sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
 	Reg	Link	*lp;
 	Reg	aClient	*acptr, *lfrm = from;
 	int	len = 0;
+	char	*msg, err[] = "message discarded (colors disallowed)";
 
 	if (MyClient(from))
 	    {	/* Always send to the client itself */
@@ -1113,6 +1107,7 @@ void	sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
 		if (IsQuiet(chptr))	/* Really shut up.. */
 			return;
 	    }
+
 	if (IsAnonymous(chptr) && IsClient(from))
 	    {
 		lfrm = &anon;
@@ -1127,8 +1122,14 @@ void	sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
 				va_start(va, pattern);
 				len = vsendpreprep(acptr, lfrm, pattern, va);
 				va_end(va);
+				if (chptr->mode.mode & MODE_NOCOLOR &&
+							strchr(psendbuf, 0x03))
+					msg = err;
+				else
+					msg = psendbuf;
 			    }
-			(void)send_message(acptr, psendbuf, len);
+
+			(void)send_message(acptr, msg, len);
 		    }
 
 	return;
@@ -1149,11 +1150,7 @@ int	what;
 	switch (what)
 	{
 	case MATCH_HOST:
-#ifdef RUSNET_IRCD
 		return (match(mask, one->sockhost) == 0);
-#else
-		return (match(mask, one->user->host) == 0);
-#endif
 	case MATCH_SERVER:
 	default:
 		return (match(mask, one->user->server)==0);
@@ -1189,9 +1186,6 @@ void	sendto_match_servs(aChannel *chptr, aClient *from, char *format, ...)
 			continue;
 		if (!BadPtr(mask) && match(mask, cptr->name))
 			continue;
-		if (chptr &&
-		    *chptr->chname == '!' && !(cptr->serv->version & SV_NJOIN))
-			continue;
 		if (!len)
 		    {
 			va_list	va;
@@ -1226,9 +1220,6 @@ int	sendto_match_servs_v(aChannel *chptr, aClient *from, int ver,
 		    IsMe(cptr))
 			continue;
 		if (!BadPtr(mask) && match(mask, cptr->name))
-			continue;
-		if (chptr &&
-		    *chptr->chname == '!' && !(cptr->serv->version & SV_NJOIN))
 			continue;
 		if ((ver & cptr->serv->version) == 0)
 		    {
@@ -1270,9 +1261,6 @@ int	sendto_match_servs_notv(aChannel *chptr, aClient *from, int ver,
 		    IsMe(cptr))
 			continue;
 		if (!BadPtr(mask) && match(mask, cptr->name))
-			continue;
-		if (chptr &&
-		    *chptr->chname == '!' && !(cptr->serv->version & SV_NJOIN))
 			continue;
 		if ((ver & cptr->serv->version) != 0)
 		    {

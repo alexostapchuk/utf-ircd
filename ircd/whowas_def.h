@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: whowas_def.h,v 1.6 2010-11-10 13:38:39 gvs Exp $
  */
 
 typedef struct aname {
@@ -23,17 +22,15 @@ typedef struct aname {
 	aClient	*ww_online;
 	time_t	ww_logout;
 	char	ww_nick[UNINICKLEN + 1];
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	ww_info[MB_LEN_MAX*REALLEN + 1];
 #else
 	char	ww_info[REALLEN + 1];
 #endif
-#ifdef RUSNET_IRCD
 #ifndef USE_OLD8BIT
 	char	ww_ucnick[UNINICKLEN+1]; /* for comparisons */
 #endif
 	char	ww_host[HOSTLEN + 1];
-#endif
 } aName;
 
 typedef struct alock {

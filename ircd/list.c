@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: list.c,v 1.21 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -120,8 +119,12 @@ aClient	*make_client(aClient *from)
 		cptr->auth = cptr->username;
 		cptr->exitc = EXITC_UNDEF;
 		cptr->receiveB = cptr->sendB = cptr->receiveM = cptr->sendM = 0;
+		cptr->held = 0;
 #ifdef	ZIP_LINKS
 		cptr->zip = NULL;
+#endif
+#ifndef USE_OLD8BIT
+		cptr->conv = NULL;
 #endif
 #ifdef	DEBUGMODE
 		cloc.inuse++;
@@ -131,9 +134,6 @@ aClient	*make_client(aClient *from)
 		crem.inuse++;
 #endif
 	    }
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
-	cptr->conv = NULL;
-#endif
 	return (cptr);
 }
 
@@ -276,24 +276,12 @@ void	free_user(anUser *user)
 #ifdef DEBUGMODE
 			dumpcore("%p user (%s!%s@%s) %s",
 				(void *)cptr, cptr ? cptr->name : "<noname>",
-				user->username, 
-#ifdef RUSNET_IRCD
-				cptr->sockhost
-#else
-				user->host
-#endif				
-				, buf);
+				user->username, cptr->sockhost, buf);
 #else
 			sendto_flag(SCH_ERROR,
 				"* %p user (%s!%s@%s) %s *",
 				(void *)cptr, cptr ? cptr->name : "<noname>",
-				user->username, 
-#ifdef RUSNET_IRCD
-				cptr->sockhost
-#else
-				user->host
-#endif
-				, buf);
+				user->username, cptr->sockhost, buf);
 #endif
 		}
 

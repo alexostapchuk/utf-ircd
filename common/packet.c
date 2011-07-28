@@ -16,7 +16,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: packet.c,v 1.7 2010-11-10 13:38:39 gvs Exp $
+ *   $Id$
  */
 
 #include "os.h"
@@ -50,7 +50,7 @@ Reg	int	length;
 {
 	Reg	char	*ch1;
 	Reg	char	*ch2, *bufptr;
-#if !defined(CLIENT_COMPILE) && defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#if !defined(CLIENT_COMPILE) && !defined(USE_OLD8BIT)
 	unsigned char	*ch3;
 #endif
 	aClient	*acpt = cptr->acpt;
@@ -149,7 +149,7 @@ Reg	int	length;
 					 ** FLUSH_BUFFER without removing the
 					 ** structure pointed by cptr... --msa
 					 */
-#if !defined(CLIENT_COMPILE) && defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#if !defined(CLIENT_COMPILE) && !defined(USE_OLD8BIT)
 			if (cptr->conv) /* do conversion right before parsing */
 			{
 			/* we will use static buffer until we get multithreaded */

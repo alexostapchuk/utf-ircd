@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: hash_def.h,v 1.8 2010-11-10 13:38:39 gvs Exp $
  */
 
 typedef	struct	hashentry {
@@ -24,14 +23,12 @@ typedef	struct	hashentry {
 	void	*list;
 } aHashEntry;
 
-#ifdef RUSNET_IRCD
 typedef struct CollMap {
 	char	nick[UNINICKLEN + 1];
 	char	collnick[UNINICKLEN + 1];
 	unsigned long	id;	 /* neighbour which announced the client */
 	time_t	tstamp;	 /* time stamp for expiry */
 } aCollMap;
-#endif
 
 /*
  * it is not important for these to be "big" as ircd will make them grow

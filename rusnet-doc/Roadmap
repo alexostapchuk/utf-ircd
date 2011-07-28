@@ -12,7 +12,31 @@ Legend
 [R] refused or postponed
 
 
-Version 1.4.3
+Version 2.0
+-------------
+[$] Topic burst on connect
+[$] Usermode +I (identified nick) -erra
+[$] Usermode +R (registered nicks only) -erra
+[$] Chanmode +R (registered nicks only) -erra
+[ ] Add nick-user-host and timestamp to b/e/I modelists  -erra
+[ ] Re-write iauth, add sendheaders[], etc
+[$] STATS l to show l:lines (logging)  -erra
+[ ] Implement EOB protocol commands
+[ ] Masked server groups support with EOB
+[$] libidn support (UTF domain names)  -erra
+[$] Prohibit colored messages in PART and QUIT for colorless (+c) channels -erra
+[$] SVSNICK/SVSMODE support  -erra
+[$] Guardian timeout (1 minute) for enforced nick changes  -erra
+
+Version 1.5
+-------------
+[+] UTF-8 support, server-to-server UTF-8 connections  -LoSt
+[+] Redefine config charset instead of internal locale setting  -LoSt
+[R] Make all the configuration parsing by yacc  -skold
+[+] Reopen ircd.log (debug log file) on SIGHUP  -LoSt
+[R] Make real iconv and locale check via setlocale in configure
+
+Version 1.4
 -------------
 [+] SSL support for client links - p: lines in ircd.conf
 [R] LazyLinks. We definitely do not need this at the moment -skold
@@ -37,20 +61,3 @@ Version 1.4.3
 [+] flexible logging configuration in ircd.conf  -lost
 [+] disregard bounce (B:) and seek for another I: when server not
     in a network  -erra
-
-Version 1.5
--------------
-[+] UTF-8 support, server-to-server UTF-8 connections  -LoSt
-[+] Redefine config charset instead of internal locale setting  -LoSt
-[ ] Topic burst on connect  -skold
-[ ] Make all the configuration parsing by yacc  -skold
-[ ] Usermode +I (identified nick) -baron
-[ ] Usermode +R (registered nicks only) -baron
-[ ] Chanmode +R (registered nicks only) -baron
-[ ] Add nick-user-host and timestamp to b/e/I modelists  -erra
-[ ] Re-write iauth, add sendheaders[], etc -skold
-[ ] STATS l to show l:lines (logging) -baron
-[ ] Implement EOB protocol commands -skold
-[ ] Masked server groups support with EOB -skold
-[+] Reopen ircd.log (debug log file) on SIGHUP  -LoSt
-[ ] Make real iconv and locale check via setlocale in configure

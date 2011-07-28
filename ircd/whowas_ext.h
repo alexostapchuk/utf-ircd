@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: whowas_ext.h,v 1.7 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -45,7 +44,7 @@ EXTERN int m_whowas(aClient *cptr, aClient *sptr, int parc,
 			 char *parv[]);
 EXTERN void count_whowas_memory(int *wwu, int *wwa, u_long *wwam,
 				     int *wwuw);
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 EXTERN void transcode_history(conversion_t *old);
 #endif
 #undef EXTERN

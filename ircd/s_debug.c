@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_debug.c,v 1.12 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -60,7 +59,7 @@ char	serveropts[] = {
 #ifdef	SUN_GSO_BUG
 'g',
 #endif
-#if defined(RUSNET_IRCD) && (defined(USE_OLD8BIT) || !defined(IRCD_CHANGE_LOCALE))
+#if defined(USE_OLD8BIT) || !defined(IRCD_CHANGE_LOCALE)
 'G',
 #endif
 #ifdef	HUB
@@ -109,7 +108,7 @@ char	serveropts[] = {
 #ifdef	CRYPT_LINK_PASSWORD
 'P',
 #endif
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT) && defined(DO_TEXT_REPLACE)
+#if !defined(USE_OLD8BIT) && defined(DO_TEXT_REPLACE)
 'q',
 #endif
 #if defined(LOCOP_RESTART) && defined(OPER_RESTART)
@@ -170,11 +169,14 @@ char	serveropts[] = {
 #ifdef INET6
 '6',
 #endif
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT) && !defined(LOCALE_STRICT_NAMES)
+#if !defined(USE_OLD8BIT) && !defined(LOCALE_STRICT_NAMES)
 '8',
 #endif
 #ifdef USE_SSL
 '+', 'S', 'S', 'L',
+#endif
+#ifdef USE_LIBIDN
+'+', 'I', 'D', 'N',
 #endif
 '\0'};
 
@@ -519,7 +521,7 @@ int	debug;
 			    {
 				d_chb++;
 				d_chbm += strlen(link->value.cp) + 1;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 				d_chbm += strlen(link->ucp) + 1;
 #endif
 			    }

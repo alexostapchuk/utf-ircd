@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: os.h,v 1.12 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file contains the various system-relative "#include" lines needed for
@@ -690,6 +689,10 @@ extern int h_errno;
  *  IPv4 or IPv6 structures?
  */
 
+# define MYDUMMY_SIZE 128
+char mydummy[MYDUMMY_SIZE];
+char mydummy2[MYDUMMY_SIZE];
+
 #ifdef INET6
 
 # define AND16(x) ((x)[0]&(x)[1]&(x)[2]&(x)[3]&(x)[4]&(x)[5]&(x)[6]&(x)[7]&(x)[8]&(x)[9]&(x)[10]&(x)[11]&(x)[12]&(x)[13]&(x)[14]&(x)[15])
@@ -703,10 +706,6 @@ extern int h_errno;
 # define	SIN_ADDR	sin6_addr
 # define	S_ADDR		s6_addr
 # define	IN_ADDR		in6_addr
-
-# define MYDUMMY_SIZE 128
-char mydummy[MYDUMMY_SIZE];
-char mydummy2[MYDUMMY_SIZE];
 
 #else /* INET6 */
 

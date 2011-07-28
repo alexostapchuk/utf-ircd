@@ -16,7 +16,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: i_io.c,v 1.4 2010-11-10 13:38:39 gvs Exp $
+ *   $Id$
  */
 
 #include "os.h"
@@ -46,9 +46,6 @@ static void
 parse_ircd()
 {
 	char *ch, *buf = iobuf;
-#ifdef	INET6
-	char	*i;
-#endif	/* INET6 */
 	DebugLog((DEBUG_RAW, "> parse_ircd()"));
 
 	iobuf[iob_len] = '\0';
@@ -56,11 +53,6 @@ parse_ircd()
 	while (ch = index(buf, '\n'))
 	    {
 		*ch = '\0';
-#ifdef  INET6
-		for (i = buf; i != ch; i++)
-			if (*i == ':')
-				*i = IRCDCONF_DELIMITER;
-#endif  /* INET6 */
 		DebugLog((DEBUG_MISC, "parse_ircd(): got [%s]", buf ? buf : "NULL"));
 		addPendingLine(buf);
 		buf = ch + 1;			/* Leave the rest for the next io cycle */

@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: common_def.h,v 1.10 2010-11-10 13:38:39 gvs Exp $
  */
 
 #ifdef DEBUGMODE
@@ -35,7 +34,7 @@
 				    } while(0)
 #undef tolower
 #define tolower(c)		(tolowertab[(u_char)(c)])
-#if !defined(RUSNET_IRCD) || defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 #undef toupper
 #define toupper(c)		(touppertab[(u_char)(c)])
 #endif
@@ -61,7 +60,7 @@
 #define	BadPtr(x)		(!(x) || (*(x) == '\0'))
 #define EmptyString(x)		(!(x) || (*(x) == '\0'))
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT) && !defined(LOCALE_STRICT_NAMES)
+#if !defined(USE_OLD8BIT) && !defined(LOCALE_STRICT_NAMES)
 #define	isvalid(c) (((c) >= 'A' && (c) <= '~') || isalnum(c) || \
 				(c) == '-' || (c) >= 0xc0 || \
 				((c) >= 0xa3 && (c) <= 0xa7) || \

@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: parse.c,v 1.24 2010-11-10 13:38:39 gvs Exp $
  */
 
 
@@ -27,9 +26,7 @@
 #undef PARSE_C
 
 #ifndef CLIENT_COMPILE
-#ifdef RUSNET_IRCD
 #include "rusnet_cmds_ext.h"
-#endif
 #endif
 
 struct Message msgtab[] = {
@@ -47,6 +44,7 @@ struct Message msgtab[] = {
   { MSG_SERVER,  m_server,   MAXPARA, MSG_LAG|MSG_NOU, 0, 0, 0L},
 #ifndef CLIENT_COMPILE
   { MSG_TRACE,   m_trace,    MAXPARA, MSG_LAG|MSG_REG, 0, 0, 0L},
+  { MSG_NTOPIC,  m_ntopic,   MAXPARA, MSG_LAG|MSG_REG|MSG_NOU, 0, 0, 0L},
 #endif
   { MSG_TOPIC,   m_topic,    MAXPARA, MSG_LAG|MSG_REGU, 0, 0, 0L},
   { MSG_INVITE,  m_invite,   MAXPARA, MSG_LAG|MSG_REGU, 0, 0, 0L},
@@ -55,7 +53,6 @@ struct Message msgtab[] = {
   { MSG_PONG,    m_pong,     MAXPARA, MSG_LAG|MSG_REG, 0, 0, 0L},
   { MSG_ERROR,   m_error,    MAXPARA, MSG_LAG|MSG_REG|MSG_NOU, 0, 0, 0L},
 #ifndef CLIENT_COMPILE
-#ifdef RUSNET_IRCD
   { MSG_CODEPAGE,m_codepage, MAXPARA, MSG_LAG, 0, 0, 0L},
 #ifndef USE_OLD8BIT
   { MSG_CHARSET, m_codepage, MAXPARA, MSG_LAG, 0, 0, 0L},
@@ -85,7 +82,6 @@ struct Message msgtab[] = {
   { MSG_CHANSERV,m_chanserv, 1, MSG_LAG|MSG_REG, 0, 0, 0L},
   { MSG_MEMOSERV,m_memoserv, 1, MSG_LAG|MSG_REG, 0, 0, 0L},
   { MSG_OPERSERV,m_operserv, 1, MSG_LAG|MSG_REG|MSG_OP, 0, 0, 0L},
-#endif /* RUSNET_IRCD */
 #ifdef OPER_TLINE
 # ifdef LOCOP_TLINE
   { MSG_KLINE,   m_kline,    MAXPARA, MSG_LAG|MSG_REG|MSG_OP|MSG_LOP, 0, 0, 0L},
@@ -143,6 +139,8 @@ struct Message msgtab[] = {
   { MSG_SERVLIST,m_servlist, MAXPARA, MSG_LAG|MSG_REG, 0, 0, 0L},
   { MSG_HASH,    m_hash,     MAXPARA, MSG_LAG|MSG_REG, 0, 0, 0L},
   { MSG_DNS,     m_dns,      MAXPARA, MSG_LAG|MSG_REG, 0, 0, 0L},
+  { MSG_SVSNICK, m_svsnick,  MAXPARA, MSG_LAG|MSG_REG|MSG_NOU, 0, 0, 0L},
+  { MSG_SVSMODE, m_svsmode,  MAXPARA, MSG_LAG|MSG_REG|MSG_NOU, 0, 0, 0L},
 #ifdef	OPER_REHASH
   { MSG_REHASH,  m_rehash,   MAXPARA, MSG_REGU|MSG_OP
 # ifdef	LOCOP_REHASH
@@ -476,7 +474,6 @@ char	*buffer, *bufend;
 		if (*sender && IsServer(cptr))
 		    {
 #ifndef	CLIENT_COMPILE
-#ifdef RUSNET_IRCD
 			   /**
 			    ** it's time to look into collision maps
 			    ** and find it there. -erra
@@ -505,7 +502,6 @@ char	*buffer, *bufend;
 					    }
 			    }
 			    else
-#endif /* RUSNET_IRCD */
 #endif /* CLIENT_COMPILE */
 				from = find_client(sender, (aClient *) NULL);
 			if (!from ||
@@ -548,7 +544,7 @@ char	*buffer, *bufend;
 			    }
 			if (from->from != cptr)
 			    {
-#if defined(RUSNET_IRCD) && !defined(CLIENT_COMPILE)
+#ifndef CLIENT_COMPILE
 				/*
 				** We need this kludge in order to avoid 
 				** Fake Prefix for "invincible" clients.

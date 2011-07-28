@@ -8,20 +8,30 @@
 ** hope that it will be useful, but without any warranty. Without even the 
 ** implied warranty of merchantability or fitness for a particular purpose. 
 ** See the GNU General Public License for details.
-** $Id: rusnet_cmds.c,v 1.17 2010-11-10 13:38:39 gvs Exp $
 **/
+
+#ifndef RUSNET_CMDS_C
+#define RUSNET_CMDS_C
  
 #include "os.h"
 #include "s_defines.h"
 #include "match_ext.h"
 #include "s_externs.h"
 
-#ifdef RUSNET_IRCD
 #include "rusnet_cmds_ext.h"
 
-#ifndef USE_OLD8BIT
 static void rusnet_changecodepage(struct Client *cptr, char *pageid, char *id)
 {
+#ifdef USE_OLD8BIT
+    FILE *fp;
+    struct Codepage *work = rusnet_getptrbyname(pageid);
+   
+    if (work != NULL) 
+    {
+        cptr->transptr = work;
+        sendto_one(cptr, rpl_str(RPL_CODEPAGE, id), pageid);
+    }
+#else
     conversion_t *conv = conv_get_conversion(pageid);
    
     if (conv != NULL) 
@@ -52,11 +62,11 @@ static void rusnet_changecodepage(struct Client *cptr, char *pageid, char *id)
 	cptr->conv = conv;
 	sendto_one(cptr, rpl_str(RPL_CODEPAGE, id), pageid);
     }
+#endif
     else 
-	sendto_one(cptr, err_str(ERR_NOCODEPAGE, id), pageid);
+        sendto_one(cptr, err_str(ERR_NOCODEPAGE, id), pageid);
 }
 
-#endif
 int m_codepage(cptr, sptr, parc, parv)
 aClient *cptr;
 aClient *sptr;
@@ -71,11 +81,55 @@ char    *parv[];
 
 #ifdef USE_OLD8BIT
     for (i = 0; parv[1][i] != '\0'; i++) parv[1][i] = toupper(parv[1][i]); 
+#else
+    /* it is save to overwrite the string because replacement is shorter */
+    if (!strcasecmp(parv[1], "translit"))
+	strcpy(parv[1], "ascii");
 #endif
- 
+
     rusnet_changecodepage(sptr, parv[1], parv[0]);
 
     return 0;    
+}
+
+int m_svsnick(cptr, sptr, parc, parv)
+aClient *cptr, *sptr;
+int     parc;
+char    *parv[];
+{
+    aClient *acptr;
+
+    if (parc < 4)
+	return -1;
+
+    /* Check if parv[2] is a registered nickname */
+    if (find_client(parv[2], NULL) != NULL)
+	return -1; /* Could not force nickchange, new nick is registered */
+
+    /* Check if parv[1] exists */
+    if ((acptr = find_client(parv[1], NULL)) == NULL)
+	return -1; /* No such user */
+
+    if (MyConnect(acptr))
+    {  
+	char    *pparv[] = { parv[1], parv[2], "1", NULL };
+
+	/* Do nick change procedure */
+	return m_nick(acptr, acptr, 3, pparv);
+    }
+
+	/* Propagate FORCE to single server where $nick is registered */
+	acptr = acptr->from;
+	if (acptr != cptr)	/* Split horizon (prevent loops) */
+	{
+		if (acptr->serv->version & SV_RUSNET2)
+			sendto_one(acptr, "SVSNICK %s %s :%ld",
+						parv[1], parv[2], parv[3]);
+		else
+			sendto_one(acptr, "FORCE %s %s", parv[1], parv[2]);
+	}
+
+	return 0;
 }
 
 int m_force(cptr, sptr, parc, parv)
@@ -83,45 +137,7 @@ aClient *cptr, *sptr;
 int     parc;
 char    *parv[];
 {
-    aClient *acptr, *zptr;
-
-    if (parc < 3)
-	return -1;
-
-    /* Check if parv[2] is a registered nickname */
-    acptr = NULL;
-    if (find_client( parv[2], acptr ) != NULL)
-	return -1; /* Could not force nickchange, new nick is registered */
-
-    /* Check if parv[1] exists and local */
-    acptr = NULL;
-    if ((zptr = find_client( parv[1], acptr )) == NULL)
-	return -1; /* No such user */
-
-    if (MyConnect(zptr))
-    {  
-	char    *pparv[] = { parv[1], parv[2], "1", NULL };
-
-	/* Do nick change procedure */
-	return m_nick(zptr, zptr, 3, pparv);
-    }
-    else
-    {
-	/* Propagate FORCE to single server where $nick is registered */
-	acptr = zptr->from;
-	if (acptr != cptr)			/* Split horizon */
-	  if (acptr->serv->version & SV_FORCE)	/* don't send to old servers */
-		sendto_one(acptr,"FORCE %s %s", parv[1], parv[2]);
-	  else
-	    {
-		char    *pparv[] = { parv[0], parv[1],
-					get_client_name(cptr, TRUE), NULL };
-		/* Do KILL procedure */
-		return m_kill(zptr, zptr, 3, pparv);
-	    }
-    }
-
-    return 0;
+	return m_svsnick(cptr, sptr, parc, parv);
 }
 
 /*
@@ -129,50 +145,53 @@ char    *parv[];
  * parv[1] - username to change mode for
  * parv[2] - modes to change
  */
-int m_rmode(cptr, sptr, parc, parv)
+int m_svsmode(cptr, sptr, parc, parv)
 aClient *cptr, *sptr;
 int     parc;
 char    *parv[];
 {
-    aClient *acptr, *zptr;
+    aClient *acptr;
     char    *s;
 
     if (parc < 3)
 	return -1;
-#if 0
-    /* cut more than 4 parrameters */
-    
-    parv[2][4]='\0';
-#endif
-    /* restricted O line */
 
+    /* prohibit remote O-line */
     if ( *parv[2] == '+' ) 
 	for (s = (char *) parv[2] + 1; *s != '\0'; s++) 
 		if (*s == 'o' || *s == 'O') 
 			return -1 ;
 
     /* Check if parv[1] exists and local */
-
-    acptr = NULL;
-
-    if ((zptr = find_client(parv[1], acptr)) == NULL)
+    if ((acptr = find_client(parv[1], NULL)) == NULL)
 	return -1; /* No such user */
 
-    if (MyConnect(zptr))
+    if (MyConnect(acptr))
     {
 	char    *pparv[] = { parv[1], parv[1], parv[2], NULL };
 	/* Do change mode procedure */
-	return m_umode(&me, zptr, 3, pparv); /* internal fake call */
-    }
-    else
-    {
-      acptr = zptr->from;
-      if ((acptr != cptr) &&                     /* Split horizon */
-	  (acptr->serv->version & SV_RMODE))   /* don't send to old servers */
-	  sendto_one(acptr,"RMODE %s %s", parv[1], parv[2]);
+	return m_umode(&me, acptr, 3, pparv); /* internal fake call */
     }
 
-    return 0;
+	acptr = acptr->from;
+
+	if (acptr != cptr)	/* Split horizon (prevent loops) */
+	{
+		if (acptr->serv->version & SV_RUSNET2)
+			sendto_one(acptr, "SVSMODE %s :%s", parv[1], parv[2]);
+		else
+			sendto_one(acptr,"RMODE %s %s", parv[1], parv[2]);
+	}
+
+	return 0;
+}
+
+int m_rmode(cptr, sptr, parc, parv)
+aClient *cptr, *sptr;
+int     parc;
+char    *parv[];
+{
+	return m_svsmode(cptr, sptr, parc, parv);
 }
 
 int m_rcpage(cptr, sptr, parc, parv)
@@ -202,15 +221,13 @@ char    *parv[];
 #ifdef USE_OLD8BIT
 	for (i = 0; parv[2][i] != '\0'; i++) parv[2][i] = toupper(parv[2][i]); 
 #endif
-
         rusnet_changecodepage(zptr, parv[2], parv[1]);
     }
     else
     {
-      acptr = zptr->from;
-      if ((acptr != cptr) &&                     /* Split horizon */
-	  (acptr->serv->version & SV_RMODE))   /* don't send to old servers */
-	  sendto_one(acptr,"RCPAGE %s %s", parv[1], parv[2]);
+	acptr = zptr->from;
+	if (acptr != cptr)	/* Split horizon */
+		sendto_one(acptr,"RCPAGE %s %s", parv[1], parv[2]);
     }
 
     return 0;

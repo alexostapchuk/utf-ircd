@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_conf_ext.h,v 1.14 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -26,11 +25,9 @@
  */
 #ifndef S_CONF_C
 extern aConfItem *conf, *kconf;
-#ifdef RUSNET_IRCD
 extern aConfItem *econf;
 #ifdef RUSNET_RLINES
 extern aConfItem *rconf;
-#endif
 #endif
 
 /*  External definitions for global functions.
@@ -40,7 +37,7 @@ extern aConfItem *rconf;
 #define EXTERN
 #endif /* S_CONF_C */
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 EXTERN int UseUnicode;
 EXTERN int Force8bit;
 #endif

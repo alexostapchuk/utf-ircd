@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: channel_ext.h,v 1.9 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -37,9 +36,7 @@ extern aChannel *channel;
 #endif /* CHANNEL_C */
 EXTERN void remove_user_from_channel(aClient *sptr, aChannel *chptr);
 EXTERN int is_chan_op(aClient *cptr, aChannel *chptr);
-#ifdef RUSNET_IRCD
 EXTERN int is_chan_halfop(aClient *cptr, aChannel *chptr);
-#endif
 EXTERN int has_voice(aClient *cptr, aChannel *chptr);
 EXTERN int can_send(aClient *cptr, aChannel *chptr);
 EXTERN aChannel *find_channel(Reg char *chname, Reg aChannel *chptr);
@@ -59,13 +56,14 @@ EXTERN int m_part(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int m_kick(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int count_channels(aClient *sptr);
 EXTERN int m_topic(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+EXTERN int m_ntopic(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int m_invite(aClient *cptr, aClient *sptr, int parc,
 			 char *parv[]);
 EXTERN int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN void send_user_joins(aClient *cptr, aClient *user);
 EXTERN time_t collect_channel_garbage(time_t now);
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 EXTERN void transcode_channels(conversion_t *old);
 #endif
 #undef EXTERN

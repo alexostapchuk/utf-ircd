@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: whowas.c,v 1.11 2010-11-10 13:38:39 gvs Exp $
+ *   $Id$
  */
 
 #include "os.h"
@@ -194,15 +194,13 @@ Reg	aClient	*cptr, *nodelay;
 	np->ww_online = (nodelay != NULL) ? nodelay : NULL;
 
 	strncpyzt(np->ww_nick, cptr->name, UNINICKLEN+1);
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	rfcstrtoupper(np->ww_ucnick, cptr->name, sizeof(np->ww_ucnick));
 	strncpyzt(np->ww_info, cptr->info, MB_LEN_MAX*REALLEN+1);
 #else
 	strncpyzt(np->ww_info, cptr->info, REALLEN+1);
 #endif
-#ifdef RUSNET_IRCD
 	strncpyzt(np->ww_host, cptr->sockhost, HOSTLEN+1);
-#endif
 
 	ww_index++;
 	if ((ww_index == ww_size) && (numclients > ww_size))
@@ -235,7 +233,7 @@ char	*server;
 		if (elapsed > ircstp->is_lkMt)
 			ircstp->is_lkMt = elapsed;
          }
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	rfcstrtoupper(locked[lk_index].nick, nick, sizeof(locked[lk_index].nick));
 #else
 	strcpy(locked[lk_index].nick, nick);
@@ -354,7 +352,7 @@ char	*nick;
 time_t	timelimit;
 {
 	Reg	aName	*wp, *wp2;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	ucnick[UNINICKLEN+1];
 
 	rfcstrtoupper(ucnick, nick, sizeof(ucnick));
@@ -378,7 +376,7 @@ time_t	timelimit;
 			/* This one is offline */
 			continue;
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		if (wp->ww_online && !strcmp(ucnick, wp->ww_ucnick))
 #else
 		if (wp->ww_online && !strcasecmp(nick, wp->ww_nick))
@@ -400,14 +398,14 @@ char  *nick;
 time_t        timelimit;
 {
 	Reg	aLock	*lp;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	ucnick[UNINICKLEN+1];
 #endif
 
 	if (!lk_index)
 		return (0);
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	rfcstrtoupper(ucnick, nick, sizeof(ucnick));
 #endif
 #ifdef RANDOM_NDELAY	
@@ -421,7 +419,7 @@ time_t        timelimit;
 		if (lp->logout < timelimit)
 			return 0;
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		if ((!strcmp(ucnick, lp->nick)) && (lp->released != 1))
 #else
 		if ((!strcasecmp(nick, lp->nick)) && (lp->released != 1))
@@ -515,7 +513,7 @@ char	*parv[];
 	Reg	anUser	*up = NULL;
 	int	max = -1;
 	char	*p, *nick, *s;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	ucnick[UNINICKLEN+1];
 #endif
 
@@ -539,18 +537,18 @@ char	*parv[];
 		wp = wp2 = &was[(ww_index ? ww_index : ww_size) - 1];
 		j = 0;
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		rfcstrtoupper(ucnick, nick, sizeof(ucnick));
 #endif
 		do {
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 			if (strcmp(ucnick, wp->ww_ucnick) == 0)
 #else
 			if (strcasecmp(nick, wp->ww_nick) == 0)
 #endif
 			    {
 				up = wp->ww_user;
-#ifdef RUSNET_IRCD
+
 				if (up->flags & FLAGS_VHOST)
 				{
 				    sendto_one(sptr, rpl_str(RPL_WHOWASUSER,
@@ -566,11 +564,7 @@ char	*parv[];
 				    sendto_one(sptr, rpl_str(RPL_WHOWASUSER,
 					   parv[0]), wp->ww_nick, up->username,
 					   wp->ww_host, wp->ww_info);
-#else	
-				sendto_one(sptr, rpl_str(RPL_WHOWASUSER,
-					   parv[0]), wp->ww_nick, up->username,
-						   up->host, wp->ww_info);
-#endif
+
 				sendto_one(sptr, rpl_str(RPL_WHOISSERVER,
 					   parv[0]), wp->ww_nick, up->server,
 					   myctime(wp->ww_logout));
@@ -650,8 +644,8 @@ u_long	*wwam;
 
 	return;
 }
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
 
+#ifndef USE_OLD8BIT
 void transcode_history(conversion_t *old)
 {
   static char buff[BUFSIZE]; /* must be long enough to contain any field */

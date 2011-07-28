@@ -1,13 +1,14 @@
-# @(#)$Id: RELEASE_NOTES,v 1.12 2010-11-10 13:38:40 gvs Exp $
-
+===============================================================================
+Important changes in 2.0 (since 1.5.16):
+	* IDN support by means of libidn.
+	* usermode +I (identified) and +R (messages from registered nicks only)
+	* chamode +R (registered users only)
+	
 ===============================================================================
 Important changes in 1.5.0 (since 1.4.3):
 	* UTF 8 support by means of iconv.
 	* UTF negotiation added to server link proto.
 	
----------
-
-
 
 This is version 1.4.3 of the Rusnet-IRC
 ==============================================================================

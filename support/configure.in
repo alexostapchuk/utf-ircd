@@ -1,7 +1,28 @@
-dnl configure.in for rusnet-ircd-1.5.13
+dnl configure.in for rusnet-ircd-2.0
 dnl Matthew Green (mrg@mame.mu.oz.au), Alain Nissen (Alain.Nissen@ulg.ac.be)
 dnl using portions of Avalon's Config and GNU Autoconf 1.12.
 
+dnl
+dnl Store information for displaying later.
+dnl
+AC_DEFUN([AC_MSG_CACHE_INIT],[
+  rm -f configure-summary
+])
+
+AC_DEFUN([AC_MSG_CACHE_ADD],[
+  cat >> configure-summary << EOF
+  $1
+EOF
+])
+
+AC_DEFUN([AC_MSG_CACHE_DISPLAY],[
+  echo "---------------------------------------------------------"
+  echo "       rusnet-ircd configuration summary:"
+  echo ""
+  cat configure-summary
+  echo "---------------------------------------------------------"
+  echo ""
+])
 
 
 AC_DEFUN(IRC_MATHLIB, [
@@ -86,24 +107,31 @@ AC_ARG_WITH(egd, AC_HELP_STRING([--with-egd=FILE],[Read entropy from FILE]),[],[
   fi
 ])
 
-# Search for OpenSSL
-
+dnl
+dnl Search for OpenSSL
+dnl
 AC_DEFUN(IRC_PATH_OPENSSL,
-[AC_MSG_CHECKING(for openssl package)
-irc_save_LIBS="$LIBS"
+[irc_save_LIBS="$LIBS"
 irc_save_LDFLAGS="$LDFLAGS"
 irc_save_CFLAGS="$CFLAGS"
-irc_openssl_dir=""
 IRC_OPENSSL_LIBRARY=""
+LIBS="-lcrypto -lssl $irc_save_LIBS"
+AC_MSG_CHECKING(for OpenSSL)
 AC_ARG_WITH(openssl, 
 	AC_HELP_STRING([--with-openssl=PATH], [Specify path to OpenSSL installation]),
 	[
 	    # Disable OpenSSL
-                if test "x$withval" != "xno" ; then
-			if test "x$withval" != "xyes" ; then
+                if test "x$withval" = "xno" ; then
+			irc_openssl_dir=""
+			AC_MSG_RESULT(disabled)
+                else
+			if test "x$withval" = "xyes" ; then
+				irc_openssl_dir="system default"
+			else
 				case "$withval" in
+					/*)       ;;
 					# Relative paths
-					./*|../*)       withval="`pwd`/$withval"	;;
+					*)       withval="`pwd`/$withval"	;;
 				esac
 				if test -d "$withval/lib"; then
 					if test -n "${need_dash_r}"; then
@@ -130,54 +158,26 @@ AC_ARG_WITH(openssl,
 					CFLAGS="${irc_openssl_include} ${CFLAGS}"
 				fi
 				irc_openssl_dir="${withval}"
-			else
-				irc_openssl_dir="system default"
 			fi
 
 			# Now check if it links
-			LIBS="-lcrypto -lssl $irc_save_LIBS"
 			AC_TRY_LINK_FUNC(SSL_library_init, 
 			[
-			    AC_DEFINE(USE_OPENSSL)
 			    AC_MSG_RESULT(linked with $LDFLAGS)
 			    IRC_OPENSSL_LIBRARY="${LIBS}"
-			    LIBS="${irc_save_LIBS}"
 			],
 			[
-			AC_MSG_RESULT(not found)
-			AC_MSG_CHECKING(if linker can find openssl itself)
-			dnl Check default openssl install dir
-			irc_openssl_dir=""
-			irc_openssl_lib=""
-			LDFLAGS="${irc_save_LDFLAGS}"
-			irc_openssl_include=""
-			CFLAGS="${irc_save_CFLAGS}"
-			AC_TRY_LINK_FUNC(SSL_library_init, 
-				[	
-					AC_MSG_RESULT(yes)
-					irc_openssl_dir="system default"
-					irc_openssl_include="found by compiler"
-					irc_openssl_lib="found by linker"
-					AC_DEFINE(USE_OPENSSL)
-					IRC_OPENSSL_LIBRARY="${LIBS}"
-					LIBS="${irc_save_LIBS}"
-				],
-				[
-					irc_openssl_dir=""
-					LIBS="${irc_save_LIBS}"
-					AC_MSG_RESULT(could not find OpenSSL libcrypto: see config.log for details)
-				]
-			)
+			    AC_MSG_RESULT(not found)
+			    irc_openssl_dir=""
 			])
-                else
-			irc_openssl_dir=""
-			AC_MSG_RESULT(disabled)
 		fi		
 	],
 	[
 	    # We didn't get any dir
-		for irc_tryssl_dir in /usr/local/ssl /usr /usr/local /usr/local/share /usr/local/openssl /usr/lib/openssl \
-		    /usr/lib/ssl /usr/local /usr/pkg /opt /opt/openssl; do
+		for irc_tryssl_dir in	/usr/local/ssl /usr /usr/local /usr/local/share \
+					/usr/local/openssl /usr/lib/openssl /usr/lib/ssl \
+					/usr/pkg /opt /opt/openssl
+		do
 		    test -d "$irc_tryssl_dir/." || continue
 		    irc_openssl_dir="${irc_tryssl_dir}"
                     if test -d "${irc_tryssl_dir}/lib"; then
@@ -200,58 +200,48 @@ AC_ARG_WITH(openssl,
 		LIBS="-lcrypto -lssl $irc_save_LIBS"
 		AC_TRY_LINK_FUNC(SSL_library_init, 
 		[
-		    AC_DEFINE(USE_OPENSSL)
 		    AC_MSG_RESULT(found in $irc_openssl_dir)
 		    IRC_OPENSSL_LIBRARY="${LIBS}"
-		    LIBS="${irc_save_LIBS}"
 		    break
     		],
 		[
+		    AC_MSG_RESULT(not found)
 		    irc_openssl_dir=""
     		])
 		done
-		if test "x$irc_openssl_dir" = "x"; then
-		    # Last chance to find it
-            	    dnl Check default openssl install dir
-		    irc_openssl_dir="/usr/local/ssl"
-            	    if test -n "${need_dash_r}"; then
-			irc_openssl_lib="-L/usr/local/ssl/lib -R/usr/local/ssl/lib"
-                        LDFLAGS="${irc_openssl_lib} ${irc_save_LDFLAGS}"
-            	    else
-			irc_openssl_lib="-L/usr/local/ssl/lib"
-                        LDFLAGS="$irc_openssl_lib ${irc_save_LDFLAGS}"
-            	    fi
-		    irc_openssl_include="-I/usr/local/ssl/include"
-            	    CFLAGS="$irc_openssl_include ${irc_save_CFLAGS}"
-            	    AC_TRY_LINK_FUNC(SSL_library_init, 
-			[
-			    AC_MSG_RESULT(found in $irc_openssl_dir)
-			    irc_openssl_lib=""
-			    irc_openssl_include=""
-			    AC_DEFINE(USE_OPENSSL)
-			    IRC_OPENSSL_LIBRARY="${LIBS}"
-			    LIBS="${irc_save_LIBS}"
-			],
-                        [
-			    irc_openssl_dir=""
-			    LIBS="${irc_save_LIBS}"
-			    CFLAGS="${irc_save_CFLAGS}"
-			    LDFLAGS="${irc_save_LDFLAGS}"
-                            AC_MSG_RESULT(could not find OpenSSL libcrypto (see config.log for details))
-                        ]
-            	    )
-		fi
-		if test "x$irc_openssl_dir" != "x"; then
-		    AC_MSG_NOTICE(libcrypto linked from $irc_openssl_dir)
-		else
-		    AC_MSG_NOTICE(OpenSSL not found)
-		fi
-	]
+	])
+dnl -- AC_ARG_WITH(openssl)
 
-# Determine OpenSSL header version
-if test "x$irc_openssl_dir" != "x"; then
-AC_MSG_CHECKING([OpenSSL header version])
-AC_RUN_IFELSE(
+# Last chance to find it
+if test "x$irc_openssl_dir" = "x"
+then
+	AC_MSG_CHECKING(if linker can find openssl itself)
+	irc_openssl_lib=""
+	LDFLAGS="${irc_save_LDFLAGS}"
+	irc_openssl_include=""
+	CFLAGS="${irc_save_CFLAGS}"
+	AC_TRY_LINK_FUNC(SSL_library_init, 
+		[	
+			AC_MSG_RESULT(yes)
+			irc_openssl_dir="system default"
+			irc_openssl_include=""
+			irc_openssl_lib=""
+			IRC_OPENSSL_LIBRARY="${LIBS}"
+		],
+		[
+			AC_MSG_RESULT(could not find OpenSSL libcrypto: see config.log for details)
+		]
+	)
+fi
+
+if test "x$irc_openssl_dir" = x; then
+    IRC_OPENSSL_LIBRARY=""
+    IRC_OPENSSL_INCLUDE=""
+    AC_MSG_CACHE_ADD(SSL support:		No)
+else
+    # Determine OpenSSL header version
+    AC_MSG_CHECKING([OpenSSL header version])
+    AC_RUN_IFELSE(
         [AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <string.h>
@@ -338,7 +328,6 @@ Check config.log for details.])
                 AC_MSG_WARN([cross compiling: not checking])
         ]
 )
-IRC_OPENSSL_LIBRARY="-lssl -lcrypto ${IRC_OPENSSL_LIBRARY}"
 # Some systems want crypt() from libcrypt, *not* the version in OpenSSL,
 # because the system crypt() is more featureful.
 if test "x$check_for_libcrypt_before" = "x1"; then
@@ -351,57 +340,62 @@ if test "x$check_for_libcrypt_later" = "x1"; then
         AC_CHECK_LIB(crypt, crypt, IRC_OPENSSL_LIBRARY="${IRC_OPENSSL_LIBRARY} -lcrypt")
 fi
 
+AC_DEFINE([USE_OPENSSL], [1], [Define if openssl package must be used for compilation/linking.])
+if test "x$irc_openssl_lib" = x; then
+    irc_openssl_library_message="found by the linker"
+else
+    IRC_OPENSSL_LIBRARY="${IRC_OPENSSL_LIBRARY} ${irc_openssl_lib}"
+    irc_openssl_library_message="${IRC_OPENSSL_LIBRARY}"
+fi
+if test "x$irc_openssl_include" = x; then
+    irc_openssl_include_message="found by the compiler"
+    IRC_OPENSSL_INCLUDE=
+else
+    irc_openssl_include_message="$irc_openssl_include"
+    IRC_OPENSSL_INCLUDE="${irc_openssl_include}"
+fi
+    AC_MSG_NOTICE(linker flags: $irc_openssl_library_message)
+    AC_MSG_NOTICE(compiler flags: $irc_openssl_include_message)
+
+    AC_SUBST(IRC_OPENSSL_INCLUDE)
+    AC_SUBST(IRC_OPENSSL_LIBRARY)
+    AC_MSG_CACHE_ADD(SSL support:		Yes)
+fi
+
 LIBS="$irc_save_LIBS"
 CFLAGS="$irc_save_CFLAGS"
 LDFLAGS="$irc_save_LDFLAGS"
-
-if test "x$irc_openssl_dir" = x; then
-    IRC_OPENSSL_LIBRARY=""
-    IRC_OPENSSL_INCLUDE=""
-    AC_MSG_RESULT(no)
-else
-  AC_DEFINE([USE_OPENSSL], [1], [Define if openssl package must be used for compilation/linking.])
-  if test "x$irc_openssl_lib" = x; then
-    irc_openssl_library_message="found by the linker"
- else
-    IRC_OPENSSL_LIBRARY="${IRC_OPENSSL_LIBRARY} ${irc_openssl_lib}"
-    irc_openssl_library_message="${IRC_OPENSSL_LIBRARY}"
-  fi
-  if test "x$irc_openssl_include" = x; then
-    irc_openssl_include_message="found by the compiler"
-    IRC_OPENSSL_INCLUDE=
-  else
-    irc_openssl_include_message="$irc_openssl_include"
-    IRC_OPENSSL_INCLUDE="${irc_openssl_include}"
-  fi
-  AC_MSG_NOTICE(linker flags: $irc_openssl_library_message)
-  AC_MSG_NOTICE(compiler flags: $irc_openssl_include_message)
-
-fi
-    AC_SUBST(IRC_OPENSSL_INCLUDE)
-    AC_SUBST(IRC_OPENSSL_LIBRARY)
-fi
-)])
-
 # End of OpenSSL
-# Search for ZLIB package
+])
 
+dnl
+dnl ZLib check
+dnl
 AC_DEFUN(IRC_PATH_ZLIB,
 [AC_MSG_CHECKING(for zlib package)
+# Search for ZLIB package
 irc_save_LIBS="$LIBS"
 irc_save_LDFLAGS="$LDFLAGS"
 irc_save_CFLAGS="$CFLAGS"
-irc_zlib_dir=""
 IRC_ZLIB_LIBRARY=""
+LIBS="-lz $irc_save_LIBS"
 AC_ARG_WITH(zlib,
         AC_HELP_STRING([--with-zlib=PATH], [Specify path to ZLIB installation]),
         [
             # Disable ZLIB
-                if test "x$withval" != "xno" ; then
-			if test "x$withval" != "xyes" ; then
+                if test "x$withval" = "xno"
+		then
+                        irc_zlib_dir=""
+                        AC_MSG_RESULT(disabled)
+                else
+			if test "x$withval" = "xyes"
+			then
+				irc_zlib_dir="system default"
+			else
 				case "$withval" in
+					/*)       ;;
 					# Relative paths
-					./*|../*)       withval="`pwd`/$withval"
+					*)       withval="`pwd`/$withval"	;;
 				esac
 				if test -d "$withval/lib"; then
 					if test -n "${need_dash_r}"; then
@@ -431,43 +425,16 @@ AC_ARG_WITH(zlib,
 			fi
 
 			# Now check if it links
-			LIBS="-lz $irc_save_LIBS"
 			AC_TRY_LINK_FUNC(inflate,
 			[
 			    AC_DEFINE(USE_ZLIB)
 			    AC_MSG_RESULT(linked with $LDFLAGS)
 			    IRC_ZLIB_LIBRARY="-lz"
-			    LIBS="$irc_save_LIBS"
 			],
 			[
-			AC_MSG_RESULT(not found)
-			AC_MSG_CHECKING(if linker can find zlib itself)
-			dnl Check default zlib install dir
-			irc_zlib_dir=""
-			irc_zlib_lib=""
-			LDFLAGS="${irc_save_LDFLAGS}"
-			irc_zlib_include=""
-			CFLAGS="${irc_save_CFLAGS}"
-			AC_TRY_LINK_FUNC(inflate,
-				[
-					AC_MSG_RESULT(yes)
-					irc_zlib_dir="system default"
-					irc_zlib_include="found by compiler"
-					irc_zlib_lib="found by linker"
-					AC_DEFINE(USE_ZLIB)
-					IRC_ZLIB_LIBRARY="-lz"
-					LIBS="$irc_save_LIBS"
-				],
-				[
-					irc_zlib_dir=""
-					LIBS="${irc_save_LIBS}"
-					AC_MSG_RESULT(could not find libz: see config.log for details)
-				]
-			)
+			    AC_MSG_RESULT(not found)
+			    irc_zlib_dir=""
 			])
-                else
-                        irc_zlib_dir=""
-                        AC_MSG_RESULT(disabled)
                 fi
         ],
         [
@@ -476,9 +443,10 @@ AC_ARG_WITH(zlib,
                     /usr/share /usr/local/share /lib /usr/zlib \
                     /usr/local/zlib /usr/lib/zlib /usr/local/lib/zlib \
                     /usr/unsupported/lib/zlib /usr/share/lib/zlib \
-                    /usr/local/share/lib/zlib /lib/zlib /usr/pkg /opt /opt/zlib \
-                    /usr/zlib/lib/zlib /usr/local/zlib/lib/zlib;  do
-                    if test ! -d "$irc_tryzlib_dir" ; then
+                    /usr/local/share/lib/zlib /lib/zlib /usr/pkg /opt \
+                     /opt/zlib/usr/zlib/lib/zlib /usr/local/zlib/lib/zlib
+		do
+                    if test ! -d "$irc_tryzlib_dir/." ; then
                         continue;
 		fi
                     irc_zlib_dir="${irc_tryzlib_dir}"
@@ -499,28 +467,58 @@ AC_ARG_WITH(zlib,
                         CFLAGS="${irc_zlib_include} ${CFLAGS}"
                     fi
 # Now check if it links
-                LIBS="-lz $irc_save_LIBS"
                 AC_TRY_LINK_FUNC(zlibVersion,
                 [
                     AC_DEFINE(USE_ZLIB)
                     AC_MSG_RESULT(found in $irc_zlib_dir)
 		    IRC_ZLIB_LIBRARY="-lz"
-		    LIBS="$irc_save_LIBS"
                     break
                 ],
                 [
                     irc_zlib_dir=""
                 ])
 	    done
-                if test "x$irc_zlib_dir" != "x"; then
-                    AC_MSG_NOTICE(libzlib linked from $irc_zlib_dir)
-                else
+                if test "x$irc_zlib_dir" != "x"
+		then
                     AC_MSG_NOTICE(ZLIB not found)
+                else
+                    AC_MSG_NOTICE(libzlib linked from $irc_zlib_dir)
                 fi
-        ]
+        ])
 
+if test "x$irc_zlib_dir" = "x"
+then
+	AC_MSG_CHECKING(if linker can find zlib itself)
+	dnl Check default zlib install dir
+	irc_zlib_lib=""
+	LDFLAGS="${irc_save_LDFLAGS}"
+	irc_zlib_include=""
+	CFLAGS="${irc_save_CFLAGS}"
+	AC_TRY_LINK_FUNC(inflate,
+		[
+			AC_MSG_RESULT(yes)
+			irc_zlib_dir="system default"
+			irc_zlib_include=""
+			irc_zlib_lib=""
+			AC_DEFINE(USE_ZLIB)
+			IRC_ZLIB_LIBRARY="-lz"
+			LIBS="$irc_save_LIBS"
+		],
+		[
+			irc_zlib_dir=""
+			LIBS="${irc_save_LIBS}"
+			AC_MSG_RESULT(could not find libz: see config.log for details)
+		])
+fi
+
+if test "x$irc_zlib_dir" = "x"
+then
+    IRC_ZLIB_LIBRARY=""
+    IRC_ZLIB_INCLUDE=""
+    AC_MSG_RESULT(no)
+    AC_MSG_CACHE_ADD(ZIPLinks support:	No)
+else
 # Determine ZLIB header version
-if test "x$irc_zlib_dir" != "x"; then
 AC_MSG_CHECKING([ZLIB header version])
 AC_RUN_IFELSE(
         [AC_LANG_SOURCE([[
@@ -608,17 +606,7 @@ Check config.log for details.])
                 AC_MSG_WARN([cross compiling: not checking])
         ]
 )
-IRC_ZLIB_LIBRARY="-lz ${IRC_ZLIB_LIBRARY}"
 
-LIBS="$irc_save_LIBS"
-CFLAGS="$irc_save_CFLAGS"
-LDFLAGS="$irc_save_LDFLAGS"
-
-if test "x$irc_zlib_dir" = x; then
-    IRC_ZLIB_LIBRARY=""
-    IRC_ZLIB_INCLUDE=""
-  AC_MSG_RESULT(no)
-else
   AC_DEFINE([USE_ZLIB], [1], [Define if zlib package must be used for compilation/linking.])
   if test "x$irc_zlib_lib" = x; then
     irc_zlib_library_message="found by the linker"
@@ -636,13 +624,59 @@ else
   AC_MSG_NOTICE(linker flags: $irc_zlib_library_message)
   AC_MSG_NOTICE(compiler flags: $irc_zlib_include_message)
 
-fi
     AC_SUBST(IRC_ZLIB_INCLUDE)
     AC_SUBST(IRC_ZLIB_LIBRARY)
+    AC_MSG_CACHE_ADD(ZIPLinks support:	Yes)
 fi
-)])
 
+LIBS="$irc_save_LIBS"
+CFLAGS="$irc_save_CFLAGS"
+LDFLAGS="$irc_save_LDFLAGS"
 # End of ZLIB
+])
+
+dnl
+dnl libidn check, taken from
+dnl http://www.gnu.org/software/libidn/manual/libidn.html#Autoconf-tests
+dnl
+dnl Modified for Solaris (/usr/include/idn)
+dnl
+AC_DEFUN(IRC_LIBIDN,
+[
+AC_ARG_WITH(libidn, AC_HELP_STRING([--with-libidn=DIR],
+                                     [Specify path to GNU libidn installation]),
+		libidn=$withval, libidn=yes)
+
+     LDFLAGS_save="${LDFLAGS}"
+     CFLAGS_save="${CFLAGS}"
+     if test "$libidn" != "no"; then
+	if test "$libidn" = "yes"
+	then
+		case `uname` in
+		SunOS)	CFLAGS="${CFLAGS} -I/usr/include/idn"	;;
+		esac
+	else
+		LDFLAGS="${LDFLAGS} -L$libidn/lib"
+		CFLAGS="${CFLAGS} -I$libidn/include"
+	fi
+	AC_CHECK_HEADER(idna.h,
+         AC_CHECK_LIB(idn, stringprep_check_version,
+           [libidn=yes LIBS="${LIBS} -lidn"], libidn=no),
+         libidn=no)
+     fi
+
+     if test "$libidn" != "no"; then
+	AC_DEFINE(USE_LIBIDN, 1, [Define to 1 if you want IDN support.])
+	AC_MSG_CACHE_ADD(IDN support:		Yes)
+     else
+	AC_MSG_WARN([Libidn not found])
+	AC_MSG_CACHE_ADD(IDN support:		No)
+	LDFLAGS="${LDFLAGS_save}"
+	CFLAGS="${CFLAGS_save}"
+     fi
+     AC_MSG_CHECKING([if Libidn should be used])
+     AC_MSG_RESULT($libidn)
+])
 
 AC_DEFUN(IRC_UNION_WAIT,
 [AC_MSG_CHECKING(whether an union wait * is mandatory in waitpid)
@@ -992,7 +1026,7 @@ elif test $irc_cv_non_blocking_system = sysv; then
   AC_DEFINE([NBLOCK_SYSV], [1], [Define if the system provides SystemV non-blocking system.])
 else
   AC_MSG_RESULT([using none])
-  AC_MSG_WARN([I can't find a working non-blocking system.])
+  AC_MSG_WARN([cannot find a working non-blocking system.])
 fi
 ])
 
@@ -1003,7 +1037,7 @@ AC_ARG_WITH(resconf, [  --with-resconf=FILE     use FILE as resolver config file
 AC_MSG_RESULT($irc_cv_path_resconf)
 AC_DEFINE_UNQUOTED([IRC_RESCONF], ["$irc_cv_path_resconf"], [Define as the resolver configuration file.])
 if test ! -r "$irc_cv_path_resconf"; then
-  AC_MSG_WARN([Unable to read "$irc_cv_path_resconf"! Without resolver configuration file, the server won't work.])
+  AC_MSG_WARN([Unable to read "$irc_cv_path_resconf"! Without resolver configuration file, the server will not work.])
 fi
 ])
 
@@ -1055,7 +1089,9 @@ fi
 
 
 AC_DEFUN(IRC_IP6,
-[AC_ARG_ENABLE(ipv6, [  --enable-ipv6           enables IPv6], [], [enableval=no])
+[AC_ARG_ENABLE(ipv6, AC_HELP_STRING([--enable-ipv6],
+		[support IPv6 (watch separator in ircd.conf!)]),
+		[], [enableval=no])
 if test "x$enableval" = xyes; then
   AC_DEFINE([INET6], [1], [Define to enable IPv6 support])
   dnl be smart about it
@@ -1084,7 +1120,10 @@ yes
   AC_MSG_RESULT($irc_cv_v6type)
 
   if test "x$irc_cv_v6type" = xunknown; then
-     AC_MSG_WARN([[You have an unknown IPv6 system. You will probably need to change the Makefile manually, or #undef INET6 in setup.h]])
+	AC_MSG_CACHE_ADD(IPv6 support:		unknown)
+	AC_MSG_WARN([[You have an unknown IPv6 system. You will probably need to change the Makefile manually, or #undef INET6 in setup.h]])
+  else
+	AC_MSG_CACHE_ADD(IPv6 support:		Yes)
   fi
 
   dnl eventually update LIBS
@@ -1097,7 +1136,12 @@ yes
 
   dnl RFC 2553 check
   AC_CHECK_FUNCS(getipnodebyname)
-
+  AC_ARG_ENABLE(vhost6,[  --enable-vhost6         enables suffix for unresolved IPv6 hosts])
+  if test "x$enable_vhost6" = xyes; then
+	AC_DEFINE(USE_VHOST6, 1, [Define to 1 if you want to add suffix to unresolved IPv6 hosts])
+  fi
+else
+	AC_MSG_CACHE_ADD(IPv6 support:		No)
 fi
 ])
 
@@ -1181,67 +1225,159 @@ fi
 ])
 
 AC_DEFUN(IRC_CHECK_ICONV,
-[AC_MSG_CHECKING(for iconv)
-AC_ARG_ENABLE(iconv, [  --enable-iconv=DIR      enables full unicode support via iconv (default)],
-		[], [enableval=yes])
-if test "x$enableval" != xno; then
-    case "$enableval" in
-	# Absolute paths
-	/*|yes)
-	    ;;
-	# Relative paths
-	*)
-	    enableval="`pwd`/$enableval"
-	    ;;
-    esac
-    if test "x$enableval" = xyes; then
+[AC_MSG_CHECKING(for unicode support)
+AC_ARG_WITH(iconv, AC_HELP_STRING([--with-iconv=DIR],
+				[Specify path to custom libiconv installation]),
+       irc_cv_have_iconv=$withval, irc_cv_have_iconv=yes)
+if test "x$irc_cv_have_iconv" = xno
+then
+	AC_MSG_RESULT(disabled)
+else
+    if test "x$irc_cv_have_iconv" = xyes; then
 	irc_cv_have_iconv=yes
 	ICONV_HEADER="<iconv.h>"
     else
-	ICONV_HEADER="\"$enableval/include/iconv.h\""
-	irc_cv_have_iconv="irc_iconv_includes= irc_iconv_libs= irc_iconv_alib=\"$enableval/lib/libiconv.a\" irc_iconv_libpath= irc_iconv_bin=\"$enableval/bin/iconv\""
-    fi
-    if test x$NO_UTF_LOCALE = x; then
-	AC_DEFINE(HAVE_UTF_LOCALE, 1, [Define if you have working UTF locale in OS])
-    fi
-else
-    irc_cv_have_iconv=no
-fi
+	# Absolute and relative paths
+	case "$irc_cv_have_iconv" in
+	/*)	iconv_path="$irc_cv_have_iconv"		;;
+	*)	iconv_path="`pwd`/$irc_cv_have_iconv"	;;
+	esac
 
+	if test -s $iconv_path/include/iconv.h
+	then
+		AC_MSG_RESULT(iconv.h found)
+		# check for the iconv supplied
+		irc_save_cflags="$CFLAGS"
+		irc_save_libs="$LIBS"
+		LIBS="${LIBS} $iconv_path/lib/libiconv.a"
+		CFLAGS="${CFLAGS} -I$iconv_path/include"
+		AC_TRY_LINK([#include <iconv.h>], [
+				iconv_open("","");
+				], ICONV_HEADER="<iconv.h>",
+			    ICONV_HEADER=
+		)
+		LIBS="$irc_save_LIBS"
+		CFLAGS="$irc_save_CFLAGS"
+		irc_cv_have_iconv="irc_iconv_includes=\"$iconv_path/include\" irc_iconv_libs= irc_iconv_alib=\"$iconv_path/lib/libiconv.a\" irc_iconv_libpath= irc_iconv_bin=\"$iconv_path/bin/iconv\""
+	else
+		AC_MSG_ERROR(iconv.h is not found in $iconv_path/include)
+	fi
+    fi
+
+    if test x$ICONV_HEADER = x
+    then
+	AC_MSG_ERROR(the libiconv supplied does not link)
+    else
+	AC_MSG_CHECKING(for working locale)
+	irc_cv_locale=`grep '^#define[ 	]*LOCALE[^_]' config.h | cut -f 2 -d '"'`
+	irc_cv_charset=`grep '^#define.*CHARSET_8BIT' config.h | cut -f 2 -d '"'`
+	irc_cv_unicode=`grep '^#define.*CHARSET_UNICODE' config.h | cut -f 2 -d '"'`
+
+	# having charset_8bit locale working is principal for successful iconv operations
+	locale=$irc_cv_locale.$irc_cv_charset
+	export LC_ALL=$locale
+	test_patterns=`grep ^$locale ../support/locale_tests`
+
+	if test "x$test_patterns"
+	then
+		pattern_uc=`echo "$test_patterns" | cut -f 2 -d ' '`
+		pattern_lc=`echo "$test_patterns" | cut -f 3 -d ' '`
+		if (echo "$pattern_uc" | grep -i "$pattern_lc" >/dev/null)
+		then
+			# having working UTF8 locale can make things easier
+			locale=$irc_cv_locale.$irc_cv_unicode
+			export LC_ALL=$locale
+			test_patterns=`grep ^$locale ../support/locale_tests`
+			if test "x$test_patterns"
+			then
+				pattern_uc=`echo "$test_patterns" | cut -f 2 -d ' '`
+				pattern_lc=`echo "$test_patterns" | cut -f 3 -d ' '`
+				if (echo "$pattern_uc" | grep -i "$pattern_lc" >/dev/null)
+				then
+					AC_MSG_RESULT(ok)
+					AC_DEFINE(HAVE_UTF_LOCALE, 1, [Define if you have working UTF locale in OS])
+				else
+					AC_MSG_RESULT($locale test failed)
+				fi
+			fi
+		else
+			case `uname` in
+			Linux)
+				cp ../contrib/$irc_cv_locale .
+				mkdir -p locale/$locale
+				localedef -f $irc_cv_charset -i $irc_cv_locale locale/$locale
+				export LOCPATH=`pwd`/locale
+				if (echo "$pattern_uc" | grep -i "$pattern_lc" >/dev/null)
+				then
+					AC_MSG_RESULT(*** Installing custom locale ***)
+					AC_MSG_CACHE_ADD(Encodings support:	With custom locale installed)
+					AC_DEFINE(LOCALE_PATH, 1, [Define if you need to use custom locale and redefine LOCPATH])
+					install_locale="install-locale"
+				else
+					AC_MSG_RESULT($locale test failed)
+					AC_MSG_CACHE_ADD(Encodings support:	8bit (Retry with custom libiconv for UTF support))
+					unset ICONV_HEADER
+				fi
+			;;
+			*)
+				AC_MSG_RESULT($locale test failed)
+				AC_MSG_CACHE_ADD(Encodings support:	8bit (Retry with custom libiconv for UTF support))
+				unset ICONV_HEADER
+			;;
+			esac
+		fi
+	fi
+    fi
+fi
+AC_SUBST(irc_cv_locale)
+AC_SUBST(install_locale)
 AC_SUBST(ICONV_HEADER)
 
-if test "x${irc_cv_have_iconv}" != xno; then
-  if test "x$irc_cv_have_iconv" = xyes; then
-    # check for default include path first...
-    AC_TRY_CPP([#include <iconv.h>],
-	[irc_iconv_includes=],
-	[# not found, now try to find...
-	AC_TRY_CPP([#include "/usr/local/include/iconv.h"],
-	    irc_iconv_includes=/usr/local/include,
-	    irc_iconv_includes=no
-    )])
-    if test "x$irc_iconv_includes" != xno ; then
+if test x$ICONV_HEADER = x
+then
+	AC_DEFINE([USE_OLD8BIT], [1], [Define to disable unicode support via iconv()])
+	irc_cv_have_iconv=no
+	newconvobjs=""
+	oldconvobjs="rusnet_codepages.o rusnet_init.o"
+	AC_MSG_CACHE_ADD(Encodings support:	8bit (NO UTF))
+else
+  if test "x$irc_cv_have_iconv" = xyes
+  then
+	# check for default include path first...
+	AC_TRY_CPP([#include <iconv.h>],
+		[irc_iconv_includes=],
+		[# not found, now try to find...
+		AC_TRY_CPP([#include "/usr/local/include/iconv.h"],
+			irc_iconv_includes=/usr/local/include,
+			irc_iconv_includes=no
+	)])
+
+    if test "x$irc_iconv_includes" != xno
+    then
 	irc_save_CFLAGS="$CFLAGS"
-	if test "x$irc_iconv_includes" != x ; then
+
+	if test "x$irc_iconv_includes" != x
+	then
 	    CFLAGS="-I$irc_iconv_includes ${CFLAGS}"
 	fi
-	# check if no library need...
+
+	# check if iconv is in libc
 	AC_TRY_LINK([#include <iconv.h>], [
-iconv_open("","");
-], [irc_iconv_libs= irc_iconv_libpath=],
+		iconv_open("","");
+		], [irc_iconv_libs= irc_iconv_libpath=],
 	    [# we need -liconv
 	    irc_iconv_libs=iconv
 	    irc_save_LIBS="$LIBS"
 	    LIBS="${LIBS} -liconv"
 	    # check for default library path first...
 	    AC_TRY_LINK([#include <iconv.h>], [
-iconv_open("","");
-], [irc_iconv_libpath=],
+			iconv_open("","");
+			], [irc_iconv_libpath=],
 		[# not found, now try to find...
 		LIBS="${LIBS} -L/usr/local/lib"
 		AC_TRY_LINK([#include <iconv.h>], [
-iconv_open("","");
-], irc_iconv_libpath=/usr/local/lib,
+			iconv_open("","");
+			], irc_iconv_libpath=/usr/local/lib,
 		    irc_iconv_libpath=no
 	    )])
 	    LIBS="$irc_save_LIBS"
@@ -1253,59 +1389,62 @@ iconv_open("","");
 
   eval "$irc_cv_have_iconv"
 
-  if test "x$irc_iconv_libpath" = xno -o "x$irc_iconv_includes" = xno ; then
-    AC_MSG_RESULT(no)
+  if test "x$irc_iconv_libpath" = xno -o "x$irc_iconv_includes" = xno
+  then
     AC_MSG_ERROR(you have no libiconv but you cannot compile ircd without it)
   fi
-  AC_MSG_RESULT(yes)
+
   if test "x$irc_iconv_includes" != x ; then
     CFLAGS="-I$irc_iconv_includes ${CFLAGS}"
   fi
+
   if test "x$irc_iconv_libs" != x ; then
     LIBS="-l$irc_iconv_libs ${LIBS}"
   else
     LIBS="$irc_iconv_alib ${LIBS}"
   fi
+
   if test "x$irc_iconv_libpath" != x ; then
     LDFLAGS="-L$irc_iconv_libpath -R$irc_iconv_libpath ${LDFLAGS}"
   fi
 
-  AC_MSG_CHECKING(for russian translit)
-  if test "x$irc_iconv_bin" = x; then
-    irc_iconv_bin=iconv
-  fi
-  if test x`echo проба| LC_ALL= LC_CTYPE=uk_UA.KOI8-U ${irc_iconv_bin} -t ascii//translit -f koi8-u 2>/dev/null` != xproba; then
-    AC_MSG_RESULT(no)
-    AC_MSG_RESULT()
-    AC_MSG_RESULT(Warning! Your iconv has no support for the Cyrillic translit so you cannot)
-    AC_MSG_RESULT(have it in ircd.  It may be not what you want.  Press Ctrl+C to abort now or)
-    if which bash >/dev/null 2>&1; then
-	bash -c 'read -sn1 -p "any other key to continue..."' <&7
-	echo
-    else
-	read -p "Enter to continue..." __ <&7
-    fi
-  else
-    AC_MSG_RESULT(yes)
-  fi
+	AC_MSG_CACHE_ADD(Encodings support:	UTF/iconv)
+	AC_MSG_CHECKING(for russian translit)
 
-  AC_MSG_CHECKING(for order of //ignore and //translit)
-  if test x`echo proba|iconv -t ascii//translit//ignore 2>/dev/null` != xproba; then
-    AC_MSG_RESULT(//ignore//translit)
-    AC_DEFINE([TRANSLIT_IGNORE], ["//IGNORE//TRANSLIT"],
-		[Order ot //ignore and //translit on iconv setup])
-  else
-    AC_MSG_RESULT(//translit//ignore)
-    AC_DEFINE([TRANSLIT_IGNORE], ["//TRANSLIT//IGNORE"])
-  fi
+	if test "x$irc_iconv_bin" = x
+	then
+		irc_iconv_bin=iconv
+	fi
 
-  newconvobjs="conversion.o"
-  oldconvobjs=""
-else
-  AC_MSG_RESULT(not required)
-  newconvobjs=""
-  oldconvobjs="rusnet_codepages.o rusnet_init.o"
-  AC_DEFINE([USE_OLD8BIT], [1], [Define to disable unicode support via iconv()])
+	test_locale=$irc_cv_locale.$irc_cv_charset
+	export LC_ALL=$test_locale
+	test_patterns=`grep ^$test_locale ../support/locale_tests`
+	pattern_lc=`echo "$test_patterns" | cut -f 3 -d ' '`
+	pattern_tr=`echo "$test_patterns" | cut -f 4 -d ' '`
+
+	if test x`echo "$pattern_lc"| LC_ALL= LANG= LC_CTYPE=$test_locale ${irc_iconv_bin} -t ascii//translit -f $irc_cv_charset 2>/dev/null` != x$pattern_tr
+	then
+		AC_MSG_RESULT(no)
+		AC_MSG_CACHE_ADD(Translit support:	NO)
+	else
+		AC_MSG_RESULT(yes)
+		AC_MSG_CACHE_ADD(Translit support:	YES)
+		AC_DEFINE(HAVE_ICONV_TRANSLIT, 1, [Define if you have working translit in iconv])
+
+		AC_MSG_CHECKING(for order of //ignore and //translit)
+		if test x`echo proba | ${irc_iconv_bin} -t ascii//translit//ignore 2>/dev/null` != xproba
+		then
+			AC_MSG_RESULT(//ignore//translit)
+			AC_DEFINE([TRANSLIT_IGNORE], ["//IGNORE//TRANSLIT"],
+					[Order ot //ignore and //translit on iconv setup])
+		else
+			AC_MSG_RESULT(//translit//ignore)
+			AC_DEFINE([TRANSLIT_IGNORE], ["//TRANSLIT//IGNORE"])
+		fi
+	fi
+
+	newconvobjs="conversion.o"
+	oldconvobjs=""
 fi
 AC_SUBST(newconvobjs)
 AC_SUBST(oldconvobjs)
@@ -1315,8 +1454,9 @@ dnl ----
 dnl main
 dnl ----
 
-AC_INIT([rusnet-ircd],[1.5.13],[rusnet-devel@rusnet.org.ru])
-AC_REVISION([$Id: configure.in,v 1.20 2010-11-10 13:38:40 gvs Exp $])
+AC_MSG_CACHE_INIT()
+
+AC_INIT([rusnet-ircd],[2.0],[rusnet-devel@rusnet.org.ru])
 AC_PREREQ(2.61)
 AC_PREFIX_DEFAULT(/usr/local/rusnet)
 AC_CONFIG_HEADERS(setup.h:../support/setup.h.in)
@@ -1571,6 +1711,7 @@ IRC_MATHLIB
 IRC_PATH_ZLIB
 IRC_PATH_OPENSSL
 IRC_CHECK_ICONV
+IRC_LIBIDN
 
   IRC_RANDOM_FILE
   IRC_EGD_SOCKET      
@@ -1599,32 +1740,7 @@ IRC_SHAREDMODULES
 IRC_ALPHA_BETA
 
 
-AC_CONFIG_FILES([Makefile:../support/Makefile.in version.c.SH:../ircd/version.c.SH.in sums:../support/sums.in tkconf.h:../support/tkconf.h.dist])
+AC_CONFIG_FILES([Makefile:../support/Makefile.in version.c.SH:../ircd/version.c.SH.in sums:../support/sums.in])
 AC_CONFIG_COMMANDS([chmod],[[chmod a+x version.c.SH]])
 AC_OUTPUT(../common/conversion.h)
-
-dnl ######################################################################
-dnl Summarize
-dnl ######################################################################
-
-AC_MSG_RESULT( )
-AC_MSG_RESULT(    Summary of options...)
-
-if test $irc_zlib_dir ; then
-  AC_MSG_RESULT( ZLIB:     $irc_zlib_include_message, $irc_zlib_library_message)
-else
-  AC_MSG_RESULT( ZLIB:     Disabled)
-fi
-
-if test x$irc_cv_have_iconv = xyes ; then
-  AC_MSG_RESULT( ICONV:    OK)
-else
-  AC_MSG_RESULT( ICONV:    Disabled)
-fi
-
-if test $irc_openssl_dir ; then
-  AC_MSG_RESULT( SSL:      $irc_openssl_include_message, $irc_openssl_library_message)
-else
-  AC_MSG_RESULT( SSL:      Disabled)
-fi
-
+AC_MSG_CACHE_DISPLAY()

@@ -8,13 +8,13 @@
 ** hope that it will be useful, but without any warranty. Without even the 
 ** implied warranty of merchantability or fitness for a particular purpose. 
 ** See the GNU General Public License for details.
-** $Id: rusnet_misc.c,v 1.10 2010-11-10 13:38:39 gvs Exp $
  */
+
+#ifndef RUSNET_MISC_C
+#define RUSNET_MISC_C
 
 #include "os.h"
 #include "s_defines.h"
-
-#ifdef RUSNET_IRCD
 
 #ifdef USE_OLD8BIT
 int rusnet_getclientport(int fd)
@@ -27,34 +27,12 @@ int rusnet_getclientport(int fd)
     else
         return 0;
 }
-
-void rusnet_changecodepage(struct Client *cptr, char *pageid, char *id)
-{
-    FILE *fp;
-    struct Codepage *work = rusnet_getptrbyname(pageid);
-   
-    if (work != NULL) 
-    {
-        cptr->transptr = work;
-        sendto_one(cptr, rpl_str(RPL_CODEPAGE, id), pageid);
-    }
-    else 
-        sendto_one(cptr, err_str(ERR_NOCODEPAGE, id), pageid);
-}
 #endif
 
-aChannel *rusnet_isagoodnickname(struct Client *cptr, char *nickname)
+aChannel *rusnet_zmodecheck(struct Client *cptr, char *nickname)
 {
 	Reg Link *lp;
-	Reg aChannel *chptr;
-	unsigned char flag_8bit;
-#ifdef USE_OLD8BIT
-	int i;
-
-	lp = cptr->user->channel;
-#else
-	register unsigned char *ch;
-#endif
+	Reg unsigned char *ch;
 
 	/*
 	 ** Now let's figure out if the nickname has 8bit up chars
@@ -62,33 +40,21 @@ aChannel *rusnet_isagoodnickname(struct Client *cptr, char *nickname)
 	 ** in m_nick() ! -LoSt
 	 */
 	
-	flag_8bit = 0;
-#ifdef USE_OLD8BIT
-	for (i=0; (i<NICKLEN) && (nickname[i]!=0); i++)
-		if ((unsigned char)(nickname[i])&0x80)
-#else
 	for (ch = (unsigned char *)nickname; *ch; ch++)
 		if (*ch & 0x80)
-#endif
-		{
-			flag_8bit = 1;
 			break;
-		}
 
-	if (flag_8bit == 0) 
+	if (!*ch)		/* end-of-line reached */
 		return NULL;
 
-#ifndef USE_OLD8BIT
-	lp = cptr->user->channel;
-#endif
-	while ( lp != NULL )
+	/* Now check whether there are channels in 7bit mode */
+	for (lp = cptr->user->channel; lp; lp = lp->next)
 	{
+		Reg aChannel *chptr;
+
 		chptr = lp->value.chptr;
 		if ((chptr->mode.mode & MODE_7BIT) != 0)
-		{
 			return chptr;
-		}
-		lp = lp->next;
 	}
 
 	return NULL;

@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_err.c,v 1.31 2010-11-10 13:38:39 gvs Exp $
  */
 
 
@@ -42,19 +41,11 @@ static	Numeric	local_replies[] = {
 /* 002 */	{ RPL_YOURHOST, ":Your host is %s, running version %s" },
 #endif
 /* 003 */	{ RPL_CREATED, ":This server was created %s" },
-#ifdef RUSNET_IRCD
 # ifdef USE_SSL
-/* 004 */	{ RPL_MYINFO, "%s %s aboOirswx abcehiIklmnoOpqrstvz" },
+/* 004 */	{ RPL_MYINFO, "%s %s aboOiIrswx abcehiIklmnoOpqrRstvz" },
 # else
-/* 004 */	{ RPL_MYINFO, "%s %s aboOirwx abcehiIklmnoOpqrstvz" },
+/* 004 */	{ RPL_MYINFO, "%s %s aboOiIrwx abcehiIklmnoOpqrRstvz" },
 # endif
-#else
-# ifdef USE_SSL
-/* 004 */	{ RPL_MYINFO, "%s %s aoOirsw abeiIklmnoOpqrstv" },
-# else
-/* 004 */	{ RPL_MYINFO, "%s %s aoOirw abeiIklmnoOpqrstv" },
-# endif
-#endif
 #ifndef SEND_ISUPPORT
 /* 005 */	{ RPL_BOUNCE, ":Try server %s, port %d" },
 #else
@@ -107,7 +98,7 @@ static	Numeric	numeric_errors[] = {
 /* 421 */	{ ERR_UNKNOWNCOMMAND, "%s :Unknown command" },
 /* 422 */	{ ERR_NOMOTD, ":MOTD File is missing" },
 /* 423 */	{ ERR_NOADMININFO,
-		"%s :No administrative info available" },
+			"%s :No administrative info available" },
 /* 424 */	{ ERR_FILEERROR, ":File error doing %s on %s" },
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
@@ -122,8 +113,8 @@ static	Numeric	numeric_errors[] = {
 /* 435 */	{ ERR_SERVICECONFUSED, (char *)NULL },
 /* 436 */	{ ERR_NICKCOLLISION, "%s :Nickname collision KILL from %s@%s" },
 /* 437 */	{ ERR_UNAVAILRESOURCE,
-		"%s :Nick/channel is temporarily unavailable" },
-/* 438 */	{ 0, (char *)NULL }, /* reserved for later use -krys */
+			"%s :Nick/channel is temporarily unavailable" },
+/* 438 */	{ ERR_NICKTOOFAST, ":Wait a minute before changing nickname" },
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
 		{ ERR_USERNOTINCHANNEL, "%s %s :They aren't on that channel" },
@@ -156,23 +147,16 @@ static	Numeric	numeric_errors[] = {
 		{ 0, (char *)NULL },
 /* 461 */	{ ERR_NEEDMOREPARAMS, "%s :Not enough parameters" },
 /* 462 */	{ ERR_ALREADYREGISTRED,
-		":Unauthorized command (already registered)" },
+			":Unauthorized command (already registered)" },
 /* 463 */	{ ERR_NOPERMFORHOST, ":Your host isn't among the privileged" },
 /* 464 */	{ ERR_PASSWDMISMATCH, ":Password Incorrect" },
 /* 465 */	{ ERR_YOUREBANNEDCREEP, ":You are banned from this server" },
 /* 466 */	{ ERR_YOUWILLBEBANNED, (char *)NULL },
 /* 467 */	{ ERR_KEYSET, "%s :Channel key already set" },
-#ifdef RUSNET_IRCD
 /* 468 */	{ ERR_NOCODEPAGE, "%s :Invalid charset" },
-#else
-		{ 0, (char *)NULL },
-#endif
-		{ 0, (char *)NULL },
-#ifdef RUSNET_IRCD
+/* 469 */	{ ERR_UNRECOGNIZED,
+			"%s :Only registered nicknames allowed (+R)"},
 /* 470 */	{ ERR_7BIT, "%s :Only latin-coded nicknames allowed (+z)" },
-#else
-		{ 0, (char *)NULL },
-#endif
 /* 471 */	{ ERR_CHANNELISFULL, "%s :Cannot join channel (+l)" },
 /* 472 */	{ ERR_UNKNOWNMODE  , "%c :is unknown mode char to me for %s" },
 /* 473 */	{ ERR_INVITEONLYCHAN, "%s :Cannot join channel (+i)" },
@@ -181,11 +165,7 @@ static	Numeric	numeric_errors[] = {
 /* 476 */	{ ERR_BADCHANMASK, "%s :Bad Channel Mask" },
 /* 477 */	{ ERR_NOCHANMODES, "%s :Channel doesn't support modes" },
 /* 478 */	{ ERR_BANLISTFULL, "%s %s :Channel list is full" },
-#ifdef RUSNET_IRCD
 /* 479 */	{ ERR_NOCOLOR, "%s :Channel couldn't accept colors (+c)" },
-#else
-		{ 0, (char *)NULL },
-#endif
 #ifdef WALLOPS_TO_CHANNEL
 /* 480 */	{ ERR_NOWALLOP,
 		":Join &WALLOPS instead" },
@@ -193,14 +173,15 @@ static	Numeric	numeric_errors[] = {
 		{ 0, (char *)NULL },
 #endif
 /* 481 */	{ ERR_NOPRIVILEGES,
-		":Permission Denied- You're not an IRC operator" },
+			":Permission Denied- You're not an IRC operator" },
 /* 482 */	{ ERR_CHANOPRIVSNEEDED, "%s :You're not channel operator" },
 /* 483 */	{ ERR_CANTKILLSERVER, "%s :You can't kill a server!" },
 /* 484 */	{ ERR_RESTRICTED, ":Your connection is restricted!" },
 /* 485 */	{ ERR_UNIQOPRIVSNEEDED,
-		  ":You're not the original channel operator" },
+			  ":You're not the original channel operator" },
 /* 486 */	{ ERR_RLINED, ":Your connection is Restricted" },
-		{ 0, (char *)NULL },
+/* 487 */	{ ERR_REGONLY,
+			":%s accepts messages from registered nicks only" },
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
@@ -247,13 +228,8 @@ static	Numeric	numeric_replies[] = {
 /* 324 */	{ RPL_CHANNELMODEIS, "%s %s %s" },
 /* 325 */	{ RPL_UNIQOPIS, "%s %s" },
 		{ 0, (char *)NULL },
-#ifdef RUSNET_IRCD
 /* 327 */	{ RPL_WHOISHOST, "%s :Real host is %s" },
 		{ 0, (char *)NULL },
-#else
-		{ 0, (char *)NULL },
-		{ 0, (char *)NULL },
-#endif
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
 /* 331 */	{ RPL_NOTOPIC, "%s :No topic is set." },
@@ -349,28 +325,15 @@ static	Numeric	numeric_replies[] = {
 /* 210 */	{ RPL_TRACERECONNECT, "Retry. %d %s" },
 /* 211 */	{ RPL_STATSLINKINFO, (char *)NULL },
 /* 212 */	{ RPL_STATSCOMMANDS, "%s %u %u %u" },
-#ifdef RUSNET_IRCD		/* we have an extra arg: localpref */
 /* 213 */	{ RPL_STATSCLINE, "%c %s %s %s %d %d %d" },
-#else
-/* 213 */	{ RPL_STATSCLINE, "%c %s %s %s %d %d" },
-#endif
-#ifdef RUSNET_IRCD
 /* 214 */	{ RPL_STATSNLINE, "%c %s %s %s %d %d %d" },
-#else
-/* 214 */	{ RPL_STATSNLINE, "%c %s %s %s %d %d" },
-#endif
-#ifdef RUSNET_IRCD		/* we have an extra arg: client_flood */
 /* 215 */	{ RPL_STATSILINE, "%c %s %s %s %d %d %d" },
-#else
-/* 215 */	{ RPL_STATSILINE, "%c %s %s %s %d %d" },
-#endif
 /* 216 */	{ RPL_STATSKLINE, "%c %s!%s %s %d %s" },
 /* 217 */	{ RPL_STATSQLINE, "%c %s %s %s %d %d" },
 /* 218 */	{ RPL_STATSYLINE, "%c %d %d %d %d %ld %d.%d %d.%d" },
 /* 219 */	{ RPL_ENDOFSTATS, "%c :End of STATS report" },
 		{ 0, (char *)NULL },
 /* 221 */	{ RPL_UMODEIS, "%s" },
-#ifdef RUSNET_IRCD
 /* 222 */	{ RPL_CODEPAGE, "%s :is your charset now" },
 /* 223 */	{ RPL_CHARSET, "%s :charset is %s" },
 /* 224 */	{ RPL_STATSFLINE, "%c %s %s %s %d %d" },
@@ -378,13 +341,6 @@ static	Numeric	numeric_replies[] = {
 # ifdef RUSNET_RLINES
 /* 226 */	{ RPL_STATSRLINE, "%c %s!%s %s %d %s" },
 # endif
-#else
-		{ 0, (char *)NULL },
-		{ 0, (char *)NULL },
-		{ 0, (char *)NULL },
-		{ 0, (char *)NULL },
-		{ 0, (char *)NULL },
-#endif
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
@@ -399,7 +355,7 @@ static	Numeric	numeric_replies[] = {
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
 /* 240 */	{ RPL_STATSVLINE, "%c %s %s %s %d %d" },
-/* 241 */	{ RPL_STATSLLINE, "%c %s %s %s %d %d" },
+/* 241 */	{ RPL_STATSLLINE, "%c %s is logged to %s" },
 /* 242 */	{ RPL_STATSUPTIME, ":Server Up %d days, %d:%02d:%02d" },
 /* 243 */	{ RPL_STATSOLINE, "%c %s %s %s %d %d" },
 /* 244 */	{ RPL_STATSHLINE, "%c %s %s %s %d %d" }, 

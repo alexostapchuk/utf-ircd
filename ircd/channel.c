@@ -16,8 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *   $Id: channel.c,v 1.50 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -158,13 +156,13 @@ char	*modeid;
 {
 	Reg	Link	*mode;
 	Reg	int	cnt = 0, len = 0;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	ucp[MODEBUFLEN+1];
 #endif
 
 	if (MyClient(cptr))
 		(void) collapse(modeid);
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	rfcstrtoupper(ucp, modeid, sizeof(ucp));
 #endif
 	for (mode = chptr->mlist; mode; mode = mode->next)
@@ -180,12 +178,13 @@ char	*modeid;
 				return -1;
 			    }
 			if (type == mode->flags &&
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
-			    (!match(mode->ucp, ucp) || !match(ucp, mode->ucp)))
+#ifndef USE_OLD8BIT
+			    (!match(mode->ucp, ucp) || !match(ucp, mode->ucp))
 #else
 			    (!match(mode->value.cp, modeid) ||
-			    !match(modeid, mode->value.cp)))
+			    !match(modeid, mode->value.cp))
 #endif
+			)
 			    {
 				int rpl;
 
@@ -201,7 +200,7 @@ char	*modeid;
 				return -1;
 			    }
 		    }
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		else if (type == mode->flags && !strcmp(mode->ucp, ucp))
 #else
 		else if (type == mode->flags && !strcasecmp(mode->value.cp, modeid))
@@ -217,7 +216,7 @@ char	*modeid;
 	mode->value.cp = (char *)MyMalloc(len = strlen(modeid)+1);
 	istat.is_banmem += len;
 	(void)strcpy(mode->value.cp, modeid);
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	mode->ucp = (char *)MyMalloc(len = strlen(ucp)+1);
 	(void)strcpy(mode->ucp, ucp);
 #endif
@@ -236,11 +235,11 @@ char	*modeid;
 {
 	Reg	Link	**mode;
 	Reg	Link	*tmp;
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char	ucp[MODEBUFLEN+1];
 #endif
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	rfcstrtoupper(ucp, modeid, sizeof(ucp));
 #endif
 	if (modeid == NULL)
@@ -253,7 +252,7 @@ char	*modeid;
 			    istat.is_banmem -= (strlen(tmp->value.cp) + 1);
 			    istat.is_bans--;
 			    MyFree(tmp->value.cp);
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 			    MyFree(tmp->ucp);
 #endif
 			    free_link(tmp);
@@ -262,7 +261,7 @@ char	*modeid;
 	    }
 	else for (mode = &(chptr->mlist); *mode; mode = &((*mode)->next))
 		if (type == (*mode)->flags &&
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 		    strcmp(ucp, (*mode)->ucp)==0)
 #else
 		    strcasecmp(modeid, (*mode)->value.cp)==0)
@@ -273,7 +272,7 @@ char	*modeid;
 			istat.is_banmem -= (strlen(modeid) + 1);
 			istat.is_bans--;
 			MyFree(tmp->value.cp);
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 			MyFree(tmp->ucp);
 #endif
 			free_link(tmp);
@@ -291,35 +290,27 @@ aClient *cptr;
 aChannel *chptr;
 {
 	Reg	Link	*tmp;
-	char	*s;
-#ifdef RUSNET_IRCD
-	char	*t;
+	char	*s, *t;
+#ifndef USE_OLD8BIT
+	char	*name = cptr->ucname;
+#else
+	char	*name = cptr->name;
 #endif
+
 	if (!IsPerson(cptr))
 		return NULL;
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
-	t = mystrdup(make_nick_user_host(cptr->ucname, cptr->user->username,
+	s = make_nick_user_host(name, cptr->user->username, cptr->user->host);
+	t = mystrdup(make_nick_user_host(name, cptr->user->username,
 							cptr->sockhost));
-	s = make_nick_user_host(cptr->ucname, cptr->user->username,
-							cptr->user->host);
-#else
-#ifdef RUSNET_IRCD
-	t = mystrdup(make_nick_user_host(cptr->name, cptr->user->username,
-							cptr->sockhost));
-#endif /* RUSNET_IRCD */
-	s = make_nick_user_host(cptr->name, cptr->user->username,
-							cptr->user->host);
-#endif /* RUSNET_IRCD && !USE_OLD8BIT */
-for (tmp = chptr->mlist; tmp; tmp = tmp->next)
+
+	for (tmp = chptr->mlist; tmp; tmp = tmp->next)
 		if (tmp->flags == type && (
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 			match(tmp->ucp, s) == 0 || match(tmp->ucp, t) == 0
 #else
-			match(tmp->value.cp, s) == 0
-#ifdef RUSNET_IRCD
-			|| match(tmp->value.cp, t) == 0
-#endif
+			match(tmp->value.cp, s) == 0 ||
+			match(tmp->value.cp, t) == 0
 #endif
 							))
 			break;
@@ -335,34 +326,23 @@ for (tmp = chptr->mlist; tmp; tmp = tmp->next)
 		ip = (char *) inetntoa((char *)&cptr->ip);
 #endif
 
-#ifdef RUSNET_IRCD
 		if (strcmp(ip, cptr->sockhost))
-#else
-		if (strcmp(ip, cptr->user->host))
-#endif
 		    {
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
-			s = make_nick_user_host(cptr->ucname,
-						cptr->user->username, ip);
-#else
-			s = make_nick_user_host(cptr->name,
-						cptr->user->username, ip);
-#endif
+			s = make_nick_user_host(name, cptr->user->username, ip);
 	    
 			for (tmp = chptr->mlist; tmp; tmp = tmp->next)
 				if (tmp->flags == type &&
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
-				    match(tmp->ucp, s) == 0)
+#ifndef USE_OLD8BIT
+				    match(tmp->ucp, s) == 0
 #else
-				    match(tmp->value.cp, s) == 0)
+				    match(tmp->value.cp, s) == 0
 #endif
+				)
 					break;
 		    }
 	  }
 
-#ifdef RUSNET_IRCD
 	MyFree(t);
-#endif
 	return (tmp);
 }
 
@@ -555,31 +535,33 @@ aChannel *chptr;
 	if (MyConnect(cptr) && IsPerson(cptr) && IsRestricted(cptr) &&
 	    *chptr->chname != '&')
 		return 0;
-	if (chptr)
-		if ((lp = find_user_link(chptr->members, cptr)))
-			chanop = (lp->flags & (CHFL_CHANOP|CHFL_UNIQOP));
+
+	if (chptr && (lp = find_user_link(chptr->members, cptr)))
+		chanop = (lp->flags & (CHFL_CHANOP|CHFL_UNIQOP));
+
 	if (chanop)
 		chptr->reop = 0;
+
 	return chanop;
 }
-#ifdef RUSNET_IRCD
-int	is_chan_halfop(cptr, chptr)
+
+int	is_chan_anyop(cptr, chptr)
 aClient *cptr;
 aChannel *chptr;
 {
 	Reg	Link	*lp;
-	int	halfop = 0;
+	int	op = 0;
 
 	if (MyConnect(cptr) && IsPerson(cptr) && IsRestricted(cptr) &&
 	    *chptr->chname != '&')
 		return 0;
 
-	if (chptr)
-		if ((lp = find_user_link(chptr->members, cptr)))
-			halfop = (lp->flags & CHFL_HALFOP);
-	return halfop;
+	if (chptr && (lp = find_user_link(chptr->members, cptr)))
+		op = (lp->flags & (CHFL_HALFOP|CHFL_CHANOP|CHFL_UNIQOP));
+
+	return op;
 }
-#endif
+
 int	has_voice(cptr, chptr)
 aClient *cptr;
 aChannel *chptr;
@@ -603,29 +585,24 @@ aChannel *chptr;
 	member = IsMember(cptr, chptr);
 	lp = find_user_link(chptr->members, cptr);
 
-	if ((!lp || !(lp->flags & (CHFL_CHANOP |
-#ifdef RUSNET_IRCD
-					CHFL_HALFOP |
-#endif
-					 CHFL_VOICE))) &&
+	if ((!lp || !(lp->flags & (CHFL_CHANOP | CHFL_HALFOP | CHFL_VOICE))) &&
 	    !match_modeid(CHFL_EXCEPTION, cptr, chptr) &&
 	    match_modeid(CHFL_BAN, cptr, chptr))
 		return (MODE_BAN);
 
 	if (chptr->mode.mode & MODE_MODERATED &&
-	    (!lp || !(lp->flags & (CHFL_CHANOP|
-#ifdef RUSNET_IRCD
-					CHFL_HALFOP |
-#endif
-					CHFL_VOICE))))
+	    (!lp || !(lp->flags & (CHFL_CHANOP| CHFL_HALFOP | CHFL_VOICE))))
 			return (MODE_MODERATED);
 
 	if (chptr->mode.mode & MODE_NOPRIVMSGS && !member)
 		return (MODE_NOPRIVMSGS);
-#ifdef RUSNET_IRCD
+
+	if (chptr->mode.mode & MODE_RECOGNIZED && !Identified(cptr))
+		return (MODE_RECOGNIZED);
+
 	if (chptr->mode.mode & MODE_NOCOLOR)
 			return (MODE_NOCOLOR);
-#endif
+
 	return 0;
 }
 
@@ -730,12 +707,11 @@ Reg	char	*mbuf, *pbuf;
 aChannel *chptr;
 {
 	*mbuf++ = '+';
-#ifdef RUSNET_IRCD
+
 	if (chptr->mode.mode & MODE_7BIT)
 		*mbuf++ = 'z';
 	if (chptr->mode.mode & MODE_NOCOLOR)
 		*mbuf++ = 'c';		
-#endif
 	if (chptr->mode.mode & MODE_SECRET)
 		*mbuf++ = 's';
 	else if (chptr->mode.mode & MODE_PRIVATE)
@@ -754,6 +730,8 @@ aChannel *chptr;
 		*mbuf++ = 'q';
 	if (chptr->mode.mode & MODE_REOP)
 		*mbuf++ = 'r';
+	if (chptr->mode.mode & MODE_RECOGNIZED)
+		*mbuf++ = 'R';
 	if (chptr->mode.limit)
 	    {
 		*mbuf++ = 'l';
@@ -883,22 +861,22 @@ uncommented may just lead to desynchs..
 	*modebuf = '+';
 	modebuf[1] = '\0';
 	send_mode_list(cptr, chptr->chname, chptr->mlist, CHFL_BAN, 'b');
-	if (cptr->serv->version & SV_NMODE)
+
+	if (modebuf[1] || *parabuf)
 	    {
-		if (modebuf[1] || *parabuf)
-		    {
-			/* only needed to help compatibility */
-			sendto_one(cptr, ":%s MODE %s %s %s",
-				   ME, chptr->chname, modebuf, parabuf);
-			*parabuf = '\0';
-			*modebuf = '+';
-			modebuf[1] = '\0';
-		    }
-		send_mode_list(cptr, chptr->chname, chptr->mlist,
-			       CHFL_EXCEPTION, 'e');
-		send_mode_list(cptr, chptr->chname, chptr->mlist,
-			       CHFL_INVITE, 'I');
+		/* only needed to help compatibility */
+		sendto_one(cptr, ":%s MODE %s %s %s",
+			   ME, chptr->chname, modebuf, parabuf);
+		*parabuf = '\0';
+		*modebuf = '+';
+		modebuf[1] = '\0';
 	    }
+
+	send_mode_list(cptr, chptr->chname, chptr->mlist,
+		       CHFL_EXCEPTION, 'e');
+	send_mode_list(cptr, chptr->chname, chptr->mlist,
+		       CHFL_INVITE, 'I');
+
 	if (modebuf[1] || *parabuf)
 		sendto_one(cptr, ":%s MODE %s %s %s",
 			   ME, chptr->chname, modebuf, parabuf);
@@ -917,8 +895,6 @@ aChannel *chptr;
 	Reg	int	cnt = 0, len = 0, nlen;
 
 	if (check_channelmask(&me, cptr, chptr->chname) == -1)
-		return;
-	if (*chptr->chname == '!' && !(cptr->serv->version & SV_NCHAN))
 		return;
 
 	sprintf(buf, ":%s NJOIN %s :", ME, chptr->chname);
@@ -940,11 +916,8 @@ aChannel *chptr;
 			buf[len++] = ',';
 			buf[len] = '\0';
 		    }
-		if (lp->flags & (CHFL_UNIQOP|CHFL_CHANOP|
-#ifdef RUSNET_IRCD
-					CHFL_HALFOP|
-#endif
-						CHFL_VOICE))
+		if (lp->flags & (CHFL_UNIQOP|CHFL_CHANOP
+				|CHFL_HALFOP|CHFL_VOICE))
 		    {
 			if (lp->flags & CHFL_UNIQOP)
 			    {
@@ -956,10 +929,8 @@ aChannel *chptr;
 				if (lp->flags & CHFL_CHANOP)
 					buf[len++] = '@';
 			    }
-#ifdef RUSNET_IRCD
 			if (lp->flags & CHFL_HALFOP)
 				buf[len++] = '%';
-#endif
 			if (lp->flags & CHFL_VOICE)
 				buf[len++] = '+';
 			buf[len] = '\0';
@@ -974,6 +945,25 @@ aChannel *chptr;
 	return;
 }
 
+#ifdef TOPICWHOTIME
+/*
+ * send "cptr" a topic for channel chptr.
+ */
+void	send_channel_topic(cptr, chptr)
+aClient *cptr;
+aChannel *chptr;
+{
+	if (check_channelmask(&me, cptr, chptr->chname) == -1)
+		return;
+
+	/* send to capable servers only if topic was set */
+	if (chptr->topic_time && cptr->serv->version & SV_RUSNET2
+					&& !IsRusnetServices(cptr))
+		sendto_one(cptr, ":%s NTOPIC %s %s %ld :%s", ME, chptr->chname,
+			   chptr->topic_nick, chptr->topic_time, chptr->topic);
+}
+#endif
+
 /*
  * m_mode
  * parv[0] - sender
@@ -981,7 +971,6 @@ aChannel *chptr;
  * parv[2] - optional modes
  * parv[n] - optional parameters
  */
-
 int	m_mode(cptr, sptr, parc, parv)
 aClient *cptr;
 aClient *sptr;
@@ -1043,20 +1032,14 @@ char	*parv[];
 			   Taking IsServer(sptr) here saves resources for
 			   server passed mode changes  --erra */
 			int chanop = IsServer(sptr) ||
-#ifdef RUSNET_IRCD
-					is_chan_halfop(sptr, chptr) ||
-#endif				     
-							is_chan_op(sptr, chptr);
+					is_chan_anyop(sptr, chptr);
 
 			if(!(mcount = set_mode(cptr, sptr, chptr, &penalty,
 					       parc - 2, parv + 2,
 					       modebuf, parabuf)))
 				continue;	/* no valid mode change */
 			if ((mcount < 0) && MyConnect(sptr) && !IsServer(sptr)
-#ifdef RUSNET_IRCD
-		    && !IsRusnetServices(sptr)
-#endif			
-			)
+						    && !IsRusnetServices(sptr))
 			    {	/* rejected mode change */
 				int num = ERR_CHANOPRIVSNEEDED;
 
@@ -1067,10 +1050,10 @@ char	*parv[];
 			    }
 			if (strlen(modebuf) > (size_t)1)
 			    {	/* got new mode to pass on */
-				if (modebuf[1] == 'e' || modebuf[1] == 'I')
-					/* 2.9.x compatibility */
+				if (modebuf[1] == 'R')
+					/* RusNet 1.x compatibility */
 					sendto_match_servs_v(chptr, cptr,
-							     SV_NMODE,
+							     SV_RUSNET2,
 							   ":%s MODE %s %s %s",
 							     parv[0], name,
 							     modebuf, parabuf);
@@ -1079,11 +1062,8 @@ char	*parv[];
 							   ":%s MODE %s %s %s",
 							   parv[0], name,
 							   modebuf, parabuf);
-				if ((IsServer(cptr) && !chanop
-#ifdef RUSNET_IRCD
-					&& !IsRusnetServices(sptr)
-#endif				     
-				     ) || mcount < 0)
+				if ((IsServer(cptr) && !chanop &&
+					!IsRusnetServices(sptr)) || mcount < 0)
 				    {
 					sendto_flag(SCH_CHAN,
 						    "Fake: %s MODE %s %s %s",
@@ -1131,9 +1111,8 @@ char	*parv[], *mbuf, *pbuf;
 				MODE_MODERATED,  'm', MODE_NOPRIVMSGS, 'n',
 				MODE_TOPICLIMIT, 't', MODE_INVITEONLY, 'i',
 				MODE_ANONYMOUS,  'a', MODE_REOP,       'r',
-#ifdef RUSNET_IRCD
 				MODE_7BIT,	 'z', MODE_NOCOLOR,    'c',
-#endif
+				MODE_RECOGNIZED, 'R',
 				0x0, 0x0 };
 
 	Reg	Link	*lp = NULL;
@@ -1153,16 +1132,9 @@ char	*parv[], *mbuf, *pbuf;
 
 	mode = &(chptr->mode);
 	bcopy((char *)mode, (char *)&oldm, sizeof(Mode));
-	is_op = IsServer(sptr) ||
-#ifdef RUSNET_IRCD
-		IsRusnetServices(sptr) ||
-#endif	
+	is_op = IsServer(sptr) || IsRusnetServices(sptr) ||
 					is_chan_op(sptr, chptr);
-	ischop = is_op
-#ifdef RUSNET_IRCD
-			 || is_chan_halfop(sptr, chptr)
-#endif
-				;
+	ischop = is_op || is_chan_anyop(sptr, chptr);
 	new = mode->mode;
 
 	while (curr && *curr && count >= 0)
@@ -1210,11 +1182,8 @@ char	*parv[], *mbuf, *pbuf;
 				    }
 				else /* not IsMember() */
 				    {
-					if (!IsServer(sptr)
-#ifdef RUSNET_IRCD
-					&& !IsRusnetServices(sptr)
-#endif					
-					)
+					if (!IsServer(sptr) &&
+							!IsRusnetServices(sptr))
 					    {
 						sendto_one(sptr, err_str(ERR_NOTONCHANNEL, sptr->name),
 							    chptr->chname);
@@ -1242,25 +1211,18 @@ char	*parv[], *mbuf, *pbuf;
 				break;
 			    }
 		case 'o' :
-#ifdef RUSNET_IRCD
 		case 'h' :
-#endif			
 		case 'v' :
 			*penalty += 1;
 			if (--parc <= 0)
 				break;
 			parv++;
 			*parv = check_string(*parv);
-			if (opcnt >= MAXMODEPARAMS)
-#ifndef V29PlusOnly
-			    if (MyClient(sptr) || opcnt >= MAXMODEPARAMS + 1)
-#endif
+			if (opcnt >= MAXMODEPARAMS && (MyClient(sptr)
+						|| opcnt >= MAXMODEPARAMS + 1))
 				break;
 			if (!IsServer(sptr) && !IsMember(sptr, chptr)
-#ifdef RUSNET_IRCD
-			    && !IsRusnetServices(sptr)
-#endif			
-			)
+					    && !IsRusnetServices(sptr))
 			    {
 				sendto_one(sptr, err_str(ERR_NOTONCHANNEL,
 								 sptr->name),
@@ -1295,9 +1257,7 @@ char	*parv[], *mbuf, *pbuf;
 				lp->value.cptr = who;
 				lp->flags = (*curr == 'O') ? MODE_UNIQOP:
 			    			(*curr == 'o') ? MODE_CHANOP:
-#ifdef RUSNET_IRCD
 			    			(*curr == 'h') ? MODE_HALFOP:
-#endif
 								  MODE_VOICE;
 				lp->flags |= MODE_ADD;
 			    }
@@ -1306,9 +1266,7 @@ char	*parv[], *mbuf, *pbuf;
 				lp = &chops[opcnt++];
 				lp->value.cptr = who;
 				lp->flags = (*curr == 'o') ? MODE_CHANOP:
-#ifdef RUSNET_IRCD
 			    			(*curr == 'h') ? MODE_HALFOP:
-#endif
 								  MODE_VOICE;
 				lp->flags |= MODE_DEL;
 			    }
@@ -1364,12 +1322,13 @@ char	*parv[], *mbuf, *pbuf;
 
 			if (!**parv)
 				break;
+
 			*parv = check_string(*parv);
-			if (opcnt >= MAXMODEPARAMS)
-#ifndef V29PlusOnly
-			    if (MyClient(sptr) || opcnt >= MAXMODEPARAMS + 1)
-#endif
+
+			if (opcnt >= MAXMODEPARAMS && (MyClient(sptr) ||
+						opcnt >= MAXMODEPARAMS + 1))
 				break;
+
 			if (whatt == MODE_ADD)
 			    {
 				if (*mode->key && !IsServer(cptr))
@@ -1423,10 +1382,8 @@ char	*parv[], *mbuf, *pbuf;
 			parv++;
 			if (BadPtr(*parv))
 				break;
-			if (opcnt >= MAXMODEPARAMS)
-#ifndef V29PlusOnly
-			    if (MyClient(sptr) || opcnt >= MAXMODEPARAMS + 1)
-#endif
+			if (opcnt >= MAXMODEPARAMS && (MyClient(sptr) ||
+						opcnt >= MAXMODEPARAMS + 1))
 				break;
 			if (whatt == MODE_ADD)
 			    {
@@ -1454,11 +1411,8 @@ char	*parv[], *mbuf, *pbuf;
 				*(curr+1) = '\0';	/* Stop MODE # bb.. */
 #ifdef MODES_RESTRICTED
 				if (!IsAnOper(sptr) && !IsServer(sptr) &&
-					!IsMember(sptr, chptr)
-#ifdef RUSNET_IRCD
-					&& !IsRusnetServices(sptr)	    
-#endif							
-							)
+						!IsMember(sptr, chptr) &&
+						!IsRusnetServices(sptr))
 				    {
 					sendto_one(sptr,
 						   err_str(ERR_NOTONCHANNEL,
@@ -1481,10 +1435,8 @@ char	*parv[], *mbuf, *pbuf;
 			parv++;
 			if (BadPtr(*parv))
 				break;
-			if (opcnt >= MAXMODEPARAMS)
-#ifndef V29PlusOnly
-			    if (MyClient(sptr) || opcnt >= MAXMODEPARAMS + 1)
-#endif
+			if (opcnt >= MAXMODEPARAMS && (MyClient(sptr) ||
+						opcnt >= MAXMODEPARAMS + 1))
 				break;
 			if (whatt == MODE_ADD)
 			    {
@@ -1512,10 +1464,7 @@ char	*parv[], *mbuf, *pbuf;
 				*(curr+1) = '\0';	/* Stop MODE # bb.. */
 #ifdef MODES_RESTRICTED
 				if ( !(IsServer(sptr) || IsAnOper(sptr)
-#ifdef RUSNET_IRCD
-				    || IsRusnetServices(sptr)
-#endif				
-				) )
+				    || IsRusnetServices(sptr)) )
 				{
 				    if (!IsMember(sptr, chptr))
 				    {
@@ -1525,11 +1474,7 @@ char	*parv[], *mbuf, *pbuf;
 								chptr->chname);
 					break;
 				    }
-				    if (!is_chan_op(sptr, chptr)
-#ifdef RUSNET_IRCD
-					&& !is_chan_halfop(sptr, chptr)
-#endif
-									)
+				    if (!is_chan_anyop(sptr, chptr))
 				    {
 					sendto_one(sptr,
 						   err_str(ERR_CHANOPRIVSNEEDED,
@@ -1553,10 +1498,8 @@ char	*parv[], *mbuf, *pbuf;
 			parv++;
 			if (BadPtr(*parv))
 				break;
-			if (opcnt >= MAXMODEPARAMS)
-#ifndef V29PlusOnly
-			    if (MyClient(sptr) || opcnt >= MAXMODEPARAMS + 1)
-#endif
+			if (opcnt >= MAXMODEPARAMS && (MyClient(sptr) ||
+						opcnt >= MAXMODEPARAMS + 1))
 				break;
 			if (whatt == MODE_ADD)
 			    {
@@ -1599,11 +1542,8 @@ char	*parv[], *mbuf, *pbuf;
 			    {
 				if (BadPtr(*parv))
 					break;
-				if (opcnt >= MAXMODEPARAMS)
-#ifndef V29PlusOnly
-				    if (MyClient(sptr) ||
-					opcnt >= MAXMODEPARAMS + 1)
-#endif
+				if (opcnt >= MAXMODEPARAMS && (MyClient(sptr)
+						|| opcnt >= MAXMODEPARAMS + 1))
 					break;
 				if (!(nusers = atoi(*++parv)))
 					break;
@@ -1799,12 +1739,10 @@ char	*parv[], *mbuf, *pbuf;
 				c = 'O';
 				cp = lp->value.cptr->name;
 				break;
-#ifdef RUSNET_IRCD
 			case MODE_HALFOP :
 				c = 'h';
 				cp = lp->value.cptr->name;
 				break;
-#endif
 			case MODE_VOICE :
 				c = 'v';
 				cp = lp->value.cptr->name;
@@ -1903,11 +1841,9 @@ char	*parv[], *mbuf, *pbuf;
 					chptr->reop = timeofday + 
 						LDELAYCHASETIMELIMIT;
 			case MODE_UNIQOP :
-#ifdef RUSNET_IRCD
 			case MODE_HALFOP :
 				if (!is_op)	/* cut off half-ops */
 					break;
-#endif
 			case MODE_VOICE :
 				*mbuf++ = c;
 				(void)strcat(pbuf, cp);
@@ -1978,10 +1914,8 @@ char	*key;
 	    chptr->history != 0 && *chptr->chname != '!')
 		return (timeofday > chptr->history) ? 0 : ERR_UNAVAILRESOURCE;
 
-#ifdef RUSNET_IRCD
 	if (IsRusnetServices(sptr))
 		return 0;
-#endif
 
 	for (lp = sptr->user->invited; lp; lp = lp->next)
 		if (lp->value.chptr == chptr)
@@ -2003,10 +1937,8 @@ char	*key;
 			return (ERR_INVITEONLYCHAN);
 	}
 	
-#ifdef RUSNET_IRCD
 	if (!IsOper(sptr))
 	{
-#endif
 	if ((chptr->mode.mode & MODE_INVITEONLY)
 	    && !match_modeid(CHFL_INVITE, sptr, chptr) && (lp == NULL))
 		return (ERR_INVITEONLYCHAN);
@@ -2017,8 +1949,11 @@ char	*key;
 	if (chptr->mode.limit &&
 	    (chptr->users >= chptr->mode.limit) && (lp == NULL))
 		return (ERR_CHANNELISFULL);
-#ifdef RUSNET_IRCD
 	}
+
+	if ((chptr->mode.mode & MODE_RECOGNIZED)
+	    && !(sptr->user->flags & FLAGS_IDENTIFIED))
+		return (ERR_UNRECOGNIZED);
 
 	if (chptr->mode.mode & MODE_7BIT)
 	{
@@ -2028,15 +1963,10 @@ char	*key;
 		    if (*i & 0x80)
 			return (ERR_7BIT);
 	}
-#endif
 
 	if (banned)
-		sendto_channel_butone(&me, &me, chptr,
-#ifdef RUSNET_IRCD
-					1, ":%s NOTICE @%s :%s carries an "
-#else
-					0, ":%s NOTICE %s :%s carries an "
-#endif
+		sendto_channel_butone(&me, &me, chptr, 1,
+					":%s NOTICE @%s :%s carries an "
 					"invitation (overriding ban on %s).",
 					ME, chptr->chname,
 					sptr->name, banned->value.cp);
@@ -2051,7 +1981,7 @@ void	clean_channelname(ch)
 Reg	unsigned char *ch;
 {
 	for (ch++; *ch; ch++)
-#if defined(RUSNET_IRCD) && defined(USE_OLD8BIT)
+#ifdef USE_OLD8BIT
 		if (*ch <= 0x20 || 
 			(*ch >= 0x7F && *ch < 0xA3) ||
 			(*ch > 0xA7 && *ch < 0xB3 && *ch != 0xAD) ||
@@ -2121,7 +2051,7 @@ int	flag;
 	len = strlen(chname);
 	if (MyClient(cptr))
 	{
-#if defined(RUSNET_IRCD) && defined(LOCALE_STRICT_NAMES) && !defined(USE_OLD8BIT)
+#if defined(LOCALE_STRICT_NAMES) && !defined(USE_OLD8BIT)
 	    unsigned char ch8[CHANNELLEN];
 	    unsigned char *nch, *ch2 = ch8;
 	    conversion_t *conv = conv_get_conversion(CHARSET_8BIT);
@@ -2151,7 +2081,7 @@ int	flag;
 #else
 	    if (len > CHANNELLEN)	/* never can be after conv_do_* --LoSt */
 	    {
-#if defined(RUSNET_IRCD) && defined(IRCD_CHANGE_LOCALE) && !defined(USE_OLD8BIT)
+#if defined(IRCD_CHANGE_LOCALE) && !defined(USE_OLD8BIT)
 		int	wlen = CHANNELLEN;
 		int	chs;
 		size_t	rlen = len;
@@ -2159,7 +2089,7 @@ int	flag;
 #endif
 		/* note: it may be weird if cutted in middle of multibyte char */
 		strncpyzt(newchname, chname, sizeof(newchname)); /* non-const */
-#if defined(RUSNET_IRCD) && defined(IRCD_CHANGE_LOCALE) && !defined(USE_OLD8BIT)
+#if defined(IRCD_CHANGE_LOCALE) && !defined(USE_OLD8BIT)
 		/* check channel name length now to be CHANNELLEN max */
 		for (len = 0; newchname[len] != '\0' && wlen > 0; wlen--)
 		    {
@@ -2188,9 +2118,12 @@ int	flag;
 	strncpyzt(chptr->chname, chname, len+1);
 	if (channel)
 		channel->prevch = chptr;
-	chptr->prevch = NULL;
 	chptr->nextch = channel;
+	/* bzero must have taken care of the following two */
+#if 0
+	chptr->prevch = NULL;
 	chptr->history = 0;
+#endif
 	channel = chptr;
 	(void)add_to_channel_hash_table(chname, chptr);
 	return chptr;
@@ -2635,11 +2568,9 @@ char	*parv[];
 					case 'o':
 						flags |= CHFL_CHANOP;
 						break;
-#ifdef RUSNET_IRCD
 					case 'h':
 						flags |= CHFL_HALFOP;
 						break;
-#endif
 					case 'v':
 						flags |= CHFL_VOICE;
 					}
@@ -2736,7 +2667,7 @@ Reg	aClient *cptr, *sptr;
 int	parc;
 char	*parv[];
 {
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 	char nbuf[MB_LEN_MAX*BUFSIZE];
 #else
 	char nbuf[BUFSIZE];
@@ -2764,7 +2695,6 @@ char	*parv[];
 			if (*(target+1) == '@')
 			    {
 				/* actually never sends in a JOIN ^G */
-#ifdef RUSNET_IRCD
 				if (*(target+2) == '%')
 				    {
 					if (*(target+3) == '+')
@@ -2783,7 +2713,6 @@ char	*parv[];
 					    }
 				    }
 				else
-#endif
 				if (*(target+2) == '+')
 				    {
 					strcpy(mbuf, "\007ov");
@@ -2799,7 +2728,6 @@ char	*parv[];
 				    }
 			    }
 			else
-#ifdef RUSNET_IRCD
 			if (*(target+1) == '%')
 			    {
 				if (*(target+2) == '+')
@@ -2817,7 +2745,6 @@ char	*parv[];
 				    }
 			    }
 			else
-#endif
 			    {
 				if (*(target+1) == '+')
 				    {
@@ -2833,7 +2760,6 @@ char	*parv[];
 				    }
 			    }
 		    }
-#ifdef RUSNET_IRCD
 		else if (*target == '%')
 		    {
 			if (*(target+1) == '+')
@@ -2849,7 +2775,6 @@ char	*parv[];
 				name = target + 1;
 			    }
 		    }
-#endif
 		else if (*target == '+')
 		    {
 			strcpy(mbuf, "\007v");
@@ -2870,25 +2795,23 @@ char	*parv[];
 				get_client_name(cptr, TRUE));
 			continue;
 		}
+		if (check_channelmask(sptr, cptr, parv[1]) == -1)
+		    {
+			sendto_flag(SCH_DEBUG,
+				    "received NJOIN for %s from %s",
+				    parv[1],
+				    get_client_name(cptr, TRUE));
+			return 0;
+		    }
+
 		/* get channel pointer */
+		if (IsChannelName(parv[1]))
+			chptr = get_channel(acptr, parv[1], CREATE);
 		if (!chptr)
 		    {
-			if (check_channelmask(sptr, cptr, parv[1]) == -1)
-			    {
-				sendto_flag(SCH_DEBUG,
-					    "received NJOIN for %s from %s",
-					    parv[1],
-					    get_client_name(cptr, TRUE));
-				return 0;
-			    }
-			if (IsChannelName(parv[1]))
-			chptr = get_channel(acptr, parv[1], CREATE);
-			if (!chptr)
-			    {
-				sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL,
-							 parv[0]), parv[1]);
-				return 0;
-			    }
+			sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL,
+						 parv[0]), parv[1]);
+			return 0;
 		    }
 		/* make sure user isn't already on channel */
 		if (IsMember(acptr, chptr))
@@ -2906,13 +2829,7 @@ char	*parv[];
 			*q++ = ',';
 		while (*target)
 			*q++ = *target++;
-		/* send 2.9 style join to other servers */
-		if (*chptr->chname != '!')
-			nj = sendto_match_servs_notv(chptr, cptr, SV_NJOIN,
-						     ":%s JOIN %s%s", name,
-						     parv[1], 
-						     UseModes(parv[1]) ? mbuf : 
-						     "");
+
 		/* send join to local users on channel */
 		sendto_channel_butserv(chptr, acptr, ":%s JOIN %s",
 							name, parv[1]);
@@ -2975,12 +2892,11 @@ char	*parv[];
 		sendto_channel_butserv(chptr, &me, ":%s MODE %s +%s %s",
 				       sptr->name, parv[1], modebuf, parabuf);
 
-	/* send NJOIN to capable servers */
+	/* send NJOIN to servers */
 	*q = '\0';
-	if (nbuf[0]) {
-		sendto_match_servs_v(chptr, cptr, SV_NJOIN, ":%s NJOIN %s :%s",
-				     parv[0], parv[1], nbuf);
-	}
+	if (nbuf[0])
+		sendto_match_servs(chptr, cptr, ":%s NJOIN %s :%s",
+					     parv[0], parv[1], nbuf);
 	return 0;
 }
 
@@ -3139,12 +3055,8 @@ char	*parv[];
 			penalty += 2;
 			continue;
 		    }
-		if (!IsServer(sptr) && !is_chan_op(sptr, chptr)
-#ifdef RUSNET_IRCD
-				&& !is_chan_halfop(sptr, chptr)
-				&& !IsRusnetServices(sptr)
-#endif		
-		)
+		if (!IsServer(sptr) && !is_chan_anyop(sptr, chptr)
+					&& !IsRusnetServices(sptr))
 		    {
 			if (!IsMember(sptr, chptr))
 				sendto_one(sptr, err_str(ERR_NOTONCHANNEL,
@@ -3167,7 +3079,6 @@ char	*parv[];
 			    (size_t) BUFSIZE - UNINICKLEN)
 				continue;
 			if (IsMember(who, chptr))
-#ifdef RUSNET_IRCD
 			    if (!IsServer(sptr) &&
 				!IsRusnetServices(sptr) &&
 				is_chan_op(who, chptr) && /* half-ops cannot */
@@ -3177,7 +3088,6 @@ char	*parv[];
 					    parv[0]), chptr->chname);
 			    else
 			    {
-#endif		
 				sendto_channel_butserv(chptr, sptr,
 						":%s KICK %s %s :%s", parv[0],
 						name, who->name, comment);
@@ -3246,9 +3156,83 @@ Reg	aChannel	*chptr;
 }
 
 /*
+** m_ntopic
+**	parv[0] = sender prefix
+**	parv[1] = channel name
+**	parv[2] = topic set by
+**	parv[3] = topic set at
+**	parv[4] = topic text
+*/
+int	m_ntopic(cptr, sptr, parc, parv)
+aClient *cptr, *sptr;
+int	parc;
+char	*parv[];
+    {
+	aChannel *chptr = NULL;
+	time_t set_at;
+
+	if (parc < 5)
+	    {
+		sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS, parv[0]),
+								"NTOPIC");
+		return 1;
+	    }
+
+	/* get channel pointer */
+	if (IsChannelName(parv[1]))
+		chptr = get_channel(sptr, parv[1], 0);
+
+	if (!chptr)
+	    {
+		sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL, parv[0]), parv[1]);
+		return 0;
+	    }
+
+	set_at = atol(parv[3]);
+
+	/* only update topic if it's newer than one we have */
+	if (set_at > chptr->topic_time)
+	    {
+		aClient *acptr = NULL;
+		Link *lp;
+
+		chptr->topic_time = set_at;
+		strcpy(chptr->topic_nick, parv[2]);
+		strcpy(chptr->topic, parv[4]);
+
+		/* send topic to local users on channel */
+		sendto_channel_butserv(chptr, sptr, ":%s TOPIC %s :%s",
+						parv[2], parv[1], parv[4]);
+
+		/* propagate ntopic to servers */
+		sendto_match_servs_v(chptr, cptr, SV_RUSNET2,
+					":%s NTOPIC %s %s %ld :%s", parv[0],
+					parv[1], parv[2], parv[3], parv[4]);
+#ifdef USE_SERVICES
+		check_services_butone(SERVICE_WANT_TOPIC, NULL,
+					sptr, ":%s TOPIC %s :%s",
+					parv[2], parv[1], parv[4]);
+#endif
+		/* send fake topic change to older servers if possible */
+		for (lp = chptr->members; lp; lp = lp->next)
+			if (!strcasecmp(parv[2], lp->value.cptr->name))
+			    {
+				acptr = lp->value.cptr;
+				break;
+			    }
+
+		if (acptr && ((chptr->mode.mode & MODE_TOPICLIMIT) == 0 ||
+						is_chan_anyop(acptr, chptr)))
+			sendto_match_servs_v(chptr, acptr, SV_RUSNET1,
+				":%s TOPIC %s :%s", parv[2], parv[1], parv[4]);
+	    }
+    }
+
+/*
 ** m_topic
 **	parv[0] = sender prefix
-**	parv[1] = topic text
+**	parv[1] = channel name(s)
+**	parv[2] = topic text
 */
 int	m_topic(cptr, sptr, parc, parv)
 aClient *cptr, *sptr;
@@ -3258,7 +3242,7 @@ char	*parv[];
 	aChannel *chptr = NullChn;
 	char	*topic = NULL, *name, *p = NULL;
 	int	penalty = 1;
-	
+
 	if (parc < 2)
 	    {
 		sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS, parv[0]),
@@ -3280,10 +3264,7 @@ char	*parv[];
 		    {
 			chptr = find_channel(name, NullChn);
 			if (!chptr || !IsMember(sptr, chptr)
-#ifdef RUSNET_IRCD
-			&& !IsRusnetServices(sptr)
-#endif			
-			)
+					&& !IsRusnetServices(sptr))
 			    {
 				sendto_one(sptr, err_str(ERR_NOTONCHANNEL,
 					   parv[0]), name);
@@ -3319,23 +3300,14 @@ char	*parv[];
 
 		    } 
 		else if ((chptr->mode.mode & MODE_TOPICLIMIT) == 0 ||
-			 is_chan_op(sptr, chptr)
-#ifdef RUSNET_IRCD
-				|| is_chan_halfop(sptr, chptr)
-				|| IsRusnetServices(sptr)
-#endif			 
-			 )
+			 is_chan_anyop(sptr, chptr) || IsRusnetServices(sptr))
 		    {	/* setting a topic */
 			strncpyzt(chptr->topic, topic, sizeof(chptr->topic));
 #ifdef TOPICWHOTIME
-# ifdef RUSNET_IRCD
-		    if (!IsRusnetServices(sptr) || !chptr->topic_nick) {
-# endif /* RUSNET_IRCD */
-                        strcpy(chptr->topic_nick, sptr->name);
-                        chptr->topic_time = timeofday;
-# ifdef RUSNET_IRCD
-		    }
-# endif
+			if (!IsRusnetServices(sptr) || !chptr->topic_nick) {
+				strcpy(chptr->topic_nick, sptr->name);
+				chptr->topic_time = timeofday;
+			}
 #endif
 			sendto_match_servs(chptr, cptr,":%s TOPIC %s :%s",
 					   parv[0], chptr->chname,
@@ -3399,9 +3371,7 @@ char	*parv[];
 	chptr = find_channel(parv[2], NullChn);
 
 	if (!chptr)
-#ifdef RUSNET_IRCD
 	    if (IsRusnetServices(sptr))
-#endif
 	    {
 		sendto_prefix_one(acptr, sptr, ":%s INVITE %s :%s",
 				  parv[0], parv[1], parv[2]);
@@ -3416,18 +3386,12 @@ char	*parv[];
 		    }
 		return 3;
 	    }
-#ifdef RUSNET_IRCD
 	    else {
 		sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL, parv[0]), parv[2]);
 		return 1;
 	    }
-#endif
 
-	if (!IsMember(sptr, chptr)
-#ifdef RUSNET_IRCD
-	    && !IsRusnetServices(sptr)
-#endif	
-	)
+	if (!IsMember(sptr, chptr) && !IsRusnetServices(sptr))
 	    {
 		sendto_one(sptr, err_str(ERR_NOTONCHANNEL, parv[0]), parv[2]);
 		return 1;
@@ -3440,12 +3404,8 @@ char	*parv[];
 		return 1;
 	    }
 
-	if ((chptr->mode.mode & MODE_INVITEONLY) &&  !is_chan_op(sptr, chptr)
-#ifdef RUSNET_IRCD
-	    && !is_chan_halfop(sptr, chptr)
-	    && !IsRusnetServices(sptr)
-#endif	
-	)
+	if ((chptr->mode.mode & MODE_INVITEONLY) && !is_chan_anyop(sptr, chptr)
+						&& !IsRusnetServices(sptr))
 	    {
 		sendto_one(sptr, err_str(ERR_CHANOPRIVSNEEDED,
 			   parv[0]), chptr->chname);
@@ -3464,13 +3424,8 @@ char	*parv[];
 	    }
 
 	if (MyConnect(acptr))
-		if (chptr && /* (chptr->mode.mode & MODE_INVITEONLY) && */
-		    sptr->user && (is_chan_op(sptr, chptr)
-#ifdef RUSNET_IRCD
-					|| is_chan_halfop(sptr, chptr)
-					|| IsRusnetServices(sptr)
-#endif
-					))
+		if (chptr && sptr->user && (is_chan_anyop(sptr, chptr)
+						|| IsRusnetServices(sptr)))
 			add_invite(acptr, chptr);
 
 	sendto_prefix_one(acptr, sptr, ":%s INVITE %s :%s",parv[0],
@@ -3605,11 +3560,7 @@ char	*parv[];
 		if (!MyConnect(sptr) && (BadPtr(para) || (rlen > CHREPLLEN)))
 			break;
 		if ((BadPtr(para) || !HiddenChannel(chptr)) &&
-		    !ShowChannel(sptr, chptr)
-#ifdef RUSNET_IRCD
-		    && !IsOper(sptr)
-#endif		    
-		    )
+		    !ShowChannel(sptr, chptr) && !IsOper(sptr))
 			continue; /* -- users on this are not listed */
 
 		/* Find users on same channel (defined by chptr) */
@@ -3630,10 +3581,8 @@ char	*parv[];
 			    {
 				if (lp->flags & CHFL_CHANOP)
 					(void)strcat(buf, "@");
-#ifdef RUSNET_IRCD
 				else if (lp->flags & CHFL_HALFOP)
 					(void)strcat(buf, "%");
-#endif		
 				else if (lp->flags & CHFL_VOICE)
 					(void)strcat(buf, "+");
 				(void)strcat(buf, parv[0]);
@@ -3647,24 +3596,19 @@ char	*parv[];
 		for (lp = chptr->members; lp; lp = lp->next)
 		    {
 			c2ptr = lp->value.cptr;
-			if (IsInvisible(c2ptr) && !IsMember(sptr,chptr)
-#ifdef RUSNET_IRCD
-			&& !IsOper(sptr)
-#endif		
-			)
+			if (IsInvisible(c2ptr) && !IsMember(sptr,chptr) &&
+								!IsOper(sptr))
 				continue;
 			if (lp->flags & CHFL_CHANOP)
 			    {
 				(void)strcat(buf, "@");
 				idx++;
 			    }
-#ifdef RUSNET_IRCD
 			else if (lp->flags & CHFL_HALFOP)
 			    {
 				(void)strcat(buf, "%");
 				idx++;
 			    }
-#endif		
 			else if (lp->flags & CHFL_VOICE)
 			    {
 				(void)strcat(buf, "+");
@@ -3715,11 +3659,7 @@ char	*parv[];
   		aChannel *ch3ptr;
 		int	showflag = 0, secret = 0;
 
-		if (!IsPerson(c2ptr) || IsInvisible(c2ptr)
-#ifdef RUSNET_IRCD
-		    && !IsOper(sptr)
-#endif		
-		)
+		if (!IsPerson(c2ptr) || IsInvisible(c2ptr) && !IsOper(sptr))
 			continue;
 		if (!MyConnect(sptr) && (BadPtr(para) || (rlen > CHREPLLEN)))
 			break;
@@ -3732,17 +3672,10 @@ char	*parv[];
 		while (lp)
 		    {
 			ch3ptr = lp->value.chptr;
-			if (PubChannel(ch3ptr) || IsMember(sptr, ch3ptr)
-#ifdef RUSNET_IRCD
-			|| IsOper(sptr)
-#endif			
-			)
+			if (PubChannel(ch3ptr) || IsMember(sptr, ch3ptr) ||
+								IsOper(sptr))
 				showflag = 1;
-			if (SecretChannel(ch3ptr)
-#ifdef RUSNET_IRCD
-			&& !IsOper(sptr)
-#endif						
-			)
+			if (SecretChannel(ch3ptr) && !IsOper(sptr))
 				secret = 1;
 			lp = lp->next;
 		    }
@@ -3794,9 +3727,6 @@ aClient	*cptr, *user;
 		chptr = lp->value.chptr;
 		if (*chptr->chname == '&')
 			continue;
-		if (*chptr->chname == '!' && !(cptr->serv->version & SV_NCHAN))
-			/* in reality, testing SV_NCHAN here is pointless */
-			continue;
 		if ((mask = rindex(chptr->chname, ':')))
 			if (match(++mask, cptr->name))
 				continue;
@@ -3818,21 +3748,16 @@ aClient	*cptr, *user;
 		    }
 		(void)strcpy(buf + len, chptr->chname);
 		len += clen;
-		if (lp->flags & (CHFL_UNIQOP|CHFL_CHANOP|
-#ifdef RUSNET_IRCD
-						CHFL_HALFOP|
-#endif
-							CHFL_VOICE))
+		if (lp->flags & (CHFL_UNIQOP|CHFL_CHANOP
+				|CHFL_HALFOP|CHFL_VOICE))
 		    {
 			buf[len++] = '\007';
 			if (lp->flags & CHFL_UNIQOP) /*this should be useless*/
 				buf[len++] = 'O';
 			if (lp->flags & CHFL_CHANOP)
 				buf[len++] = 'o';
-#ifdef RUSNET_IRCD
 			if (lp->flags & CHFL_HALFOP)
 				buf[len++] = 'h';
-#endif
 			if (lp->flags & CHFL_VOICE)
 				buf[len++] = 'v';
 			buf[len] = '\0';
@@ -3893,16 +3818,10 @@ aChannel *chptr;
 			{
 			    mbuf[cnt] = '\0';
 			    if (lp != chptr->members)
-				{
-				    sendto_match_servs_v(chptr, NULL, SV_NCHAN,
-							 ":%s MODE %s +%s %s",
-							 ME, chptr->chname,
-							 mbuf, nbuf);
-				    sendto_channel_butserv(chptr, &me,
+				sendto_channel_butone(chptr, &me,
 						   ":%s MODE %s +%s %s",
-							   ME, chptr->chname,
-							   mbuf, nbuf);
-				}
+							ME, chptr->chname,
+							mbuf, nbuf);
 			    cnt = 0;
 			    mbuf[0] = nbuf[0] = '\0';
 			}
@@ -3920,10 +3839,7 @@ aChannel *chptr;
 	    if (cnt)
 		{
 		    mbuf[cnt] = '\0';
-		    sendto_match_servs_v(chptr, NULL, SV_NCHAN,
-					 ":%s MODE %s +%s %s",
-					 ME, chptr->chname, mbuf, nbuf);
-		    sendto_channel_butserv(chptr, &me, ":%s MODE %s +%s %s",
+		    sendto_channel_butone(chptr, &me, ":%s MODE %s +%s %s",
 					   ME, chptr->chname, mbuf, nbuf);
 		}
 	}
@@ -3955,9 +3871,7 @@ aChannel *chptr;
 					   chptr->chname, now - chptr->reop);
 	    op.flags = MODE_ADD|MODE_CHANOP;
 	    change_chan_flag(&op, chptr);
-	    sendto_match_servs_v(chptr, NULL, SV_NCHAN, ":%s MODE %s +o %s",
-				 ME, chptr->chname, op.value.cptr->name);
-	    sendto_channel_butserv(chptr, &me, ":%s MODE %s +o %s",
+	    sendto_channel_butone(chptr, &me, ":%s MODE %s +o %s",
 				   ME, chptr->chname, op.value.cptr->name);
 	}
     chptr->reop = 0;
@@ -4069,8 +3983,8 @@ time_t	now;
 	/* Check again after CHECKFREQ seconds */
 	return (time_t) (now + CHECKFREQ);
 }
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
 
+#ifndef USE_OLD8BIT
 void transcode_channels (conversion_t *old)
 {
   static char buff[MB_LEN_MAX*BUFSIZE+1]; /* must be long enough to get any field */

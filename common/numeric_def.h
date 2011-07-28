@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: numeric_def.h,v 1.16 2008-07-03 15:15:45 skold Exp $
  */
 /*
  * -- Wumpus -- 30 Nov 1991
@@ -76,7 +75,7 @@
 #define ERR_SERVICECONFUSED  435
 #define	ERR_NICKCOLLISION    436
 #define ERR_UNAVAILRESOURCE  437
-/* #define ERR_DEAD    438  reserved for later use -krys */
+#define ERR_NICKTOOFAST      438
 
 #define ERR_USERNOTINCHANNEL 441
 #define ERR_NOTONCHANNEL     442
@@ -96,8 +95,9 @@
 #define	ERR_KEYSET           467
 
 #define ERR_NOCODEPAGE       468
+#define ERR_UNRECOGNIZED     469
 
-#define ERR_7BIT	      470
+#define ERR_7BIT	     470
 #define ERR_CHANNELISFULL    471
 #define ERR_UNKNOWNMODE      472
 #define ERR_INVITEONLYCHAN   473
@@ -116,6 +116,7 @@
 #define ERR_RESTRICTED       484
 #define ERR_UNIQOPRIVSNEEDED 485
 #define ERR_RLINED           486
+#define ERR_REGONLY          487
 
 #define ERR_NOOPERHOST       491
 #define ERR_NOSERVICEHOST    492
@@ -231,7 +232,6 @@
 
 #define RPL_UMODEIS          221
 
-#ifdef RUSNET_IRCD
 #define RPL_CODEPAGE         222
 #define RPL_CHARSET          223
 #define RPL_STATSFLINE       224
@@ -239,7 +239,6 @@
 # define RPL_WHOISRMODE	     225
 # define RPL_STATSRLINE	     226
 #endif /* RUSNET_RLINES */
-#endif
 
 #define RPL_SERVICEINFO      231
 #define RPL_ENDOFSERVICES    232

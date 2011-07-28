@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: hash_ext.h,v 1.9 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -50,7 +49,6 @@ EXTERN aChannel *hash_find_channel(char *name, aChannel *chptr);
 EXTERN aChannel *hash_find_channels(char *name, aChannel *chptr);
 EXTERN aServer *hash_find_stoken(int tok, aClient *cptr, void *dummy);
 EXTERN int m_hash(aClient *cptr, aClient *sptr, int parc, char *parv[]);
-#ifdef RUSNET_IRCD
 EXTERN void gen_crc32table(void);
 EXTERN unsigned long gen_crc(char *);   /* calculate crc32 value */
 EXTERN char * b64enc(unsigned long id);   /* encode with b64e */
@@ -61,6 +59,5 @@ EXTERN char * find_collision(const char *nick, unsigned long id);
 EXTERN void expire_collision_map(time_t time);
 #ifndef USE_OLD8BIT
 EXTERN void transcode_collmaps(conversion_t *old);
-#endif
 #endif
 #undef EXTERN

@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: config.h.dist,v 1.43 2010-11-10 13:38:40 gvs Exp $
+ *   $Id$
  */
 
 /*
@@ -70,16 +70,10 @@
  * Configure rusnet extensions. Russian codepages per ports support,
  * russian nicks and channels, channel mode +z (latin nicks only) etc
  */
-#define RUSNET_IRCD
 #define NETWORKNAME "RusNet"
 
-#ifdef RUSNET_IRCD
 #define RUSNET_RLINES
 #define IRCDRMOTD_PATH IRCDCONF_DIR "/ircd.rmotd"
-#else
-#undef RUSNET_RLINES
-#undef IRCDRMOTD_PATH IRCDCONF_DIR
-#endif
 
 /*
  * Define if you want wallops to be directed to &WALLOPS channel.
@@ -141,7 +135,6 @@
  */
 #undef	NO_DEFAULT_INVISIBLE
 
-#ifdef RUSNET_IRCD
 /* NO_DEFAULT_VHOST
  *
  * When defined, your users will not automatically be attributed with user
@@ -160,8 +153,6 @@
  * option are not compatible in the same network!
  */
 #undef	NO_DIRECT_VHOST
-
-#endif
 
 /* STATS_RESTRICTED
  *
@@ -325,7 +316,14 @@
 #undef	LOG_OLDFORMAT
 
 
-#ifdef RUSNET_IRCD
+/* The following definitions are needed by m_*serv commands */
+#define SERVICES_SERV "*.RusNet"
+#define SERVICES_IDENT "Service"
+#define SERVICES_HOST "RusNet"
+#define NICKSERV_NICK "NickServ"
+#define CHANSERV_NICK "ChanServ"
+#define MEMOSERV_NICK "MemoServ"
+#define OPERSERV_NICK "OperServ"
 
 #undef	OPER_RCPAGE	/* Opers can remotely change user's codepage */
 
@@ -337,8 +335,6 @@
 #undef  WHOIS_NOTICES   /* Opers see /whoises on them */
 #undef  JOIN_NOTICES	/* Mind your clients privacy before defining this */
 #endif /* EXTRA_NOTICES */
-
-#endif
 
 /*
  * define this if you want to use crypted passwords for operators in your
@@ -411,7 +407,7 @@
  */
 #define        EXTRA_STATISTICS
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 /*
  * Locale stuff:
  * 1. LOCALE* and CHARSET* must be network global settings.
@@ -434,7 +430,12 @@
  *
  * undef IRCD_CHANGE_LOCALE if your UTF-8 locale is broken to avoid desync
  * caused by upper/lowercase letters mismatch
+ *
+ * Finally, SYS_LOCALE allows you to have timestamps and log messages
+ * in separate locale (you'd better keep it in C, but it's up to you
+ * to have it changed)
  */
+#define SYS_LOCALE		"C"
 #define	LOCALE			"uk_UA"
 #define	LOCALE_STRICT_NAMES	1
 
@@ -462,23 +463,9 @@
 #undef USE_SERVICES
 
 /*
- * Configure this if you want to start with TkServ and Services.
- * Of course, you'll need to configure and build tkserv, too.
+ * Configure this if you want to start with Services.
  */
-#ifdef RUSNET_IRCD
 #define SERVICES_SERV	"*.RusNet"
-#define SERVICES_IDENT	"Service"
-#define SERVICES_HOST	"RusNet"
-#define	NICKSERV_NICK	"NickServ"
-#define	CHANSERV_NICK	"ChanServ"
-#define	MEMOSERV_NICK	"MemoServ"
-#define	OPERSERV_NICK	"OperServ"
-# ifdef USE_TKSERV
-#define	TK_USER		OPERSERV_NICK "!" SERVICES_IDENT "@" SERVICES_HOST
-#define TK_PASS		"check_your_tkserv.access"
-#define TK_REASON	"Banned by services"
-# endif
-#endif
 
 /*
  * Use conservative mechanisms of NDELAY array management.
@@ -648,9 +635,7 @@
 /*
  * number of collision map entries to allocate per request  -erra
  */
-#ifdef RUSNET_IRCD
 #define COLLMAPCHUNK       16
-#endif
 
 /*
  * Max time from the nickname change that still causes KILL
@@ -755,7 +740,7 @@
 
 /*
  * USE_ISERV makes ircd use the iserv program for remote administration.
- * If RUSNET_IRCD is defined USE_ISERV is mandatory
+ * Nowadays USE_ISERV is mandatory
  */
 #define USE_ISERV
  
@@ -893,14 +878,6 @@ error FD_SETSIZE must be bigger than MAXCONNECTIONS
 #endif
 
 /*
-** Make sure that USE_ISERV is defined if RUSNET_IRCD is.
-*/
-#ifdef RUSNET_IRCD
-# define USE_ISERV
-# undef USE_TKSERV
-#endif
-
-/*
 ** You should not want to change this. ;)
 */
 #define	NOWRITEALARM	1
@@ -920,6 +897,6 @@ error FD_SETSIZE must be bigger than MAXCONNECTIONS
 /*
 ** Until FreeBSD jail bug is fixed we need JAIL_RESOLVER_HACK defined
 */
-#ifdef RUSNET_IRCD
+#ifdef FREEBSD
 # define JAIL_RESOLVER_HACK	1
 #endif

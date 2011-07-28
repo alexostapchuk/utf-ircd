@@ -19,7 +19,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_user.c,v 1.72 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -28,7 +27,7 @@
 #include "s_externs.h"
 #undef S_USER_C
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 static char buf[MB_LEN_MAX*BUFSIZE], buf2[MB_LEN_MAX*BUFSIZE];
 #else
 static char buf[BUFSIZE], buf2[BUFSIZE];
@@ -40,16 +39,30 @@ static int user_modes[]	     = { FLAGS_OPER, 'o',
 				 FLAGS_WALLOP, 'w',
 				 FLAGS_RESTRICTED, 'r',
 				 FLAGS_AWAY, 'a',
-#ifdef RUSNET_IRCD
 				 FLAGS_VHOST, 'x',
-#endif
 #ifdef USE_SSL
 				 FLAGS_SMODE, 's',
 #endif
 #ifdef RUSNET_RLINES
 				 FLAGS_RMODE, 'b',
 #endif
+				/*
+				 * we need these two to be last ones
+				 * so that we can exclude them for
+				 * older servers  --erra
+				 */
+				 FLAGS_REGISTERED, 'R',
+				 FLAGS_IDENTIFIED, 'I',
 				 0, 0 };
+
+#define	ISTAT_BALANCE(sptr)	do {	\
+	if (IsInvisible(sptr))		\
+		istat.is_user[1]++;	\
+	else				\
+	istat.is_user[0]++;		\
+	istat.is_unknown--;		\
+	istat.is_myclnt++;		\
+} while (0)
 
 /*
 ** m_functions execute protocol messages on this server:
@@ -263,7 +276,7 @@ int		server;
 	if (!strncasecmp(nick, "anonymous", 9)) /* Do or do we not need anynimous? -skold*/
 		return 0;
 
-#if defined(RUSNET_IRCD) && !defined(USE_OLD8BIT)
+#ifndef USE_OLD8BIT
 #ifdef LOCALE_STRICT_NAMES
 	if (Force8bit || MB_CUR_MAX > 1)
 #else
@@ -317,7 +330,7 @@ int		server;
 	for (ch = nick; *ch && (ch - nick) < NICKLEN; ch++)
 		if (!isvalid(*ch))
 			break;
-#if defined(RUSNET_IRCD) && !defined(NO_DIRECT_VHOST)
+#ifndef NO_DIRECT_VHOST
 	if (!server && *ch == '!')	/* for +x users at startup  -skold */
 		ch++;
 #endif
@@ -710,7 +723,7 @@ char	*nick, *username;
 /*		*user->tok = '1';
 		user->tok[1] = '\0';*/
 		sp = user->servp;
-#if defined(RUSNET_IRCD) && !defined(NO_DIRECT_VHOST)
+#ifndef NO_DIRECT_VHOST
 		if (sptr->flags & FLAGS_XMODE)
 		{
 			sptr->flags &= ~FLAGS_XMODE;
@@ -721,9 +734,7 @@ char	*nick, *username;
 	else
 	    {
 		strncpyzt(user->username, username, USERLEN+1);
-#ifdef RUSNET_IRCD
 		strncpyzt(sptr->sockhost, user->host, HOSTLEN+1);
-#endif
 	    }
 
 	SetClient(sptr);
@@ -742,14 +753,13 @@ char	*nick, *username;
 					   "USER server wrong direction");
 		    }
 	    }
-#ifdef RUSNET_IRCD
 	if (!IsRusnetServices(sptr))
 	{	/*
 		** false data for usermode +x. After really long discussion
 		** it's been concluded to false last three octets of IP
-		** address and first two parts of hostname to provide
-		** the reasonable compromise between security and
-		** channels ban lists. Host.domain.tld is mapped to
+		** address and first two parts of hostname, to provide
+		** the reasonable compromise between security
+		** and channels ban lists. Host.domain.tld is mapped to
 		** crc32(host.domain.tld).crc32(domain.tld).domain.tld
 		** and domain.tld to crc32(domain.tld).crc32(tld).domain.tld
 		** respectively --erra
@@ -771,141 +781,132 @@ char	*nick, *username;
 		** domain. -> crcsum().crc32(domain.crcsum()).domain
 		**/
 		char *s = sptr->sockhost;
-		char *c = s + strlen(s);
+		char *c;
+		char *b = s + strlen(s);
 		int n = 0;
 
-		while (c > s)
+		for (c = s; c < b; c++)
 		{
-			c--;
-
-			if (*c == '.' && (++n) == 3)	/* 4th dot reached */
-				break;
-
-			else if (*c <= '9' && *c >= '0')
-				break;
+			if (*c == ':' && (++n) == 2) break;
 		}
 
-		if (n)	/* hostname second level or above... duh */
+		if (c < b)	/* IPv6 address received */
 		{
-			int len;
+			int offset = strncmp(s, "2002", 4) ? c - s : c - s - 2;
+			char *ptr = user->host + offset;
 
-			 /* ignore digits in second-level domain part
-			    when there are no minus signs  --erra
-			  */
-			if (c > s && n == 1)
-				while (c > s && *c != '.') {
-					if (*c == '-') {
-						do c++;
-						while (*c != '.');
+			*ptr++ = ':';	/* fake IPv6 separator */
+			*ptr++ = '\0';	/* cut the rest of string */
 
-						break;
+			strcat(user->host, b64enc(gen_crc(ptr)));
+			strcat(user->host, ":");
+			strcat(user->host, b64enc(gen_crc(sptr->sockhost)));
+		}
+		else	/* distinguish hostname from IPv4 address */
+		{
+			for (c--, n = 0; c > s; c--)
+			{
+				if (*c == '.' && (++n) == 3)	/* 4th dot reached */
+					break;
+
+				else if (*c <= '9' && *c >= '0')
+					break;
+			}
+
+			if (n)	/* hostname second level or above... duh */
+			{
+				int len;
+
+				 /* ignore digits in second-level domain part
+				    when there are no minus signs  --erra
+				  */
+				if (c > s && n == 1)
+					while (c > s && *c != '.') {
+						if (*c == '-') {
+							do c++;
+							while (*c != '.');
+
+							break;
+						}
+						c--;
 					}
-					c--;
+				else	/* *c cannot reach \0 - see above */
+					while (*c != '.')
+						c++;
+				s = c;
+
+				while (s > sptr->sockhost && *(--s) != '.');
+
+				if (*s == '.')	/* s is part for second crc32 */
+					s++;
+
+				if (s == sptr->sockhost) /* it needs crc32(crcsum()) */
+					s = user->host;
+
+				/* finished gathering data, let's rock */
+				strcpy(user->host, b64enc(gen_crc(sptr->sockhost)));
+				strcat(user->host, ".");
+				strcat(user->host, b64enc(gen_crc(s)));
+				len = strlen(user->host);
+				n = len + strlen(c) - HOSTLEN;
+
+				if (n > 0)	/* overrun protection */
+					user->host[len - n] = '\0';
+
+				strcat(user->host, c);
+			}
+			else if (c != s) /* are there hosts w/o dots? Yes */
+			{
+					/* IP address.. reverse search */
+				char *pfx;
+
+				if (!(s = strrchr(user->host, '.')))
+					goto kill_badhost;
+				*s = '\0';
+				DupString(pfx, b64enc(gen_crc(user->host)));
+			 	/* keep 1st octet */
+				s = strchr(user->host, '.');
+				if (!s) {
+					MyFree(pfx);
+						kill_badhost:
+					ircstp->is_kill++;
+					sendto_one(cptr, ":%s KILL %s :%s "
+							"(Bad hostmask)",
+							ME, sptr->name, ME);
+					sptr->flags |= FLAGS_KILLED;
+					/* to save balance */
+					ISTAT_BALANCE(sptr);
+					return exit_client(NULL, sptr, &me,
+								"Bad hostmask");
 				}
-			else	/* *c cannot reach \0 - see above */
-				while (*c != '.')
-					c++;
-			s = c;
-
-			while (s > sptr->sockhost && *(--s) != '.');
-
-			if (*s == '.')	/* s is part for second crc32 */
-				s++;
-
-			if (s == sptr->sockhost) /* it needs crc32(crcsum()) */
-				s = user->host;
-
-			/* finished gathering data, let's rock */
-			strcpy(user->host, b64enc(gen_crc(sptr->sockhost)));
-			strcat(user->host, ".");
-			strcat(user->host, b64enc(gen_crc(s)));
-			len = strlen(user->host);
-			n = len + strlen(c) - HOSTLEN;
-
-			if (n > 0)	/* overrun protection */
-				user->host[len - n] = '\0';
-
-			strcat(user->host, c);
-		}
-		else if (c == s)	/* are there hosts w/o dots? Yes */
-		{
-			strcpy(user->host, sptr->sockhost);
-#if 0		/* stupid masking, really */
-			strcat(user->host, ".");
-			strcpy(user->host, b64enc(gen_crc(user->host)));
-			strcat(user->host, ".");
-			strcat(user->host, b64enc(gen_crc(user->host)));
-			strcat(user->host, ".");
-			strcat(user->host, sptr->sockhost);
-#endif
-		}
-		else	/* IP address.. reverse search */
-		{
-			char *pfx, sep = '.';
-
-			s = strrchr(user->host, sep);
-			if (!s) {
-				sep = ':';
-				s = strrchr(user->host, sep);
-			}
-			if (!s) {
-			    ircstp->is_kill++;
-			    sendto_one(cptr,
-				":%s KILL %s :%s (Bad hostmask)", ME, sptr->name, ME);
-			    sptr->flags |= FLAGS_KILLED;
-			    return exit_client(NULL, sptr, &me, "Bad hostmask");
-			}
-			*s = '\0';
-			DupString(pfx, b64enc(gen_crc(user->host)));
-			s = strchr(user->host, sep); 	/* keep 1st octet */
-			if (!s) {
-			    ircstp->is_kill++;
-			    sendto_one(cptr,
-				":%s KILL %s :%s (Bad hostmask)", ME, sptr->name, ME);
-			    sptr->flags |= FLAGS_KILLED;
-			    return exit_client(NULL, sptr, &me, "Bad hostmask");
-			}
-			strcpy(++s, b64enc(gen_crc(sptr->sockhost)));
-			strcat(user->host, ".");
-			strcat(user->host, pfx);
-
-			if (sep == '.')
+				strcpy(++s, b64enc(gen_crc(sptr->sockhost)));
+				strcat(user->host, ".");
+				strcat(user->host, pfx);
 				strcat(user->host, ".in-addr");
-			else
-				strcat(user->host, ".in6-addr");
-
-			MyFree(pfx);
+				MyFree(pfx);
+			}
 		}
 	}
-#endif
 	send_umode(NULL, sptr, 0, SEND_UMODES, buf);
+
+	/* Find my leaf servers and feed the new client to them */
 	for (i = fdas.highest; i >= 0; i--)
-	    {	/* Find my leaf servers and feed the new client to them */
+	    {
+		char *tok;
+
 		if ((acptr = local[fdas.fd[i]]) == cptr || IsMe(acptr))
 			continue;
-		if ((aconf = acptr->serv->nline) &&
-		    !match(my_name_for_link(ME, aconf->port),
-			   user->server))
-			sendto_one(acptr, "NICK %s %d %s %s %s %s :%s",
-				   nick, sptr->hopcount+1, user->username,
-#ifdef RUSNET_IRCD
-					sptr->sockhost,
-#else
-					user->host, 
-#endif
-				   me.serv->tok, (*buf) ? buf : "+",
-				   sptr->info);
-		else
-			sendto_one(acptr, "NICK %s %d %s %s %s %s :%s",
-				   nick, sptr->hopcount+1, user->username,
-#ifdef RUSNET_IRCD
-					sptr->sockhost,
-#else
-					user->host, 
-#endif
-				   user->servp->tok, 
-				   (*buf) ? buf : "+", sptr->info);
+
+		tok = ((aconf = acptr->serv->nline) &&
+			!match(my_name_for_link(ME, aconf->port),
+			user->server)) ? me.serv->tok : user->servp->tok;
+
+		sendto_one(acptr, "NICK %s %d %s %s %s %s :%s",
+				nick, sptr->hopcount+1, user->username,
+				sptr->sockhost, tok,
+				(*buf) ? buf : "+", sptr->info);
 	    }	/* for(my-leaf-servers) */
+
 	if (IsInvisible(sptr))		/* Can be initialized in m_user() */
 		istat.is_user[1]++;	/* Local and server defaults +i */
 	else
@@ -959,14 +960,8 @@ char	*nick, *username;
 		}
 #endif
 		sprintf(buf, "%s!%s@%s", nick, user->username,
-#ifdef RUSNET_IRCD
-					(user->flags & FLAGS_VHOST) ?
-#endif
-							user->host
-#ifdef RUSNET_IRCD
-							: sptr->sockhost
-#endif
-									);
+			(user->flags & FLAGS_VHOST) ?
+						user->host : sptr->sockhost);
 		sptr->exitc = EXITC_REG;
 		sendto_one(sptr, rpl_str(RPL_WELCOME, nick), buf);
 		/* This is a duplicate of the NOTICE but see below...*/
@@ -989,7 +984,6 @@ char	*nick, *username;
 		if (IsRestricted(sptr))
 			sendto_one(sptr, err_str(ERR_RESTRICTED, nick));
 		send_umode(sptr, sptr, 0, ALL_UMODES, buf);
-#ifdef RUSNET_IRCD
 #ifndef USE_OLD8BIT
 		if (sptr->conv)
 			sendto_one(sptr, rpl_str(RPL_CODEPAGE, nick),
@@ -999,21 +993,9 @@ char	*nick, *username;
 			sendto_one(sptr, rpl_str(RPL_CODEPAGE, nick),
 							sptr->transptr->id);
 #endif
-#endif
 		nextping = timeofday;
 	    }
 #ifdef	USE_SERVICES
-#if 0
-	check_services_butone(SERVICE_WANT_NICK, user->server, NULL,
-			      "NICK %s :%d", nick, sptr->hopcount+1);
-	check_services_butone(SERVICE_WANT_USER, user->server, sptr,
-			      ":%s USER %s %s %s :%s", nick, user->username, 
-			      user->host, user->server, sptr->info);
-	if (MyConnect(sptr))	/* all modes about local users */
-		send_umode(NULL, sptr, 0, ALL_UMODES, buf);
-	check_services_butone(SERVICE_WANT_UMODE, user->server, sptr,
-			      ":%s MODE %s :%s", nick, nick, buf);
-#endif
 	if (MyConnect(sptr))	/* all modes about local users */
 		send_umode(NULL, sptr, 0, ALL_UMODES, buf);
 	check_services_num(sptr, buf);
@@ -1041,12 +1023,8 @@ char	*parv[];
 {
 	aClient *acptr;
 	int	delayed = 0, l;
-	char	nick[UNINICKLEN+2], *s, *user, *host;
+	char	nick[UNINICKLEN+2], *s, *user, *host, *reason;
 	Link	*lp = NULL;
-#ifdef RUSNET_IRCD
-	aChannel *chptr;
-	char *reason;
-#endif
 
 	if (IsService(sptr))
    	    {
@@ -1073,11 +1051,7 @@ char	*parv[];
 		if (sptr->user)
 		    {
 			user = sptr->user->username;
-#ifdef RUSNET_IRCD
 			host = sptr->sockhost;
-#else
-			host = sptr->user->host;
-#endif
 		    }
 		else
 			user = host = "";
@@ -1089,7 +1063,7 @@ char	*parv[];
 	 * and KILL it. -avalon 4/4/92
 	 */
 	l = do_nick_name(nick, IsServer(cptr) || IsMe(cptr));
-#if defined(RUSNET_IRCD) && !defined(NO_DIRECT_VHOST)
+#ifndef NO_DIRECT_VHOST
 	if (l && nick[l - 1] == '!')		/* wants usermode +x  -skold */
 	{
 		l--;
@@ -1127,27 +1101,29 @@ char	*parv[];
 		return 2;
 	    }
 
-#ifdef RUSNET_IRCD
 	if (MyClient(cptr))
 	{
-#ifdef RUSNET_RLINES
 		if ((parc == 3) && parv[2] && (*parv[2] == '1')) {
-		/* Internal call, do not restrict */
+		/* Internal call, do not apply sanity checks and restrictions */
 		}
 		else {
-		    if (IsRMode(sptr)) {
-			sendto_one(sptr,
-			err_str(ERR_RESTRICTED, nick));
-			return 2;
-		    }
-		}
+			Reg aChannel *chptr;
+#ifdef RUSNET_RLINES
+
+			if (IsRMode(sptr))
+			{
+				sendto_one(sptr,
+				err_str(ERR_RESTRICTED, nick));
+				return 2;
+			}
 #endif
-		chptr = rusnet_isagoodnickname(cptr, nick);
-		if (chptr != NULL)
-		{
-			sendto_one(sptr, err_str(ERR_7BIT, parv[0]),
-							chptr->chname);
-			return 2; /* NICK message ignored */
+			chptr = rusnet_zmodecheck(cptr, nick);
+			if (chptr != NULL)
+			{
+				sendto_one(sptr, err_str(ERR_7BIT, parv[0]),
+								chptr->chname);
+				return 2; /* NICK message ignored */
+			}
 		}
 
 		if (check_tlines(sptr, 1, &reason, nick, &kconf, NULL))
@@ -1180,7 +1156,7 @@ char	*parv[];
 		}
 #endif
 	}
-#endif
+
 	/*
 	** Check against nick name collisions.
 	**
@@ -1212,12 +1188,7 @@ char	*parv[];
 			    "Nick collision on %s (%s@%s)%s <- (%s@%s)%s",
 			    sptr->name,
 			    (acptr->user) ? acptr->user->username : "???",
-#ifdef RUSNET_IRCD
-			    acptr->sockhost,
-#else
-			    (acptr->user) ? acptr->user->host : "???",
-#endif
-			    acptr->from->name, user, host,
+			    acptr->sockhost, acptr->from->name, user, host,
 			    get_client_name(cptr, FALSE));
 		ircstp->is_kill++;
 		sendto_one(cptr, ":%s KILL %s :%s (%s <- %s)",
@@ -1269,7 +1240,6 @@ char	*parv[];
 			*/
 			goto nickkilldone; /* -- go and process change */
 		else
-#ifdef RUSNET_IRCD
                         /* 
 			** This is collision renaming coming from
 			** acptr owner direction (not the owner itself). Just delete this collision
@@ -1285,7 +1255,6 @@ char	*parv[];
 						acptr->name);
 				return 2;
 			} else
-#endif
 			/*
 			** This is just ':old NICK old' type thing.
 			** Just forget the whole thing here. There is
@@ -1331,11 +1300,8 @@ char	*parv[];
 	** joined and having same nicks in use. We cannot have TWO users with
 	** same nick--purge this NICK from the system with a KILL... >;)
 	*/
-#ifdef RUSNET_IRCD
 	else
 	    {
-		char *newnick = MyMalloc(UNINICKLEN + 1);
-		char *pparv[] = { acptr->name, newnick, "1", NULL };
 		    /*
 		    ** Recursive collision resolving is dangerous. We do not allow
 		    ** someone to collide interim nick change.
@@ -1398,6 +1364,8 @@ char	*parv[];
 			int i;
 			char *ch;
 			char *chasenick = MyMalloc(UNINICKLEN + 1);
+			char *newnick = MyMalloc(UNINICKLEN + 1);
+			char *pparv[] = { acptr->name, newnick, "1", NULL };
 			
 			*chasenick = '1';
 			strncpy(chasenick + 1, acptr->name, UNINICKLEN - 6);
@@ -1420,12 +1388,7 @@ char	*parv[];
 			/* Reserve 5-digits space */
 			newnick[UNINICKLEN - 4] = '\0';
 			ch = newnick + strlen(newnick);
-#endif
-#ifndef RUSNET_IRCD
-		    sendto_one(acptr, err_str(ERR_NICKCOLLISION, acptr->name),
-			acptr->name, user, host);
-#endif
-#ifdef RUSNET_IRCD
+
 		/* cut last five digits only if there are exactly five */
 		    for (i = 0, ch--; i < 5 && isdigit(*ch); i++, ch--);
 		    if (i >= 5) 
@@ -1433,7 +1396,8 @@ char	*parv[];
 		    sprintf (newnick + strlen(newnick), "%d",
 			10000 + (int) (60000.0 * rand() / (RAND_MAX + 10000.0)));
 		    
-		    m_nick(acptr, acptr, 3, pparv);
+			m_nick(acptr, acptr, 3, pparv);
+			MyFree(newnick);
 		}
 		else
 			if (!IsRusnetServices(acptr))
@@ -1444,6 +1408,8 @@ char	*parv[];
 		** For one-time collision renaming we need to comment out the true part above
 		** and uncomment what is commented out below.
 		*/
+			char *newnick = MyMalloc(UNINICKLEN + 1);
+			char *pparv[] = { acptr->name, newnick, "1", NULL };
 		
 		    *newnick = '1';
 		    /* guard against too long nick */
@@ -1480,18 +1446,21 @@ char	*parv[];
 				    acptr->flags |= FLAGS_KILLED;
 				    (void)exit_client(NULL, acptr, &me,
 							"Collision deadlock");
-				    goto nickkilldone;
+				MyFree(newnick);
+				goto nickkilldone;
 			    }
-		    }
+			}
 		    
-		    add_to_collision_map(acptr->name, newnick,
+			add_to_collision_map(acptr->name, newnick,
 						acptr->from->serv->crc);
-		    acptr->flags |= FLAGS_COLLMAP;
-		    m_nick(cptr, acptr, 3, pparv);
+			acptr->flags |= FLAGS_COLLMAP;
+			m_nick(cptr, acptr, 3, pparv);
+			MyFree(newnick);
 		}
 		/* Services part */
 			else
 		{
+			char *newnick = MyMalloc(UNINICKLEN + 1);
 			/*
 			** We should send kill to cptr for mapped nick because acptr->name
 			** is already owned by someone else (e.g. NickServ ;) -slcio
@@ -1508,6 +1477,7 @@ char	*parv[];
                         		    "ERROR: USER:%s without SERVER:%s from %s",
 					    parv[0], parv[5], get_client_name(cptr, FALSE));
 					ircstp->is_nosrv++;
+					MyFree(newnick);
 					return exit_client(NULL, sptr, &me, "No Such Server");
 				} else {
 					strcat(newnick, b64enc(asptr->crc));
@@ -1521,6 +1491,8 @@ char	*parv[];
 			ircstp->is_kill++;
 			sendto_one(cptr,
 			    ":%s KILL %s :%s (Services collision)", ME, newnick, ME);
+			MyFree(newnick);
+
 			if (cptr != sptr) {
 				sendto_serv_butone(NULL,
 				    ":%s KILL %s :%s (Services collision)", ME, sptr->name, ME);
@@ -1534,71 +1506,7 @@ char	*parv[];
 			/* propagate to common channels and servers
 			 * excluding source server direction for this nick (cptr)
 			 */
-		MyFree( newnick );
 	    }
-#endif
-#ifndef RUSNET_IRCD
-	/*
-	** This seemingly obscure test (sptr == cptr) differentiates
-	** between "NICK new" (TRUE) and ":old NICK new" (FALSE) forms.
-	*/
-	if (sptr == cptr)
-	    {
-		sendto_flag(SCH_KILL,
-			    "Nick collision on %s (%s@%s)%s <- (%s@%s)%s",
-			    acptr->name,
-			    (acptr->user) ? acptr->user->username : "???",
-			    (acptr->user) ? acptr->user->host : "???",
-			    acptr->from->name,
-			    user, host, get_client_name(cptr, FALSE));
-		/*
-		** A new NICK being introduced by a neighbouring
-		** server (e.g. message type "NICK new" received)
-		*/
-		ircstp->is_kill++;
-		sendto_serv_butone(NULL, 
-				   ":%s KILL %s :%s ((%s@%s)%s <- (%s@%s)%s)",
-				   ME, acptr->name, ME,
-				   (acptr->user) ? acptr->user->username:"???",
-				   (acptr->user) ? acptr->user->host : "???",
-				   acptr->from->name, user, host,
-				   /* NOTE: Cannot use get_client_name twice
-				   ** here, it returns static string pointer:
-				   ** the other info would be lost
-				   */
-				   get_client_name(cptr, FALSE));
-		acptr->flags |= FLAGS_KILLED;
-		return exit_client(NULL, acptr, &me, "Nick collision");
-	    }
-	/*
-	** A NICK change has collided (e.g. message type
-	** ":old NICK new". This requires more complex cleanout.
-	** Both clients must be purged from this server, the "new"
-	** must be killed from the incoming connection, and "old" must
-	** be purged from all outgoing connections.
-	*/
-	sendto_flag(SCH_KILL, "Nick change collision %s!%s@%s to %s %s <- %s",
-		    sptr->name, user, host, acptr->name, acptr->from->name,
-		    get_client_name(cptr, FALSE));
-	ircstp->is_kill++;
-	sendto_serv_butone(NULL, /* KILL old from outgoing servers */
-			   ":%s KILL %s :%s (%s@%s[%s](%s) <- %s@%s[%s])",
-			   ME, sptr->name, ME, acptr->user->username, 
-			   acptr->user->host,
-			   acptr->from->name, acptr->name,
-			   user, host, cptr->name);
-	ircstp->is_kill++;
-	sendto_serv_butone(NULL, /* Kill new from incoming link */
-		   ":%s KILL %s :%s (%s@%s[%s] <- %s@%s[%s](%s))",
-		   ME, acptr->name, ME, acptr->user->username,
-		   acptr->user->host,
-		   acptr->from->name,
-		   user, host, cptr->name, sptr->name);
-	acptr->flags |= FLAGS_KILLED;
-	(void)exit_client(NULL, acptr, &me, "Nick collision(new)");
-	sptr->flags |= FLAGS_KILLED;
-	return exit_client(cptr, sptr, &me, "Nick collision(old)");
-#endif /* !RUSNET_IRCD */
 
 nickkilldone:
 	if (IsServer(sptr))
@@ -1639,12 +1547,19 @@ nickkilldone:
 			if (!IsPerson(sptr))    /* Unregistered client */
 				return 2;       /* Ignore new NICKs */
 			if ((parc == 3) && parv[2] && (*parv[2] == '1')) {
-			/* Internal call, do not restrict */
+				/* nick was enforced, hold it for a minute */
+				sptr->held = time(NULL) + 60;
 			}
 			else if (IsRestricted(sptr))
 			    {
-				sendto_one(sptr,
-					   err_str(ERR_RESTRICTED, nick));
+				sendto_one(sptr, err_str(ERR_RESTRICTED,
+								sptr->name));
+				return 2;
+			    }
+			else if (sptr->held > time(NULL))
+			    {
+				sendto_one(sptr, err_str(ERR_NICKTOOFAST,
+								sptr->name));
 				return 2;
 			    }
 			/* Can the user speak on all channels? */
@@ -1668,12 +1583,7 @@ nickkilldone:
                         sendto_flag(SCH_OPER,
 					"Nick change: From %s to %s (%s@%s)",
 					parv[0], nick, sptr->user->username,
-#ifdef RUSNET_IRCD
-						   sptr->sockhost
-#else
-							sptr->user->host
-#endif
-									);
+						   sptr->sockhost);
 #endif
                                                 
 		if (sptr->user) /* should always be true.. */
@@ -1689,7 +1599,7 @@ nickkilldone:
 			sendto_flag(SCH_NOTICE,
 				    "Illegal NICK change: %s -> %s from %s",
 				    parv[0], nick, get_client_name(cptr,TRUE));
-#ifdef RUSNET_IRCD
+
 		if (sptr->flags & FLAGS_COLLMAP) /* dealing with collision */
 		{
 			if (cptr == sptr->from)
@@ -1704,7 +1614,7 @@ nickkilldone:
 			else
 				cptr = sptr->from;
 		}
-#endif
+
 		sendto_serv_butone(cptr, ":%s NICK :%s", sptr->name, nick);
 
 		if (sptr->name[0])
@@ -1819,12 +1729,21 @@ int	parc, notice;
 		    		}
 			}
 #endif
+			if (acptr->user->flags & FLAGS_REGISTERED &&
+				!(sptr->user->flags & FLAGS_IDENTIFIED))
+			{
+				sendto_one(sptr, err_str(ERR_REGONLY,
+							parv[0]));
+				continue;
+			}
+
 			if (!notice && MyConnect(sptr) &&
 			    acptr->user && (acptr->user->flags & FLAGS_AWAY))
 				sendto_one(sptr, rpl_str(RPL_AWAY, parv[0]),
 					   acptr->name,
 					   (acptr->user->away) ? 
 					   acptr->user->away : "Gone");
+
 			sendto_prefix_one(acptr, sptr, ":%s %s %s :%s",
 					  parv[0], cmd, nick, parv[2]);
 			continue;
@@ -1843,17 +1762,14 @@ int	parc, notice;
 				continue;
 			}
 #endif
-		    	if (IsServer(sptr) ||
-#ifdef RUSNET_IRCD
-			IsRusnetServices(sptr) ||
-#endif
+		    	if (IsServer(sptr) || IsRusnetServices(sptr) ||
 					(flag = can_send(sptr, chptr)) == 0)
 				sendto_channel_butone(cptr, sptr, chptr,
 						      (*nick == '@') ? 1 : 0,
 						      ":%s %s %s :%s",
 						      parv[0], cmd, nick,
 						      parv[2]);
-#ifdef RUSNET_IRCD
+
 			else if (flag == MODE_NOCOLOR) 
 				if(strchr(parv[2],0x03))
 					sendto_one(sptr, err_str(ERR_NOCOLOR, 
@@ -1864,7 +1780,7 @@ int	parc, notice;
 							  ":%s %s %s :%s",
 							  parv[0], cmd, nick,
 							  parv[2]);
-#endif
+
 			else if (!notice)
 				sendto_one(sptr, err_str(ERR_CANNOTSENDTOCHAN,
 					   parv[0]), nick);
@@ -1913,17 +1829,19 @@ int	parc, notice;
 			*host = '\0';
 			if ((acptr = find_person(nick, NULL)) &&
 			    !strcasecmp(user+1, acptr->user->username) &&
-#ifdef RUSNET_IRCD
 			    !strcasecmp(host+1,
 					(acptr->user->flags & FLAGS_VHOST) ?
-						acptr->user->host
-						: acptr->sockhost)
-#else
-			    !strcasecmp(host+1, acptr->user->host)
-#endif
-			    )
+					acptr->user->host : acptr->sockhost))
 
 			    {
+				if (acptr->user->flags & FLAGS_REGISTERED &&
+					!(sptr->user->flags & FLAGS_IDENTIFIED))
+				{
+					sendto_one(sptr, err_str(ERR_REGONLY,
+								parv[0]));
+					continue;
+				}
+
 				sendto_prefix_one(acptr, sptr, ":%s %s %s :%s",
 						  parv[0], cmd, nick, parv[2]);
 				*user = '!';
@@ -1967,10 +1885,17 @@ int	parc, notice;
 			if (acptr)
 			    {
 				if (count == 1)
+				{
+					if (acptr->user->flags & FLAGS_REGISTERED && !(sptr->user->flags & FLAGS_IDENTIFIED))
+					{
+						sendto_one(sptr, err_str(ERR_REGONLY, nick));
+						continue;
+					}
 					sendto_prefix_one(acptr, sptr,
 							  ":%s %s %s :%s",
 					 		  parv[0], cmd,
 							  nick, parv[2]);
+				}
 				else if (!notice)
 					sendto_one(sptr, err_str(
 						   ERR_TOOMANYTARGETS,
@@ -1990,10 +1915,19 @@ int	parc, notice;
 			if (acptr)
 			    {
 				if (count == 1)
+				{
+					if (acptr->user->flags & FLAGS_REGISTERED && !(sptr->user->flags & FLAGS_IDENTIFIED))
+					{
+						sendto_one(sptr,
+							err_str(ERR_REGONLY,
+									nick));
+						continue;
+					}
 					sendto_prefix_one(acptr, sptr,
 							  ":%s %s %s :%s",
 					 		  parv[0], cmd,
 							  nick, parv[2]);
+				}
 				else if (!notice)
 					sendto_one(sptr, err_str(
 						   ERR_TOOMANYTARGETS,
@@ -2055,12 +1989,10 @@ Link *lp;
 		status[i++] = 'G';
 	else
 		status[i++] = 'H';
-#ifdef RUSNET_IRCD
 	if (acptr->user->flags & FLAGS_VHOST)
 		status[i++] = 'x';
 	if (IsRMode(acptr))
 		status[i++] = 'b';
-#endif
 #ifdef USE_SSL
 	if (IsSMode(acptr))
 		status[i++] = 's';
@@ -2073,26 +2005,20 @@ Link *lp;
 	    {
 		if (lp->flags & CHFL_CHANOP)
 			status[i++] = '@';
-#ifdef RUSNET_IRCD
 		else if (lp->flags & CHFL_HALFOP)
 			status[i++] = '%';
-#endif
 		else if (lp->flags & CHFL_VOICE)
 			status[i++] = '+';
 	    }
 	status[i] = '\0';
 
 	sendto_one(sptr, rpl_str(RPL_WHOREPLY, sptr->name),
-			   (repchan) ? (repchan->chname) : "*", acptr->user->username,
-#ifdef RUSNET_IRCD
-			   (acptr->user->flags & FLAGS_VHOST) ?
-#endif
-			   acptr->user->host
-#ifdef RUSNET_IRCD
-					: acptr->sockhost
-#endif
-						, acptr->user->server, acptr->name,
-			   status, acptr->hopcount, acptr->info);
+			(repchan) ? (repchan->chname) : "*",
+			acptr->user->username,
+			(acptr->user->flags & FLAGS_VHOST) ?
+			acptr->user->host : acptr->sockhost,
+			acptr->user->server, acptr->name,
+			status, acptr->hopcount, acptr->info);
 }
 
 
@@ -2197,9 +2123,7 @@ int oper;
 		     match(mask, acptr->name) == 0 ||
 		     match(mask, acptr->user->username) == 0 ||
 		     match(mask, acptr->user->host) == 0 ||
-#ifdef RUSNET_IRCD
 		     match(mask, acptr->sockhost) == 0 ||
-#endif
 		     match(mask, acptr->user->server) == 0 ||
 		     match(mask, acptr->info) == 0))
 			who_one(sptr, acptr, ch2ptr, NULL);
@@ -2375,7 +2299,6 @@ char    *parv[];
 
 	a2cptr = find_server(user->server, NULL);
 
-#ifdef RUSNET_IRCD
 	if (acptr->user && acptr->user->flags & FLAGS_VHOST)
 	{
 	    sendto_one(sptr, rpl_str(RPL_WHOISUSER, sptr->name), name,
@@ -2388,17 +2311,12 @@ char    *parv[];
 	else
 	    sendto_one(sptr, rpl_str(RPL_WHOISUSER, sptr->name), name,
 			user->username, acptr->sockhost, acptr->info);
-#else
-	sendto_one(sptr, rpl_str(RPL_WHOISUSER, sptr->name), name,
-			user->username, user->host, acptr->info);
-#endif
+
 	mlen = strlen(ME) + strlen(sptr->name) + 6 + strlen(name);
 	*buf = '\0';
 	/* Mark IRC Services from being at any channel */
-#ifdef RUSNET_IRCD
 	if (!IsRusnetServices(acptr))
-#endif
-	for (len = 0, lp = user->channel; lp; lp = lp->next)
+	    for (len = 0, lp = user->channel; lp; lp = lp->next)
 	    {
 		chptr = lp->value.chptr;
 		if (((!IsAnonymous(chptr) || acptr == sptr) &&
@@ -2415,10 +2333,8 @@ char    *parv[];
 			    }
 			if (is_chan_op(acptr, chptr))
 				*(buf + len++) = '@';
-#ifdef RUSNET_IRCD
-			else if (is_chan_halfop(acptr, chptr))
+			else if (is_chan_anyop(acptr, chptr))
 				*(buf + len++) = '%';
-#endif
 			else if (has_voice(acptr, chptr))
 				*(buf + len++) = '+';
 			if (len)
@@ -2441,7 +2357,6 @@ char    *parv[];
 	if (user->flags & FLAGS_AWAY)
 		sendto_one(sptr, rpl_str(RPL_AWAY, sptr->name), name,
 			   (user->away) ? user->away : "Gone");
-#ifdef RUSNET_IRCD
 #ifndef USE_OLD8BIT
 	/* conversion charset name cannot be empty */
 	if (MyConnect(acptr) && acptr->user && acptr->conv)
@@ -2461,7 +2376,6 @@ char    *parv[];
 	if (IsSMode(acptr))
 	    sendto_one(sptr, rpl_str(RPL_USINGSSL, sptr->name), name);
 #endif
-#endif
 	if (IsAnOper(acptr))
 	    sendto_one(sptr, rpl_str(RPL_WHOISOPERATOR, sptr->name), name);
 
@@ -2469,13 +2383,8 @@ char    *parv[];
 	if (IsAnOper(acptr) && acptr != sptr)
 	    sendto_one(acptr, ":%s NOTICE %s :WHOIS on YOU requested by %s "
 			"(%s@%s) [%s]", ME, acptr->name, parv[0],
-			sptr->user->username,
-#ifdef RUSNET_IRCD
-				sptr->sockhost,
-#else
-				sptr->user->host,
-#endif
-						sptr->user->server);
+			sptr->user->username, sptr->sockhost,
+			sptr->user->server);
 #endif
 	if (acptr->user && MyConnect(acptr))
 		sendto_one(sptr, rpl_str(RPL_WHOISIDLE, sptr->name),
@@ -2631,11 +2540,7 @@ aClient	*cptr, *sptr;
 int	parc;
 char	*parv[];
 {
-#ifdef RUSNET_IRCD
 #define	UFLAGS	(FLAGS_INVISIBLE|FLAGS_WALLOP|FLAGS_VHOST|FLAGS_RMODE)
-#else
-#define	UFLAGS	(FLAGS_INVISIBLE|FLAGS_WALLOP)
-#endif
 	char	*username, *host, *server, *realname;
 	anUser	*user;
 
@@ -2697,7 +2602,10 @@ char	*parv[];
 #ifndef	NO_DEFAULT_VHOST
 		else SetVHost(sptr);
 #endif
+		/* What did it mean to be? Mark it out  --erra */
+#if 0
 		sptr->user->flags |= (UFLAGS & atoi(host));
+#endif
 		user->server = find_server_string(me.serv->snum);
 	    }
 	else
@@ -3223,14 +3131,9 @@ char	*parv[];
 #ifdef EXTRA_NOTICES
 		sendto_flag(SCH_OPER, "No O:line for the name %s [%s!%s@%s] from %s(%s)", 
 			parv[1], sptr->name, sptr->user->username, 
-#ifdef RUSNET_IRCD
 			(sptr->user->flags & FLAGS_VHOST) ?
-#endif /* RUSNET_IRCD */				
-			sptr->user->host
-#ifdef RUSNET_IRCD
-			: sptr->sockhost
-#endif /* RUSNET_IRCD */ 
-			, get_client_name(cptr, TRUE), sptr->user->server);
+			sptr->user->host : sptr->sockhost,
+			get_client_name(cptr, TRUE), sptr->user->server);
 #endif /* EXTRA_NOTICES */
 		sendto_one(sptr, err_str(ERR_NOOPERHOST, parv[0]));
 		return 1;
@@ -3250,14 +3153,9 @@ char	*parv[];
 			sendto_flag(SCH_OPER, "crypt() failed on O:line for the name %s \
 				[%s!%s@%s] from %s(%s)",
 				parv[1], sptr->name, sptr->user->username, 
-#ifdef RUSNET_IRCD
 				(sptr->user->flags & FLAGS_VHOST) ?
-#endif /* RUSNET_IRCD */				
-				sptr->user->host
-#ifdef RUSNET_IRCD
-				: sptr->sockhost
-#endif /* RUSNET_IRCD */ 
-				, get_client_name(cptr, TRUE), sptr->user->server);
+				sptr->user->host : sptr->sockhost,
+				get_client_name(cptr, TRUE), sptr->user->server);
 #endif /* EXTRA_NOTICES */
 			sendto_one(sptr,err_str(ERR_PASSWDMISMATCH, parv[0]));
 			return 3;
@@ -3289,15 +3187,9 @@ char	*parv[];
 		*--s =  '@';
 		sendto_flag(SCH_NOTICE, "%s (%s@%s) is now operator (%c)",
 			parv[0], sptr->user->username, 
-			    
-#ifdef RUSNET_IRCD
 			(sptr->user->flags & FLAGS_VHOST) ?
-#endif /* RUSNET_IRCD */				
-			sptr->user->host
-#ifdef RUSNET_IRCD
-			: sptr->sockhost
-#endif /* RUSNET_IRCD */ 
-			, IsOper(sptr) ? 'O' : 'o');
+			sptr->user->host : sptr->sockhost,
+			IsOper(sptr) ? 'O' : 'o');
 		send_umode_out(cptr, sptr, old);
  		sendto_one(sptr, rpl_str(RPL_YOUREOPER, parv[0]));
 #ifndef CRYPT_OPER_PASSWORD
@@ -3334,14 +3226,9 @@ char	*parv[];
 			sendto_flag(SCH_OPER, "Incorrect OPER password for the name %s \
 				[%s!%s@%s] from %s(%s)",
 				parv[1], sptr->name, sptr->user->username, 
-#ifdef RUSNET_IRCD
 				(sptr->user->flags & FLAGS_VHOST) ?
-#endif /* RUSNET_IRCD */				
-				sptr->user->host
-#ifdef RUSNET_IRCD
-				: sptr->sockhost
-#endif /* RUSNET_IRCD */ 
-				, get_client_name(cptr, TRUE), sptr->user->server);
+				sptr->user->host : sptr->sockhost,
+				get_client_name(cptr, TRUE), sptr->user->server);
 #endif /* EXTRA_NOTICES */
     
 		sendto_one(sptr,err_str(ERR_PASSWDMISMATCH, parv[0]));
@@ -3432,14 +3319,8 @@ char	*parv[];
 				IsAnOper(acptr) ? "*" : "",
 				(acptr->user->flags & FLAGS_AWAY) ? '-' : '+',
 				acptr->user->username,
-#ifdef RUSNET_IRCD
 					(acptr->user->flags & FLAGS_VHOST) ?
-#endif
-						acptr->user->host
-#ifdef RUSNET_IRCD
-						: acptr->sockhost
-#endif
-							 );
+					acptr->user->host : acptr->sockhost);
 			(void)strncat(buf, buf2, sizeof(buf) - len);
 			len += strlen(buf2);
 			if (len > BUFSIZE - (UNINICKLEN + 5 + HOSTLEN + USERLEN))
@@ -3647,6 +3528,9 @@ char	*parv[];
 		if (!(setflags & FLAGS_OPER) && IsOper(sptr) &&
 		    !IsServer(cptr))
 			ClearOper(sptr);
+
+		if (!(setflags & FLAGS_IDENTIFIED) && !IsServer(cptr))
+			ClearIdentified(sptr);
 #ifdef NO_DIRECT_VHOST
 		if (!(setflags & FLAGS_VHOST) && HasVHost(sptr) &&
 		    !(IsServer(cptr) || IsMe(cptr) || IsOper(sptr)))
@@ -3808,18 +3692,42 @@ int	old;
 	Reg	int	i;
 	Reg	aClient	*acptr;
 
+	/* just build modeline first */
 	send_umode(NULL, sptr, old, SEND_UMODES, buf);
 
 	if (*buf)
+	{
+		Reg	char *old_modes = mystrdup(buf);
+
+		/* cut off new modes for old servers */
+		for (i = 0; old_modes[i]; i++)
+			if (old_modes[i] == 'I' || old_modes[i] == 'R')
+			{
+				if (i == 1)
+					*old_modes = '\0';
+				else
+					old_modes[i] = '\0';
+
+				break;
+			}
+
 		for (i = fdas.highest; i >= 0; i--)
 		    {
 			if (!(acptr = local[fdas.fd[i]]) || !IsServer(acptr))
 				continue;
 			if (acptr == cptr || acptr == sptr)
 				continue;
-			sendto_one(acptr, ":%s MODE %s :%s",
-				   sptr->name, sptr->name, buf);
+
+			if (acptr->serv->version & SV_RUSNET2)
+				sendto_one(acptr, ":%s MODE %s :%s",
+					   sptr->name, sptr->name, buf);
+			else if (*old_modes)
+				sendto_one(acptr, ":%s MODE %s :%s",
+					   sptr->name, sptr->name, old_modes);
 		    }
+
+		free(old_modes);
+	}
 
 	if (cptr && MyClient(cptr))
 		send_umode(cptr, sptr, old, ALL_UMODES, buf);
