@@ -154,6 +154,13 @@
  */
 #undef	NO_DIRECT_VHOST
 
+/* HOLD_ENFORCED_NICKS
+ *
+ * When defined, a nick enforced by services is held for 1 minute, i.e.
+ * can't be changed to anything else. It affects local clients only
+ */
+#undef HOLD_ENFORCED_NICKS
+
 /* STATS_RESTRICTED
  *
  * When defined, only /stats c, h, o and u will be allowed for ordinary

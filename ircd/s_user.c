@@ -1547,8 +1547,10 @@ nickkilldone:
 			if (!IsPerson(sptr))    /* Unregistered client */
 				return 2;       /* Ignore new NICKs */
 			if ((parc == 3) && parv[2] && (*parv[2] == '1')) {
+#ifdef HOLD_ENFORCED_NICKS
 				/* nick was enforced, hold it for a minute */
 				sptr->held = time(NULL) + 60;
+#endif
 			}
 			else if (IsRestricted(sptr))
 			    {
@@ -1556,12 +1558,14 @@ nickkilldone:
 								sptr->name));
 				return 2;
 			    }
+#ifdef HOLD_ENFORCED_NICKS
 			else if (sptr->held > time(NULL))
 			    {
 				sendto_one(sptr, err_str(ERR_NICKTOOFAST,
 								sptr->name));
 				return 2;
 			    }
+#endif
 			/* Can the user speak on all channels? */
 			for (lp = sptr->user->channel; lp; lp = lp->next)
 				if (can_send(sptr, lp->value.chptr) &&

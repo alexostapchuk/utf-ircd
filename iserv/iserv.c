@@ -478,7 +478,6 @@ int appendConfLine(isConfLine *isline)
 	flush_error = flushOutBuffer();
     }
     if (!flush_error) {
-/*	bytes = snprintf(isoutbuf + outbuf_count, ISMAXLINE, "%c:%s:%s:%s:%s:%d\n", isline->type, isline->userhost,*/
 	bytes = snprintf(isoutbuf + outbuf_count, ISMAXLINE,
 		"%c%c%s%c%s%c%s%c%s%c%d\n",
 		isline->type, IRCDCONF_DELIMITER,

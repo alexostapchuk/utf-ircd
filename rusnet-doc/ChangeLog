@@ -1,5 +1,10 @@
 Version 2.0
 --------------
+2011-07-29 erra <erra@ya.ru>
+	* common/numeric_def.h, common/struct_def.h, ircd/s_user.c,
+		ircd/s_err.c, support/config.h.dist: HOLD_ENFORCED_NICKS
+			option added to make it configurable
+
 2011-07-28 erra <erra@ya.ru>
 	* rusnet/rusnet_cmds.c: replace "translit" with "ascii" for iconv calls
 

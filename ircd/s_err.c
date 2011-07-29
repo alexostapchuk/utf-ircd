@@ -114,7 +114,11 @@ static	Numeric	numeric_errors[] = {
 /* 436 */	{ ERR_NICKCOLLISION, "%s :Nickname collision KILL from %s@%s" },
 /* 437 */	{ ERR_UNAVAILRESOURCE,
 			"%s :Nick/channel is temporarily unavailable" },
+#ifdef HOLD_ENFORCED_NICKS
 /* 438 */	{ ERR_NICKTOOFAST, ":Wait a minute before changing nickname" },
+#else
+		{ 0, (char *)NULL },
+#endif
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
 		{ ERR_USERNOTINCHANNEL, "%s %s :They aren't on that channel" },

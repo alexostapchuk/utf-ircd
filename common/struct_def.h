@@ -650,7 +650,9 @@ struct Client	{
 	struct SSL *ssl;
 	struct X509 *client_cert;
 #endif /* USE SSL */
+#ifdef HOLD_ENFORCED_NICKS
 	time_t	held;		/* prohibit instant nick change after SVSNICK */
+#endif
 };
 
 #define	CLIENT_LOCAL_SIZE sizeof(aClient)
