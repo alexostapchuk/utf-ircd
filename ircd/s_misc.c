@@ -502,6 +502,10 @@ char	*comment;	/* Reason for the exit */
 		** to test whether "sptr != acptr" in the following loops.
 		*/
 		close_connection(sptr);
+#ifndef USE_OLD8BIT
+		/* conversion was activated so uncount it */
+		conv_free_conversion(sptr->conv);
+#endif
 
 		if (IsServer(sptr))
 		    {
@@ -862,10 +866,6 @@ char	*comment;
 		else
 			sendto_flag(SCH_ERROR, "Found local %s in collision map",
 				sptr->name);
-#ifndef USE_OLD8BIT
-	/* conversion was activated so uncount it */
-	conv_free_conversion(sptr->conv);
-#endif
 	/* Remove sptr from the client list */
 	if (del_from_client_hash_table(sptr->name, sptr) != 1)
 		Debug((DEBUG_ERROR, "%#x !in tab %s[%s] %#x %#x %#x %d %d %#x",

@@ -119,7 +119,9 @@ aClient	*make_client(aClient *from)
 		cptr->auth = cptr->username;
 		cptr->exitc = EXITC_UNDEF;
 		cptr->receiveB = cptr->sendB = cptr->receiveM = cptr->sendM = 0;
+#ifdef	HOLD_ENFORCED_NICKS
 		cptr->held = 0;
+#endif
 #ifdef	ZIP_LINKS
 		cptr->zip = NULL;
 #endif
