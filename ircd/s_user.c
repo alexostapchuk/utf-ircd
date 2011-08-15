@@ -1106,18 +1106,17 @@ char	*parv[];
 		if ((parc == 3) && parv[2] && (*parv[2] == '1')) {
 		/* Internal call, do not apply sanity checks and restrictions */
 		}
-		else {
-			Reg aChannel *chptr;
 #ifdef RUSNET_RLINES
-
-			if (IsRMode(sptr))
-			{
-				sendto_one(sptr,
-				err_str(ERR_RESTRICTED, nick));
-				return 2;
-			}
+		else if (IsRMode(sptr))
+		{
+			sendto_one(sptr, err_str(ERR_RESTRICTED, nick));
+			return 2;
+		}
 #endif
-			chptr = rusnet_zmodecheck(cptr, nick);
+		else
+		{
+			Reg aChannel *chptr = rusnet_zmodecheck(cptr, nick);
+
 			if (chptr != NULL)
 			{
 				sendto_one(sptr, err_str(ERR_7BIT, parv[0]),

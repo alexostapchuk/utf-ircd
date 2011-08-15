@@ -49,6 +49,7 @@ void initialize_rusnet(char *);
 #include "conversion.h"
 #endif
 
+aChannel *rusnet_zmodecheck(struct Client *, char *);
 void rusnet_add_route(char *, char *, char *);
 void rusnet_free_routes(void);
 int rusnet_bind_interface_address(int, struct SOCKADDR_IN *, char *, size_t);

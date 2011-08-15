@@ -1,5 +1,15 @@
 Version 2.0
 --------------
+2011-08-14 erra <erra@ya.ru>
+	* rusnet/rusnet.h: rusnet_zmodecheck reintroduced (needed in
+		ircd/s_user.c)
+
+2011-08-05 erra <erra@ya.ru>
+	* ircd/s_user.c: R-mode check moved up
+
+2011-08-04 erra <erra@ya.ru>
+	* common/send.c: conversion buffer size increased for better safety
+
 2011-08-03 erra <erra@ya.ru>
 	* ircd/s_misc.c: conv_free_conversion call moved from exit_one_client
 		to exit_client under MyConnect(sptr) check to avoid mess

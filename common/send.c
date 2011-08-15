@@ -33,7 +33,7 @@ static void	vsendto_prefix_one(aClient *, aClient *, char *, va_list);
 #ifndef USE_OLD8BIT
 /* I hope it's enough since RFC max message size is 512
    note: it may be static until ircd is multithreaded */
-static	char	convbuf[2048];
+static	char	convbuf[3072];
 #endif
 static	char	psendbuf[2048];
 static	int	sentalong[MAXCONNECTIONS];

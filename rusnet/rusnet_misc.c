@@ -50,9 +50,8 @@ aChannel *rusnet_zmodecheck(struct Client *cptr, char *nickname)
 	/* Now check whether there are channels in 7bit mode */
 	for (lp = cptr->user->channel; lp; lp = lp->next)
 	{
-		Reg aChannel *chptr;
+		Reg aChannel *chptr = lp->value.chptr;
 
-		chptr = lp->value.chptr;
 		if ((chptr->mode.mode & MODE_7BIT) != 0)
 			return chptr;
 	}
