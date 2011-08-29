@@ -2767,7 +2767,7 @@ static void report_listeners(aClient *sptr, char *to)
 			tmp->port, (*tmp->host == '\0') ? tmp->host : "-",
 			what
 #ifndef USE_OLD8BIT
-				, conv_charset(acptr->conv)
+				, acptr->conv ? conv_charset(acptr->conv) : ""
 #endif
 		    );
 	}

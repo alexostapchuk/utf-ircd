@@ -2,6 +2,50 @@
 --------------------------------------------------------------------------
 Версия 2.0
 --------------
+2011-08-29 erra <erra@ya.ru>
+	* ircd/s_conf.c: DEFAULT_CHARSET применяется к портам, кодировка для
+			которых не указана
+	* ircd/s_serv.c: добавлена проверка на NULL в функции report_listeners
+			во избежание SIGSEGV в /stats P при наличии портов
+			с неверно заданной кодировкой
+	* ircd/s_user.c: поправлено использование макроса DupString
+	* support/config.h.dist: добавлен DEFAULT_CHARSET
+
+2011-08-14 erra <erra@ya.ru>
+	* rusnet/rusnet.h: вновь добавлено объявление функции rusnet_zmodecheck,
+			требуемое в ircd/s_user.c
+
+2011-08-05 erra <erra@ya.ru>
+	* ircd/s_user.c: проверка на R-mode передвинута выше
+
+2011-08-04 erra <erra@ya.ru>
+	* common/send.c: размер буфера перекодировки увеличен в целях
+			безопасности
+
+2011-08-03 erra <erra@ya.ru>
+	* ircd/s_misc.c: вызов conv_free_conversion перемещён из exit_one_client
+			в exit_client в блок MyConnect(sptr) во избежание
+			ложных вызовов
+
+2011-08-02 erra <erra@ya.ru>
+	* ircd/list.c: исправлено обрамление #ifdef HOLD_ENFORCED_NICKS
+			для cptr->held
+
+2011-07-29 erra <erra@ya.ru>
+	* common/numeric_def.h, common/struct_def.h, ircd/s_user.c,
+		ircd/s_err.c, support/config.h.dist: добавлен параметр
+			HOLD_ENFORCED_NICKS, чтобы дать возможность настраивать
+			удержание ников
+
+2011-07-28 erra <erra@ya.ru>
+	* rusnet/rusnet_cmds.c: автоматическая замена "translit" на "ascii"
+
+2011-07-26 erra <erra@ya.ru>
+	* ircd/s_misc.c: удалён неиспользуемый код libidn (вызывал ошибки)
+
+2011-07-25 erra <erra@ya.ru>
+	* ircd/channel.c, ircd/s_user.c: исправлен вызов is_chan_anyop
+
 2011-07-24 erra <erra@ya.ru>
 	* ircd/channel.c, ircd/hash.c: удалены устаревшие части кода
 

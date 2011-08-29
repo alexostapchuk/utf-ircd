@@ -791,7 +791,7 @@ static int find_conf_listener (char *charset)
 	Reg	aConfItem *aconf;
 
 	for (aconf = conf; aconf; aconf = aconf->next)
-	    if ((aconf->status == CONF_LISTEN_PORT) &&
+	    if (aconf->status == CONF_LISTEN_PORT &&
 		!strcasecmp (charset, aconf->passwd))
 			return aconf->port;
 }
@@ -1393,15 +1393,13 @@ int	init_flags;
 			continue;
 
 #ifdef USE_SSL
-		if (aconf->status & CONF_SSL_LISTEN_PORT)
-		{
-			if(!(sslable))
+		if (aconf->status & CONF_SSL_LISTEN_PORT && !sslable)
 			{
-			fprintf(stderr, "You have p:lines in your conf. "
-				"But SSL init failed (probably you did not "
-				"create SSL certificate?)\nReverting to non-ssl ports.\n");
-//			aconf->status = CONF_LISTEN_PORT;
-			}
+			fprintf(stderr, "You have p:lines in your conf, "
+				"but SSL init failed (probably you did not "
+				"create SSL certificate?)\n"
+				"Reverting to non-ssl ports.\n");
+			aconf->status = CONF_LISTEN_PORT;
 		}
 #endif
 
@@ -1426,6 +1424,20 @@ int	init_flags;
 			DupString(aconf->host, tmp);
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
+			if (aconf->status & 
+				(CONF_LISTEN_PORT
+#ifdef USE_SSL
+						|CONF_SSL_LISTEN_PORT
+#endif
+									))
+			{
+				/* provide reasonable default for ports
+					with unassigned charset  --erra */
+				char *s = *tmp ? tmp : DEFAULT_CHARSET;
+
+				DupString(aconf->passwd, s);
+			}
+			else
 			DupString(aconf->passwd, tmp);
 			if ((tmp = getfield(NULL)) == NULL)
 				break;

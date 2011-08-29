@@ -862,11 +862,14 @@ char	*nick, *username;
 
 				if (!(s = strrchr(user->host, '.')))
 					goto kill_badhost;
+
 				*s = '\0';
-				DupString(pfx, b64enc(gen_crc(user->host)));
+				s = b64enc(gen_crc(user->host));
+				DupString(pfx, s);
 			 	/* keep 1st octet */
 				s = strchr(user->host, '.');
-				if (!s) {
+				if (!s)
+				{
 					MyFree(pfx);
 						kill_badhost:
 					ircstp->is_kill++;
