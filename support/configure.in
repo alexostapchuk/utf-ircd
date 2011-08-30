@@ -1270,8 +1270,8 @@ else
     else
 	AC_MSG_CHECKING(for working locale)
 	irc_cv_locale=`grep '^#define[ 	]*LOCALE[^_]' config.h | cut -f 2 -d '"'`
-	irc_cv_charset=`grep '^#define.*CHARSET_8BIT' config.h | cut -f 2 -d '"'`
-	irc_cv_unicode=`grep '^#define.*CHARSET_UNICODE' config.h | cut -f 2 -d '"'`
+	irc_cv_charset=`grep '^#define.*CHARSET_8BIT.*"' config.h | cut -f 2 -d '"'`
+	irc_cv_unicode=`grep '^#define.*CHARSET_UNICODE.*"' config.h | cut -f 2 -d '"'`
 
 	# having charset_8bit locale working is principal for successful iconv operations
 	locale=$irc_cv_locale.$irc_cv_charset

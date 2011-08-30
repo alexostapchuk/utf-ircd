@@ -1,5 +1,8 @@
 Version 2.0
 --------------
+2011-08-30 erra <erra@ya.ru>
+	* support/configure, support/configure.in: locale test fixed
+
 2011-08-29 erra <erra@ya.ru>
 	* ircd/s_conf.c: DEFAULT_CHARSET assigned for ports with undefined one
 	* ircd/s_serv.c: NULL pointer check added in report_listeners
