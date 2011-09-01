@@ -3,6 +3,9 @@
 Версия 2.0
 --------------
 2011-09-01 erra <erra@ya.ru>
+	* common/numeric_def.h, ircd/s_err.c: добавлен RPL_IDENTIFIED
+	* ircd/s_user.c: вывод RPL_IDENTIFIED добавлен в send_whois; вывод "I"
+		добавлен в who_one
 	* support/configure, support/configure.in: при подключении libiconv.a
 		принято во внимание amd64; добавлено переопределение CPPFLAGS
 		при проверке IDN

@@ -138,6 +138,7 @@
 #define RPL_TEXT             304
 #define	RPL_UNAWAY           305
 #define	RPL_NOWAWAY          306
+#define	RPL_IDENTIFIED       307 /* match Bahamut and Unreal here */
 
 #define RPL_WHOISUSER        311
 #define RPL_WHOISSERVER      312

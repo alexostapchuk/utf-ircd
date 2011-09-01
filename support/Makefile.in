@@ -29,17 +29,17 @@ exec_prefix = @exec_prefix@
 # compiler program
 CC = @CC@
 # compiler flags used for the server
-S_CFLAGS = @CFLAGS@ -w -I. -I../ircd -I../common -I../rusnet @IRC_ZLIB_INCLUDE@ @IRC_OPENSSL_INCLUDE@
+S_CFLAGS = @CFLAGS@ -I. -I../ircd -I../common -I../rusnet @IRC_ZLIB_INCLUDE@ @IRC_OPENSSL_INCLUDE@
 # compiler flags used for the authentication slave
-A_CFLAGS = @CFLAGS@ -w -I. -I../iauth -I../common -I../rusnet @IRC_ZLIB_INCLUDE@ @IRC_OPENSSL_INCLUDE@
+A_CFLAGS = @CFLAGS@ -I. -I../iauth -I../common -I../rusnet @IRC_ZLIB_INCLUDE@ @IRC_OPENSSL_INCLUDE@
 # compiler flags used for the configuration slave
-IS_CFLAGS = @CFLAGS@ -w -I. -I../iserv -I../common -I../rusnet -DCLIENT_COMPILE @IRC_ZLIB_INCLUDE@ @IRC_OPENSSL_INCLUDE@
+IS_CFLAGS = @CFLAGS@ -I. -I../iserv -I../common -I../rusnet -DCLIENT_COMPILE @IRC_ZLIB_INCLUDE@ @IRC_OPENSSL_INCLUDE@
 # compiler flags used for chkconfig
-CC_CFLAGS = @CFLAGS@ -w -I. -I../ircd -I../common -I../rusnet @IRC_ZLIB_INCLUDE@ @IRC_OPENSSL_INCLUDE@
+CC_CFLAGS = @CFLAGS@ -I. -I../ircd -I../common -I../rusnet @IRC_ZLIB_INCLUDE@ @IRC_OPENSSL_INCLUDE@
 # compiler flags used for the client
-C_CFLAGS = @CFLAGS@ -w -I. -I../ircd -I../common -I../rusnet -DCLIENT_COMPILE
+C_CFLAGS = @CFLAGS@ -I. -I../ircd -I../common -I../rusnet -DCLIENT_COMPILE
 # compiler flags used for other things (in contrib/)
-O_CFLAGS = @CFLAGS@ -w -I. -I../common -I../rusnet -DCONTRIB_COMPILE
+O_CFLAGS = @CFLAGS@ -I. -I../common -I../rusnet -DCONTRIB_COMPILE
 # linker flags
 LDFLAGS = @LDFLAGS@
 # required libraries, except zlib,libssl and curses/termcap

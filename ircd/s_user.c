@@ -1988,7 +1988,7 @@ aClient *sptr, *acptr;
 aChannel *repchan;
 Link *lp;
 {
-	char	status[6];
+	char	status[7];
 	int	i = 0;
 
 	if (acptr->user->flags & FLAGS_AWAY)
@@ -1997,6 +1997,8 @@ Link *lp;
 		status[i++] = 'H';
 	if (acptr->user->flags & FLAGS_VHOST)
 		status[i++] = 'x';
+	if (acptr->user->flags & FLAGS_IDENTIFIED)
+		status[i++] = 'I';
 	if (IsRMode(acptr))
 		status[i++] = 'b';
 #ifdef USE_SSL
@@ -2173,11 +2175,6 @@ char	*parv[];
 		/* find channel user last joined, we might need it later */
 		if (sptr->user && sptr->user->channel)
 			channame = sptr->user->channel->value.chptr->chname;
-
-#if 0
-		/* I think it's useless --Beeth */
-		clean_channelname(mask);
-#endif
 
 		/* simplify mask */
 		(void)collapse(mask);
@@ -2384,6 +2381,9 @@ char    *parv[];
 #endif
 	if (IsAnOper(acptr))
 	    sendto_one(sptr, rpl_str(RPL_WHOISOPERATOR, sptr->name), name);
+
+	if (user->flags & FLAGS_IDENTIFIED)
+	    sendto_one(sptr, rpl_str(RPL_IDENTIFIED, sptr->name), name);
 
 #if defined(EXTRA_NOTICES) && defined(WHOIS_NOTICES)
 	if (IsAnOper(acptr) && acptr != sptr)

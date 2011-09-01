@@ -212,7 +212,7 @@ static	Numeric	numeric_replies[] = {
 /* 304 */	{ RPL_TEXT, (char *)NULL },
 /* 305 */	{ RPL_UNAWAY, ":You are no longer marked as being away" },
 /* 306 */	{ RPL_NOWAWAY, ":You have been marked as being away" },
-		{ 0, (char *)NULL },	/* "is a registered nick */
+/* 307 */	{ RPL_IDENTIFIED, ":Identified by NickServ" },
 		{ 0, (char *)NULL },	/* is a Server Administrator */
 		{ 0, (char *)NULL },	/* is a services admin */
 		{ 0, (char *)NULL },	/* is an IRC helper */
