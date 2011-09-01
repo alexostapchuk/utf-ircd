@@ -1663,8 +1663,16 @@ char	*parv[], *mbuf, *pbuf;
 				mode->mode |= *ip;
 				if (*ip == MODE_ANONYMOUS && MyPerson(sptr))
 				  {
-				      sendto_channel_butone(NULL, &me, chptr, 0, ":%s NOTICE %s :The anonymous flag is being set on channel %s.", ME, chptr->chname, chptr->chname);
-				      sendto_channel_butone(NULL, &me, chptr, 0, ":%s NOTICE %s :Be aware that anonymity on IRC is NOT securely enforced!", ME, chptr->chname);
+				      sendto_channel_butone(NULL, &me, chptr, 0,
+						":%s NOTICE %s :The anonymous "
+						"flag is being set on channel "
+						"%s.", ME, chptr->chname,
+								chptr->chname);
+				      sendto_channel_butone(NULL, &me, chptr, 0,
+						":%s NOTICE %s :Be aware that "
+						"anonymity on IRC is NOT "
+						"securely enforced!", ME,
+								chptr->chname);
 				  }
 			  }
 			*mbuf++ = *(ip+1);
@@ -1842,7 +1850,9 @@ char	*parv[], *mbuf, *pbuf;
 						LDELAYCHASETIMELIMIT;
 			case MODE_UNIQOP :
 			case MODE_HALFOP :
-				if (!is_op)	/* cut off half-ops */
+				/* only allow half-ops to -h themselves */
+				if (!(is_op || lp->flags & MODE_DEL &&
+						lp->value.cptr == sptr))
 					break;
 			case MODE_VOICE :
 				*mbuf++ = c;

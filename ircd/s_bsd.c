@@ -789,14 +789,14 @@ void	init_sys(void)
 			exit(-1);
 		    }
 	    }
-#if defined(SOLARIS_10UP)
+# if defined(SOLARIS_10UP) && !defined(__amd64__)
 	if (enable_extended_FILE_stdio (-1, -1) == -1)
 	    {
 		(void)fprintf(stderr, "error calling enable_extended_FILE_stdio()\n");
 		exit(-1);
 	    }
-#endif
-#endif
+# endif
+#endif /* if defined(RLIMIT_FD_MAX) || defined(SOLARIS_10UP) */
 #if !defined(USE_POLL)
 # ifdef sequent
 #  ifndef	DYNIXPTX
@@ -2242,12 +2242,22 @@ int	msg_ready;
 		if (cptr->lasttime > cptr->since)
 			cptr->since = cptr->lasttime;
 		cptr->flags &= ~(FLAGS_PINGSENT|FLAGS_NONL);
-		/*
-		 * If not ready, fake it so it isnt closed
-		 */
-		if (length == -1 &&
-			((errno == EWOULDBLOCK) || (errno == EAGAIN)))
-			return 1;
+
+		if (length == -1)
+		{
+			/*
+			 * If not ready, fake it so it isnt closed
+			 */
+			if ((errno == EWOULDBLOCK) || (errno == EAGAIN))
+				return 1;
+
+			/*
+			 * Otherwise mark the socket as dead
+			 */
+			if (errno == ECONNRESET)
+				return dead_link(cptr,
+						strerror(get_sockerr(cptr)));
+		}
 		if (length <= 0)
 			return length;
 	    }

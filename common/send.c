@@ -233,7 +233,7 @@ char	*str;
 **	Also, the notice is skipped for "uninteresting" cases,
 **	like Persons and yet unknown connections...
 */
-static	int	dead_link(to, notice)
+int	dead_link(to, notice)
 aClient *to;
 char	*notice;
 {

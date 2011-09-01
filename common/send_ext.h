@@ -35,6 +35,7 @@ extern int writecalls, writeb[];
 EXTERN int send_queued(aClient *to);
 EXTERN int vsendto_one (aClient *to, char *pattern, va_list va);
 EXTERN int sendto_one (aClient *to, char *pattern, ...);
+EXTERN int dead_link(aClient *to, char *notice);
 #ifndef CLIENT_COMPILE
 EXTERN void flush_connections(int fd);
 EXTERN void flush_fdary(FdAry *);

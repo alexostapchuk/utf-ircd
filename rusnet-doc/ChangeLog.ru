@@ -2,6 +2,16 @@
 --------------------------------------------------------------------------
 Версия 2.0
 --------------
+2011-09-01 erra <erra@ya.ru>
+	* support/configure, support/configure.in: при подключении libiconv.a
+		принято во внимание amd64; добавлено переопределение CPPFLAGS
+		при проверке IDN
+
+2011-08-31 erra <erra@ya.ru>
+	* common/send.c, common/send_ext.h: экспорт dead_link для s_bsd.c
+	* ircd/s_bsd.c: если получен ECONNRESET, вызываем dead_link; отменён
+		вызов enable_extended_FILE_stdio для amd64
+
 2011-08-30 erra <erra@ya.ru>
 	* support/configure, support/configure.in: исправлен тест локали
 

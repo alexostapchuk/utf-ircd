@@ -6564,7 +6564,12 @@ $as_echo "iconv.h found" >&6; }
 		# check for the iconv supplied
 		irc_save_cflags="$CFLAGS"
 		irc_save_libs="$LIBS"
-		LIBS="${LIBS} $iconv_path/lib/libiconv.a"
+
+		case "$CFLAGS" in
+		*64*)	iconv_libpath="$iconv_path/lib/amd64"	;;
+		*)	iconv_libpath="$iconv_path/lib/"	;;
+		esac
+		LIBS="${LIBS} $iconv_libpath/libiconv.a"
 		CFLAGS="${CFLAGS} -I$iconv_path/include"
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -6589,7 +6594,7 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 		LIBS="$irc_save_LIBS"
 		CFLAGS="$irc_save_CFLAGS"
-		irc_cv_have_iconv="irc_iconv_includes=\"$iconv_path/include\" irc_iconv_libs= irc_iconv_alib=\"$iconv_path/lib/libiconv.a\" irc_iconv_libpath= irc_iconv_bin=\"$iconv_path/bin/iconv\""
+		irc_cv_have_iconv="irc_iconv_includes=\"$iconv_path/include\" irc_iconv_libs= irc_iconv_alib=\"$iconv_libpath/libiconv.a\" irc_iconv_libpath= irc_iconv_bin=\"$iconv_path/bin/iconv\""
 	else
 		as_fn_error $? "iconv.h is not found in $iconv_path/include" "$LINENO" 5
 	fi
@@ -6904,15 +6909,20 @@ fi
 
      LDFLAGS_save="${LDFLAGS}"
      CFLAGS_save="${CFLAGS}"
+     CPPFLAGS_save="${CPPFLAGS}"
      if test "$libidn" != "no"; then
 	if test "$libidn" = "yes"
 	then
 		case `uname` in
-		SunOS)	CFLAGS="${CFLAGS} -I/usr/include/idn"	;;
+		SunOS)
+			CFLAGS="${CFLAGS} -I/usr/include/idn"
+			CPPFLAGS="${CPPFLAGS} -I/usr/include/idn"
+		;;
 		esac
 	else
 		LDFLAGS="${LDFLAGS} -L$libidn/lib"
 		CFLAGS="${CFLAGS} -I$libidn/include"
+		CPPFLAGS="${CPPFLAGS} -I$libidn/include"
 	fi
 	ac_fn_c_check_header_mongrel "$LINENO" "idna.h" "ac_cv_header_idna_h" "$ac_includes_default"
 if test "x$ac_cv_header_idna_h" = x""yes; then :
@@ -6984,6 +6994,7 @@ EOF
 
 	LDFLAGS="${LDFLAGS_save}"
 	CFLAGS="${CFLAGS_save}"
+	CPPFLAGS="${CPPFLAGS_save}"
      fi
      { $as_echo "$as_me:${as_lineno-$LINENO}: checking if Libidn should be used" >&5
 $as_echo_n "checking if Libidn should be used... " >&6; }

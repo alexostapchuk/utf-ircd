@@ -1,5 +1,14 @@
 Version 2.0
 --------------
+2011-09-01 erra <erra@ya.ru>
+	* support/configure, support/configure.in: amd64 is taken into account
+		for libiconv.a; CPPFLAGS override added for IDN test
+
+2011-08-31 erra <erra@ya.ru>
+	* common/send.c, common/send_ext.h: export dead_link for s_bsd.c
+	* ircd/s_bsd.c: mark link as dead if ECONNRESET occurs; cancelled
+		enable_extended_FILE_stdio for amd64 (by denk)
+
 2011-08-30 erra <erra@ya.ru>
 	* support/configure, support/configure.in: locale test fixed
 
@@ -1110,11 +1119,12 @@ Version 1.4.3
 	* rusnet/rusnet_cmds.c: passed reason from KLINE command to tkserv
 
 2004-05-16:
-* "KICK #chan me, someone" buffer overflow (NJOIN error) -skold
-* Fix for incorrect SERVICES_SERV collision handling
-  (s_user.c, parse.c)  -silencio
-* Fix for kill chase on host servers when collision produces
-  KILL message  -skold
+	* ircd/channel.c: "KICK #chan me, someone" buffer overflow (NJOIN
+		error) -skold
+	* common/parse.c, ircd/s_user.c: Fix for incorrect SERVICES_SERV
+		collision handling  -silencio
+	* ircd/s_user.c: Fix for kill chase on host servers when collision
+		produces KILL message  -skold
 
 2004-05-02:
 * Twilight mode is removed from code  -skold

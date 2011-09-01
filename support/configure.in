@@ -649,15 +649,20 @@ AC_ARG_WITH(libidn, AC_HELP_STRING([--with-libidn=DIR],
 
      LDFLAGS_save="${LDFLAGS}"
      CFLAGS_save="${CFLAGS}"
+     CPPFLAGS_save="${CPPFLAGS}"
      if test "$libidn" != "no"; then
 	if test "$libidn" = "yes"
 	then
 		case `uname` in
-		SunOS)	CFLAGS="${CFLAGS} -I/usr/include/idn"	;;
+		SunOS)
+			CFLAGS="${CFLAGS} -I/usr/include/idn"
+			CPPFLAGS="${CPPFLAGS} -I/usr/include/idn"
+		;;
 		esac
 	else
 		LDFLAGS="${LDFLAGS} -L$libidn/lib"
 		CFLAGS="${CFLAGS} -I$libidn/include"
+		CPPFLAGS="${CPPFLAGS} -I$libidn/include"
 	fi
 	AC_CHECK_HEADER(idna.h,
          AC_CHECK_LIB(idn, stringprep_check_version,
@@ -673,6 +678,7 @@ AC_ARG_WITH(libidn, AC_HELP_STRING([--with-libidn=DIR],
 	AC_MSG_CACHE_ADD(IDN support:		No)
 	LDFLAGS="${LDFLAGS_save}"
 	CFLAGS="${CFLAGS_save}"
+	CPPFLAGS="${CPPFLAGS_save}"
      fi
      AC_MSG_CHECKING([if Libidn should be used])
      AC_MSG_RESULT($libidn)
@@ -1249,7 +1255,12 @@ else
 		# check for the iconv supplied
 		irc_save_cflags="$CFLAGS"
 		irc_save_libs="$LIBS"
-		LIBS="${LIBS} $iconv_path/lib/libiconv.a"
+
+		case "$CFLAGS" in
+		*64*)	iconv_libpath="$iconv_path/lib/amd64"	;;
+		*)	iconv_libpath="$iconv_path/lib/"	;;
+		esac
+		LIBS="${LIBS} $iconv_libpath/libiconv.a"
 		CFLAGS="${CFLAGS} -I$iconv_path/include"
 		AC_TRY_LINK([#include <iconv.h>], [
 				iconv_open("","");
@@ -1258,7 +1269,7 @@ else
 		)
 		LIBS="$irc_save_LIBS"
 		CFLAGS="$irc_save_CFLAGS"
-		irc_cv_have_iconv="irc_iconv_includes=\"$iconv_path/include\" irc_iconv_libs= irc_iconv_alib=\"$iconv_path/lib/libiconv.a\" irc_iconv_libpath= irc_iconv_bin=\"$iconv_path/bin/iconv\""
+		irc_cv_have_iconv="irc_iconv_includes=\"$iconv_path/include\" irc_iconv_libs= irc_iconv_alib=\"$iconv_libpath/libiconv.a\" irc_iconv_libpath= irc_iconv_bin=\"$iconv_path/bin/iconv\""
 	else
 		AC_MSG_ERROR(iconv.h is not found in $iconv_path/include)
 	fi
