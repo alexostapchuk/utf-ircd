@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id$
  */
 
 #include "os.h"
@@ -50,7 +49,7 @@ parse_ircd()
 
 	iobuf[iob_len] = '\0';
 	
-	while (ch = index(buf, '\n'))
+	while ((ch = index(buf, '\n')))
 	    {
 		*ch = '\0';
 		DebugLog((DEBUG_MISC, "parse_ircd(): got [%s]", buf ? buf : "NULL"));
@@ -101,7 +100,6 @@ loop_io()
 
 	int	i, nfds		= 0;
 	struct	timeval wait;
-	time_t	now		= time(NULL);
 
 #if !defined(USE_POLL)
 	FD_ZERO(&read_set);
@@ -134,6 +132,7 @@ loop_io()
 	pfd = poll_fdarray;
 #endif
 	if (nfds == -1)
+	{
 		if (errno == EINTR)
 		{
 			DebugLog((DEBUG_RAW, "< loop_io()"));
@@ -148,6 +147,7 @@ loop_io()
 				   strerror(errno));
 			exit(1);
 		    }
+	}
 	if (nfds == 0)	/* end of timeout */
 	{
 		DebugLog((DEBUG_RAW, "< loop_io()"));

@@ -110,7 +110,7 @@ char * b64enc(unsigned long id)
     b64[4] = crc.p[3] & 0x3F;
 
     for (j = 0; j < 5; j++)
-	b64[j] = b64enc_table[ b64[j] ];
+	b64[j] = b64enc_table[ (int)b64[j] ];
 
     b64[5] = '\0';	/* null-terminating result string */
     return b64;
@@ -294,7 +294,7 @@ char * find_collision(const char *nick, unsigned long id)
 #ifndef USE_OLD8BIT
 void transcode_collmaps(conversion_t *old)
 {
-  static char buff[UNINICKLEN+1];
+  static unsigned char buff[UNINICKLEN+1];
   int i;
 
   for (i = 0; i < collnum; i++)

@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: i_log.c,v 1.6 2006/02/14 09:52:12 gvs Exp $
  */
  
 
@@ -25,7 +24,11 @@
 #include "i_externs.h"
 #undef I_LOG_C
 
-static FILE	*debug = NULL, *iservlog = NULL;
+#if defined(ISERV_DEBUG)
+static FILE	*debug = NULL;
+#endif
+static FILE	*iservlog = NULL;
+
 const char *logstrings[] =  {
 			    "UNDEF",
 			    "ALERT",

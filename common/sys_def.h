@@ -15,12 +15,11 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: sys_def.h,v 1.5 2005/10/02 18:56:30 cj Exp $
  */
  
 #if defined(DEBUGMODE) && !defined(CLIENT_COMPILE) && !defined(CHKCONF_COMPILE) && defined(DO_DEBUG_MALLOC)
 # define	free(x)		MyFree(x)
-#else
+#elif !defined CHKCONF_C
 # define	MyFree(x)	do { if ((x) != NULL) free(x); (x) = NULL; } while(0)
 #endif
 

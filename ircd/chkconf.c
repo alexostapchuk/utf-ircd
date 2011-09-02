@@ -19,8 +19,8 @@
 
 
 #include "os.h"
-#include "s_defines.h"
 #define CHKCONF_C
+#include "s_defines.h"
 #include "match_ext.h"
 #undef CHKCONF_C
 
@@ -610,7 +610,7 @@ print_confline:
 			aconf = NULL;
 		    }
 	    }
-	(void)close(fdn);
+	(void)fclose(fdn);
 #ifdef	M4_PREPROC
 	(void)wait(0);
 #endif

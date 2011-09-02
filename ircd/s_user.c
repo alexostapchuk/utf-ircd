@@ -1730,13 +1730,16 @@ int	parc, notice;
 					continue;
 				} else {
 					if (!notice) 
-						sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
+						sendto_one(sptr,
+							err_str(ERR_RESTRICTED,
+								parv[0]));
 					continue;
 		    		}
 			}
 #endif
 			if (acptr->user->flags & FLAGS_REGISTERED &&
-				!(sptr->user->flags & FLAGS_IDENTIFIED))
+				!(IsRusnetServices(sptr) ||
+					sptr->user->flags & FLAGS_IDENTIFIED))
 			{
 				sendto_one(sptr, err_str(ERR_REGONLY,
 							parv[0]));

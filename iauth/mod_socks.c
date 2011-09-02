@@ -161,7 +161,7 @@ socks_check_cache(cl)
 	      cl, cldata[cl].itsip));
 
     last = &(mydata->cache);
-    while (pl = *last)
+    while ((pl = *last))
 	{
 	    DebugLog((ALOG_DSOCKSC, 0, "socks_check_cache(%d): cache %s",
 		      cl, pl->ip));
@@ -198,17 +198,62 @@ socks_check_cache(cl)
     return 0;
 }
 
+/*
+ * socks_start
+ *
+ *	This procedure is called to start the socks check procedure.
+ *	Returns 0 if everything went fine,
+ *	-1 otherwise (nothing to be done, or failure)
+ *
+ *	It is responsible for sending error messages where appropriate.
+ *	In case of failure, it's responsible for cleaning up (e.g. socks_clean
+ *	will NOT be called)
+ */
+int
+socks_start(cl)
+u_int cl;
+{
+    char *error;
+    int fd;
+    
+    if (cldata[cl].state & A_DENY)
+	{
+	    /* no point of doing anything */
+	    DebugLog((ALOG_DSOCKS, 0,
+		      "socks_start(%d): A_DENY alredy set ", cl));
+	    return -1;
+	}
+    
+    if (socks_check_cache(cl))
+	    return -1;
+    
+    DebugLog((ALOG_DSOCKS, 0, "socks_start(%d): Connecting to %s", cl,
+	      cldata[cl].itsip));
+    fd= tcp_connect(cldata[cl].ourip, cldata[cl].itsip, SOCKSPORT, &error);
+    if (fd < 0)
+	{
+	    DebugLog((ALOG_DSOCKS, 0,
+		      "socks_start(%d): tcp_connect() reported %s", cl,error));
+	    socks_add_cache(cl, PROXY_NONE, 0);
+	    return -1;
+	}
+
+    cldata[cl].wfd = fd; /*so that socks_work() is called when connected*/
+
+    return 0;
+}
+
 static int
 socks_write(cl, strver)
 u_int cl;
 char *strver;
 {
-    struct socks_private *mydata = cldata[cl].instance->data;
     u_char query[22];    /* big enough to hold all queries */
     int query_len = 13;  /* lenght of socks4 query */
 #ifndef	INET6
     u_int a, b, c, d;
 #else
+	struct socks_private *mydata = cldata[cl].instance->data;
 	struct in6_addr	addr;
 #endif
     
@@ -597,52 +642,6 @@ AnInstance *self;
 }
 
 /*
- * socks_start
- *
- *	This procedure is called to start the socks check procedure.
- *	Returns 0 if everything went fine,
- *	-1 otherwise (nothing to be done, or failure)
- *
- *	It is responsible for sending error messages where appropriate.
- *	In case of failure, it's responsible for cleaning up (e.g. socks_clean
- *	will NOT be called)
- */
-int
-socks_start(cl)
-u_int cl;
-{
-    struct socks_private *mydata = cldata[cl].instance->data;
-    char *error;
-    int fd;
-    
-    if (cldata[cl].state & A_DENY)
-	{
-	    /* no point of doing anything */
-	    DebugLog((ALOG_DSOCKS, 0,
-		      "socks_start(%d): A_DENY alredy set ", cl));
-	    return -1;
-	}
-    
-    if (socks_check_cache(cl))
-	    return -1;
-    
-    DebugLog((ALOG_DSOCKS, 0, "socks_start(%d): Connecting to %s", cl,
-	      cldata[cl].itsip));
-    fd= tcp_connect(cldata[cl].ourip, cldata[cl].itsip, SOCKSPORT, &error);
-    if (fd < 0)
-	{
-	    DebugLog((ALOG_DSOCKS, 0,
-		      "socks_start(%d): tcp_connect() reported %s", cl,error));
-	    socks_add_cache(cl, PROXY_NONE, 0);
-	    return -1;
-	}
-
-    cldata[cl].wfd = fd; /*so that socks_work() is called when connected*/
-
-    return 0;
-}
-
-/*
  * socks_work
  *
  *	This procedure is called whenever there's new data in the buffer.
@@ -659,10 +658,12 @@ u_int cl;
     struct socks_private *mydata = cldata[cl].instance->data;
     
     if (cldata[cl].mod_status == 0)
+	{
 	    if (mydata->options & OPT_V5ONLY)
 		    cldata[cl].mod_status = ST_V5;
 	    else
 		    cldata[cl].mod_status = ST_V4;
+	}
     
     if (cldata[cl].mod_status & ST_V5)
 	    strver = "5";

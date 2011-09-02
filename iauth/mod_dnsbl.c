@@ -145,7 +145,7 @@ dnsbl_check_cache(cl)
 	      cl, cldata[cl].itsip));
 
     last = &(mydata->cache);
-    while (pl = *last)
+    while ((pl = *last))
 	{
 	    DebugLog((ALOG_DNSBLC, 0, "dnsbl_check_cache(%d): cache %s",
 		      cl, pl->ip));
@@ -236,7 +236,7 @@ AnInstance *self;
 		return "Aiee! no option(s)";
 	}
 
-	if (s = strstr(self->opt, "list"))
+	if ((s = strstr(self->opt, "list")))
 	{
 		char *ch = index(s, '=');
 	    
@@ -458,11 +458,12 @@ int
 dnsbl_work(cl)
 u_int cl;
 {
-	    /*
-	    ** There' nothing to do here
-	    */
-	    DebugLog((ALOG_DNSBL, 0,
+	/*
+	** There' nothing to do here
+	*/
+	DebugLog((ALOG_DNSBL, 0,
 		      "dnsbl_work(%d) invoked but why?", cl ));
+	return 0;
 }
 
 /*

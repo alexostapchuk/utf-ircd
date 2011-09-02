@@ -326,7 +326,9 @@ void hup_ircd ()
 void daemon_run () 
 {
   int i;
+#ifdef IRCDWATCH_HUP_ON_CONFIG_CHANGE
   int last_config_time = 0;
+#endif
 
   /* is ircdwatch already running? */
   i = ircdwatch_running();
@@ -466,10 +468,8 @@ Usage:\n\
 \n");
 }
 
-int
-main (int argc, char **argv) {
-  int i;
-
+int main (int argc, char **argv)
+{
 #ifdef IRCDWATCH_USE_SYSLOG
   openlog(IRCDWATCH_SYSLOG_IDENT, 
 	  IRCDWATCH_SYSLOG_OPTIONS, 
@@ -494,4 +494,5 @@ main (int argc, char **argv) {
 
   daemon_run();
   finalize(0);
+  return 0;
 }

@@ -2,6 +2,17 @@
 --------------------------------------------------------------------------
 Версия 2.0
 --------------
+2011-09-02 erra <erra@ya.ru>
+	* common/sys_def.h, contrib/ircdwatch/ircdwatch.c, ircd/chkconf.c,
+		ircd/hash.c, iauth/mod_dnsbl.c, iauth/mod_rfc931.c,
+		iauth/mod_socks.c, iauth/mod_pipe.c, iserv/i_io.c,
+		iserv/iserv.c, iserv/i_log.c: зачистка кода (сборка без
+			лишних сообщений)
+	* ircd/s_user.c: сервисам разрешены сообщения пользователям,
+			включившим режим +R (сообщения только от
+			зарегистрированных пользователей)
+	* support/config.h.dist, support/Makefile.in: убраны дубликаты макросов
+
 2011-09-01 erra <erra@ya.ru>
 	* common/numeric_def.h, ircd/s_err.c: добавлен RPL_IDENTIFIED
 	* ircd/s_user.c: вывод RPL_IDENTIFIED добавлен в send_whois; вывод "I"

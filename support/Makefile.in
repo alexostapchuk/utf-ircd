@@ -99,6 +99,8 @@ ISERV_PATH = $(server_bin_dir)/$(ISERV)
 IRCDM4_PATH = $(ircd_conf_dir)/ircd.m4
 
 
+# configuration lines server file
+KILLSCONF_PATH = $(ircd_conf_dir)/kills.conf
 # authentication slave configuration file
 IAUTHCONF_PATH = $(ircd_conf_dir)/iauth.conf
 # server PID file
@@ -312,8 +314,8 @@ hash.o: ../common/struct_def.h ../common/os.h ../ircd/hash_def.h \
 
 ircd.o: ../ircd/ircd.c $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" \
-	-DIRCDTUNE_PATH="\"$(IRCDTUNE_PATH)\"" \
-	-DLOCPATH="\"$(ircd_locale_dir)/locale\"" \
+	-DIRCDCONF_PATH="\"$(IRCDCONF_PATH)\"" -DIRCDTUNE_PATH="\"$(IRCDTUNE_PATH)\"" \
+	-DIRCDMOTD_PATH="\"$(IRCDMOTD_PATH)\"" -DLOCPATH="\"$(ircd_locale_dir)/locale\"" \
 	-DIRCD_PATH="\"$(IRCD_PATH)\"" -DIAUTH_PATH="\"$(IAUTH_PATH)\"" \
 	-DIAUTH="\"$(IAUTH)\"" -DISERV_PATH="\"$(ISERV_PATH)\"" \
 	-DISERV="\"$(ISERV)\"" -DIRCDDBG_PATH="\"$(IRCDDBG_PATH)\"" -c -o $@ ../ircd/ircd.c
@@ -406,7 +408,8 @@ iauth.o: ../iauth/iauth.c $(IAUTH_DEPS)
 	$(CC) $(A_CFLAGS) -c -o $@ ../iauth/iauth.c
 
 a_conf.o: ../iauth/a_conf.c $(IAUTH_DEPS)
-	$(CC) $(A_CFLAGS) -DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" -c -o $@ ../iauth/a_conf.c
+	$(CC) $(A_CFLAGS) -DIAUTHCONF_PATH="\"$(IAUTHCONF_PATH)\"" \
+		-DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" -c -o $@ ../iauth/a_conf.c
 
 a_dyn.o: ../iauth/a_dyn.c $(IAUTH_DEPS)
 	$(CC) $(A_CFLAGS) -c -o $@ ../iauth/a_dyn.c
@@ -438,7 +441,7 @@ mod_dnsbl.o: ../iauth/mod_dnsbl.c $(IAUTH_DEPS)
 
 # iserv stuff
 iserv.o: ../iserv/iserv.c $(ISERV_DEPS)
-	$(CC) $(IS_CFLAGS) -DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" -c -o $@ ../iserv/iserv.c
+	$(CC) $(IS_CFLAGS) -DKILLSCONF_PATH="\"$(KILLSCONF_PATH)\"" -c -o $@ ../iserv/iserv.c
 
 i_io.o: ../iserv/i_io.c $(ISERV_DEPS)
 	$(CC) $(IS_CFLAGS) -c -o $@ ../iserv/i_io.c

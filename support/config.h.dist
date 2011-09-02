@@ -15,20 +15,22 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id$
  */
 
 /*
  *  Global directory & file path section
+ *  These are given in Makefile.in, so
+ *  I comment them out here  --erra
  */
 
+/*
 #define IRCDM4_PATH IRCDCONF_DIR "/ircd.m4"
 #define IRCDCONF_PATH IRCDCONF_DIR "/ircd.conf"
 #define KILLSCONF_PATH IRCDCONF_DIR "/kills.conf"
 #define RUSNETCONF_PATH IRCDCONF_DIR "/rusnet.conf"
 #define IRCDMOTD_PATH IRCDCONF_DIR "/ircd.motd"
 #define IAUTHCONF_PATH IRCDCONF_DIR "/iauth.conf"
-
+*/
 
 
 /*
@@ -723,8 +725,6 @@
 ** is trying to connect to you.
 */
 /* #undef DISABLE_DOUBLE_CONNECTS */
-
-/*
 
 /*
 ** Define delimiter of fields in ircd.conf.

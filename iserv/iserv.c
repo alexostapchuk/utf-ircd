@@ -29,6 +29,11 @@ time_t		nextflush;
 FILE		*f;
 int		isffd_tmp;
 
+static int flushPendingLines(void);
+static int flushOutBuffer(void);
+static int match_tline(isConfLine *, isConfLine *);
+static int checkPendingLines(isConfLine *);
+
 RETSIGTYPE dummy(s)
 int s;
 {
@@ -164,10 +169,7 @@ int	main(argc, argv)
 int	argc;
 char	*argv[];
 {
-	
-	char	*host, *port, buffer[ISREADBUF], last_buf[ISREADBUF]; 
 	nextflush = time(NULL) + ISCHECK;
-
 
 	if (argc == 2 && !strcmp(argv[1], "-X"))
 		exit(0);
@@ -273,7 +275,7 @@ isConfLine *makePendingLine(char *line)
     mallocs++;
 #endif
     if (!line)
-	return;
+	return NULL;
 
 	DebugLog((DEBUG_RAW, "> makePendingLine(%s)", line));
 	DebugLog((DEBUG_MISC, "Making new line: %s", line));
@@ -430,7 +432,7 @@ char *line;
     int	flush_error = 1;
     
     if (!line)
-	return;
+	return -1;
     DebugLog((DEBUG_RAW, "> appendLine(%s)", line));
 
     bytes = strlen(line);
@@ -485,7 +487,7 @@ int appendConfLine(isConfLine *isline)
 		isline->passwd, IRCDCONF_DELIMITER,
 		isline->name, IRCDCONF_DELIMITER,
 		isline->port, IRCDCONF_DELIMITER,
-		isline->expire);
+		(int)isline->expire);
 	outbuf_count += bytes; /* Next available position */
 	if (bytes >= ISMAXLINE) /* Should not happen, write anyway, so don't be stupid */
 	    DebugLog((DEBUG_IO, "Written line was truncated. Check yourself."));
@@ -498,7 +500,7 @@ int appendConfLine(isConfLine *isline)
     }    
 }
 
-int flushOutBuffer()
+static int flushOutBuffer()
 {
 	DebugLog((DEBUG_RAW, "flushOutBuffer()"));
 	isoutbuf[outbuf_count] = '\0';
@@ -520,13 +522,11 @@ int flushOutBuffer()
  ** K, R and E lines always have to go into separate file since they are dynamic.
  **/
 
-int flushPendingLines()
+static int flushPendingLines(void)
 {
-    char	*head, *tail, *tmp;
-    int		count = 0, i = 0;
-    char	buf[ISREADBUF];
+    char	*tmp, buf[ISREADBUF];
     isConfLine	*isline = NULL;
-    int		skip_config = 0;
+    int		i = 0, skip_config = 0;
     
     DebugLog((DEBUG_RAW, "> flushPendingLines(): %d lines", inbuf_count));
 
@@ -545,7 +545,7 @@ int flushPendingLines()
 			    buf ? buf : "NULL"));
 		if (buf[1] != IRCDCONF_DELIMITER)
 		{
-		    sendto_log(LOG_ALERT, "Illegal line in config file: %s, skipped", buf ? buf : "NULL");
+		    sendto_log(LOG_ALERT, "Illegal line in config file: %s, skipped", buf);
 		    continue;
 		}
 
@@ -624,7 +624,7 @@ int flushPendingLines()
  ** Return value is 0 if line is to be removed from config, 1 - otherwise
  */
 
-int checkPendingLines(isConfLine *isline)
+static int checkPendingLines(isConfLine *isline)
 {
     time_t	now;
     int		i = 0, tmp = 0;
@@ -666,7 +666,7 @@ int checkPendingLines(isConfLine *isline)
  ** Main lines check is inside ircd now.  Iserv should blindly follow the changes
  ** sent from ircd. This was decided so to save us from being doing everything twice. -skold
  */
-int match_tline(isConfLine *newline, isConfLine *oldline)
+static int match_tline(isConfLine *newline, isConfLine *oldline)
 {
 
     if (newline->type != oldline->type)

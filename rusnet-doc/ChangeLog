@@ -1,16 +1,27 @@
 Version 2.0
 --------------
+2011-09-02 erra <erra@ya.ru>
+	* common/sys_def.h, contrib/ircdwatch/ircdwatch.c, ircd/chkconf.c,
+		ircd/hash.c, iauth/mod_dnsbl.c, iauth/mod_rfc931.c,
+		iauth/mod_socks.c, iauth/mod_pipe.c, iserv/i_io.c,
+		iserv/iserv.c, iserv/i_log.c: code clearance (no warnings
+			at compile time)
+	* ircd/s_user.c: allow network services to send messages and
+			notices to users with +R mode set (registered only)
+	* support/config.h.dist, support/Makefile.in: avoid duplicated macros
+
 2011-09-01 erra <erra@ya.ru>
 	* common/numeric_def.h, ircd/s_err.c: RPL_IDENTIFIED added
 	* ircd/s_user.c: RPL_IDENTIFIED added to send_whois;
-		"I" added to who_one
+			"I" added to who_one for identified nicks
 	* support/configure, support/configure.in: amd64 is taken into account
-		for libiconv.a; CPPFLAGS override added for IDN test
+			for libiconv.a; CPPFLAGS override added for IDN test
 
 2011-08-31 erra <erra@ya.ru>
 	* common/send.c, common/send_ext.h: export dead_link for s_bsd.c
-	* ircd/s_bsd.c: mark link as dead if ECONNRESET occurs; cancelled
-		enable_extended_FILE_stdio for amd64 (by denk)
+	* ircd/channel.c: allow halfops to -h themselves
+	* ircd/s_bsd.c: mark link as dead if ECONNRESET occurs;
+		enable_extended_FILE_stdio cancelled for amd64 (not needed)
 
 2011-08-30 erra <erra@ya.ru>
 	* support/configure, support/configure.in: locale test fixed

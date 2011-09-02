@@ -111,7 +111,8 @@ u_int cl;
 				(void)close(pp[1]);
 			(void)execlp(cldata[cl].instance->popt,
 				     cldata[cl].instance->popt,
-				     cldata[cl].itsip, cldata[cl].itsport);
+				     cldata[cl].itsip, cldata[cl].itsport,
+								(char *)NULL);
 			_exit(-1);
 		    }
 	    default :
