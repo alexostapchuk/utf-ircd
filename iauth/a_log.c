@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: a_log.c,v 1.6 2005/08/23 22:28:22 skold Exp $
  */
 
 #include "os.h"
@@ -24,7 +23,10 @@
 #include "a_externs.h"
 #undef A_LOG_C
 
-static FILE	*debug = NULL, *authlog = NULL;
+#if defined(IAUTH_DEBUG)
+static FILE	*debug = NULL;
+#endif
+static FILE	*authlog = NULL;
 
 void	init_filelogs(void)
 {
@@ -88,7 +90,7 @@ void	vsendto_log(int flags, int slflag, char *pattern, va_list va)
 	    }
 	if (flags & ALOG_IRCD)
 	    {
-		write(0, logbuf, strlen(logbuf));
+		(void)write(0, logbuf, strlen(logbuf));
 #if defined(IAUTH_DEBUG)
 		if ((ALOG_DSPY & debuglevel) && debug)
 		    {

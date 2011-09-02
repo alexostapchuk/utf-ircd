@@ -9,7 +9,6 @@
 ** hope that it will be useful, but without any warranty. Without even the 
 ** implied warranty of merchantability or fitness for a particular purpose. 
 ** See the GNU General Public License for details.
-** $Id: iserv.h,v 1.3 2005/08/27 16:05:24 skold Exp $
  */
 
 #ifndef ISERV_C
@@ -20,10 +19,9 @@
 
 EXTERN void addPendingLine(char *line);
 
-#define SEP IRCDCONF_DELIMETER
+#define KILLSCONF KILLSCONF_PATH
 #define KILLSCONFTMP KILLSCONF ".tmp"
 #define KILLSCONFBAK KILLSCONF ".bak"
-#define KILLSCONF KILLSCONF_PATH
 
 #define ISREADBUF 8192
 #define ISINBUF 10

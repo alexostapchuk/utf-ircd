@@ -1,14 +1,19 @@
 Version 2.0
 --------------
 2011-09-02 erra <erra@ya.ru>
-	* common/sys_def.h, contrib/ircdwatch/ircdwatch.c, ircd/chkconf.c,
-		ircd/hash.c, iauth/mod_dnsbl.c, iauth/mod_rfc931.c,
-		iauth/mod_socks.c, iauth/mod_pipe.c, iserv/i_io.c,
-		iserv/iserv.c, iserv/i_log.c: code clearance (no warnings
+	* common/match.c, common/support.c, common/sys_def.h,
+		contrib/ircdwatch/ircdwatch.c, iauth/a_conf.c, iauth/a_io.c,
+		iauth/a_log.c, iauth/mod_dnsbl.c, iauth/mod_pipe.c,
+		iauth/mod_rfc931.c, iauth/mod_socks.c, iauth/mod_webproxy.c,
+		ircd/chkconf.c, ircd/hash.c, iserv/i_io.c, iserv/i_log.c,
+		iserv/iserv.c, iserv/iserv.h: code clearance (no warnings
 			at compile time)
 	* ircd/s_user.c: allow network services to send messages and
-			notices to users with +R mode set (registered only)
-	* support/config.h.dist, support/Makefile.in: avoid duplicated macros
+			notices to users with +R mode set (registered only);
+			sendto_one(sptr, err_str(ERR_REGONLY... calls fixed
+	* rusnet/rusnet_cmds.c: do not pass SVSMODE +I/+R to older servers
+	* support/config.h.dist, support/Makefile.in: avoid duplicated macros;
+			place all path definitions into Makefile
 
 2011-09-01 erra <erra@ya.ru>
 	* common/numeric_def.h, ircd/s_err.c: RPL_IDENTIFIED added

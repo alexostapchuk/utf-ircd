@@ -1741,8 +1741,8 @@ int	parc, notice;
 				!(IsRusnetServices(sptr) ||
 					sptr->user->flags & FLAGS_IDENTIFIED))
 			{
-				sendto_one(sptr, err_str(ERR_REGONLY,
-							parv[0]));
+				sendto_one(sptr,
+					err_str(ERR_REGONLY, parv[0]), nick);
 				continue;
 			}
 
@@ -1847,7 +1847,7 @@ int	parc, notice;
 					!(sptr->user->flags & FLAGS_IDENTIFIED))
 				{
 					sendto_one(sptr, err_str(ERR_REGONLY,
-								parv[0]));
+								parv[0]), nick);
 					continue;
 				}
 
@@ -1897,7 +1897,7 @@ int	parc, notice;
 				{
 					if (acptr->user->flags & FLAGS_REGISTERED && !(sptr->user->flags & FLAGS_IDENTIFIED))
 					{
-						sendto_one(sptr, err_str(ERR_REGONLY, nick));
+						sendto_one(sptr, err_str(ERR_REGONLY, parv[0]), nick);
 						continue;
 					}
 					sendto_prefix_one(acptr, sptr,
@@ -1929,7 +1929,7 @@ int	parc, notice;
 					{
 						sendto_one(sptr,
 							err_str(ERR_REGONLY,
-									nick));
+								parv[0]), nick);
 						continue;
 					}
 					sendto_prefix_one(acptr, sptr,

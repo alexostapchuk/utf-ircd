@@ -16,8 +16,6 @@
 #*   along with this program; if not, write to the Free Software
 #*   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #*
-#*   $Id$
-#*
 #*/
 
 # -------------------------------------------------------------------------
@@ -97,6 +95,10 @@ IAUTH_PATH = $(server_bin_dir)/$(IAUTH)
 ISERV_PATH = $(server_bin_dir)/$(ISERV)
 # Path to the m4 configuration file
 IRCDM4_PATH = $(ircd_conf_dir)/ircd.m4
+# Path to the main configuration file
+IRCDCONF_PATH = $(ircd_conf_dir)/ircd.conf
+# Path to the 8-bit codepages configuration file
+RUSNETCONF_PATH = $(ircd_conf_dir)/rusnet.conf
 
 
 # configuration lines server file
@@ -109,6 +111,8 @@ IRCDPID_PATH = $(ircd_var_dir)/ircd.pid
 IRCDTUNE_PATH = $(ircd_var_dir)/ircd.tune
 # ircdwatch PID file
 IRCDWATCHPID_PATH = $(ircd_var_dir)/ircdwatch.pid
+# ircd motd path
+IRCDMOTD_PATH = $(ircd_conf_dir)/ircd.motd
 # ircd rmotd path
 IRCDRMOTD_PATH = $(ircd_conf_dir)/ircd.rmotd
 
@@ -313,9 +317,12 @@ hash.o: ../common/struct_def.h ../common/os.h ../ircd/hash_def.h \
 	@touch hash.o
 
 ircd.o: ../ircd/ircd.c $(SERVER_DEPS)
-	$(CC) $(S_CFLAGS) -DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" \
-	-DIRCDCONF_PATH="\"$(IRCDCONF_PATH)\"" -DIRCDTUNE_PATH="\"$(IRCDTUNE_PATH)\"" \
-	-DIRCDMOTD_PATH="\"$(IRCDMOTD_PATH)\"" -DLOCPATH="\"$(ircd_locale_dir)/locale\"" \
+	$(CC) $(S_CFLAGS) -DIRCDCONF_PATH="\"$(IRCDCONF_PATH)\"" \
+	-DRUSNETCONF_PATH="\"$(RUSNETCONF_PATH)\"" \
+	-DIRCDTUNE_PATH="\"$(IRCDTUNE_PATH)\"" \
+	-DIRCDMOTD_PATH="\"$(IRCDMOTD_PATH)\"" \
+	-DIRCDRMOTD_PATH="\"$(IRCDRMOTD_PATH)\"" \
+	-DLOCPATH="\"$(ircd_locale_dir)/locale\"" \
 	-DIRCD_PATH="\"$(IRCD_PATH)\"" -DIAUTH_PATH="\"$(IAUTH_PATH)\"" \
 	-DIAUTH="\"$(IAUTH)\"" -DISERV_PATH="\"$(ISERV_PATH)\"" \
 	-DISERV="\"$(ISERV)\"" -DIRCDDBG_PATH="\"$(IRCDDBG_PATH)\"" -c -o $@ ../ircd/ircd.c
@@ -362,7 +369,7 @@ s_numeric.o: ../ircd/s_numeric.c $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -c -o $@ ../ircd/s_numeric.c
 
 s_serv.o: ../ircd/s_serv.c $(SERVER_DEPS)
-	$(CC) $(S_CFLAGS) -DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" -c -o $@ ../ircd/s_serv.c
+	$(CC) $(S_CFLAGS) -c -o $@ ../ircd/s_serv.c
 
 s_service.o: ../ircd/s_service.c $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -c -o $@ ../ircd/s_service.c
@@ -371,7 +378,7 @@ s_user.o: ../ircd/s_user.c $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -DLOG_DIR="\"$(ircd_log_dir)\"" -c -o $@ ../ircd/s_user.c
 
 ssl.o: ../ircd/ssl.c $(SERVER_DEPS)
-	$(CC) $(S_CFLAGS) -c -o $@ ../ircd/ssl.c -DIRCDCONF_DIR="\"$(ircd_conf_dir)\""
+	$(CC) $(S_CFLAGS) -c -o $@ ../ircd/ssl.c
 
 s_zip.o: ../ircd/s_zip.c $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -c -o $@ ../ircd/s_zip.c
@@ -409,7 +416,7 @@ iauth.o: ../iauth/iauth.c $(IAUTH_DEPS)
 
 a_conf.o: ../iauth/a_conf.c $(IAUTH_DEPS)
 	$(CC) $(A_CFLAGS) -DIAUTHCONF_PATH="\"$(IAUTHCONF_PATH)\"" \
-		-DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" -c -o $@ ../iauth/a_conf.c
+			  -c -o $@ ../iauth/a_conf.c
 
 a_dyn.o: ../iauth/a_dyn.c $(IAUTH_DEPS)
 	$(CC) $(A_CFLAGS) -c -o $@ ../iauth/a_dyn.c
@@ -460,8 +467,8 @@ chkconf.o: ../ircd/chkconf.c $(SERVER_DEPS) ../ircd/config_read.c
 
 ircdwatch.o: ../contrib/ircdwatch/ircdwatch.c
 	$(CC) $(O_CFLAGS) -DIRCDWATCH_PID_FILENAME="\"$(IRCDWATCHPID_PATH)\"" \
-	-DIRCD_PATH="\"$(IRCD_PATH)\"" -DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" \
-	-DIRCDPID_PATH="\"$(IRCDPID_PATH)\"" -c -o $@ ../contrib/ircdwatch/ircdwatch.c
+	-DIRCD_PATH="\"$(IRCD_PATH)\"" -DIRCDPID_PATH="\"$(IRCDPID_PATH)\"" \
+	-c -o $@ ../contrib/ircdwatch/ircdwatch.c
 
 mkpasswd.o: ../contrib/mkpasswd/mkpasswd.c
 	$(CC) $(O_CFLAGS) -c -o $@ ../contrib/mkpasswd/mkpasswd.c

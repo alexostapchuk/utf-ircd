@@ -180,7 +180,14 @@ char    *parv[];
 		if (acptr->serv->version & SV_RUSNET2)
 			sendto_one(acptr, "SVSMODE %s :%s", parv[1], parv[2]);
 		else
+		{
+			/* do not pass +I/+R to older servers */
+			for (s = (char *) parv[2] + 1; *s != '\0'; s++) 
+				if (*s == 'I' || *s == 'R') 
+					return 0;
+
 			sendto_one(acptr,"RMODE %s %s", parv[1], parv[2]);
+		}
 	}
 
 	return 0;

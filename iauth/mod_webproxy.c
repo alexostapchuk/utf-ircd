@@ -18,7 +18,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: mod_webproxy.c,v 1.6 2005/08/23 22:28:22 skold Exp $
  */
 
 #include "os.h"
@@ -190,7 +189,7 @@ webproxy_write(u_int cl)
 {
 
 	struct webproxy_private *mydata = cldata[cl].instance->data;
-	static u_char query[64];	/* big enough to hold all queries */
+	static char query[64];	/* big enough to hold all queries */
 	static int query_len;	/* lenght of socks4 query */
 	static int wlen;
 

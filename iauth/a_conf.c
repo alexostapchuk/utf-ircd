@@ -103,7 +103,7 @@ char *cfile;
 	    {
 		while (fgets(buffer, 160, cfh))
 		    {
-			if (ch = index(buffer, '\n'))
+			if ((ch = index(buffer, '\n')))
 				lnnb += 1;
 			else
 			    {
@@ -118,7 +118,7 @@ char *cfile;
 			if (buffer[0] == '#' || buffer[0] == '\n')
 				continue;
 			*ch = '\0';
-			if (ch = index(buffer, '#'))
+			if ((ch = index(buffer, '#')))
 				*ch = '\0';
 			if (!strncmp("required", buffer, 8))
 			  {
@@ -255,7 +255,7 @@ char *cfile;
 				aTarget **ttmp;
 				u_long baseip = 0, lmask = 0;
 
-				if (ch = index(buffer, '\n'))
+				if ((ch = index(buffer, '\n')))
 					lnnb += 1;
 				else
 				    {
@@ -412,11 +412,13 @@ char *cfile;
 			sendto_log(ALOG_IRCD|ALOG_DCONF, LOG_ERR,
 			   "Warning: sum of timeouts exceeds ACCEPTTIMEOUT!");
 		if (o_dto)
+		{
 			if (cfile)
 				printf("Error: \"notimeout\" is set!\n");
 			else
 				sendto_log(ALOG_IRCD|ALOG_DCONF, LOG_ERR,
 					   "Error: \"notimeout\" is set!");
+		}
 	    }
 
 	itmp = instances;
@@ -430,23 +432,23 @@ char *cfile;
 		    {
 			printf("\t%s\t%s\n", itmp->mod->name,
 			       (itmp->opt) ? itmp->opt : "");
-			if (ttmp = itmp->hostname)
+			if ((ttmp = itmp->hostname))
 			    {
 				printf("\t\tHost = %s%s",
 				       (ttmp->yes == 0) ? "" : "!",
 				       ttmp->value);
-				while (ttmp = ttmp->nextt)
+				while ((ttmp = ttmp->nextt))
 					printf(",%s%s",
 					       (ttmp->yes == 0) ? "" : "!",
 					       ttmp->value);
 				printf("\n");
 			    }
-			if (ttmp = itmp->address)
+			if ((ttmp = itmp->address))
 			    {
 				printf("\t\tIP   = %s%s",
 				       (ttmp->yes == 0) ? "" : "!",
 				       ttmp->value);
-				while (ttmp = ttmp->nextt)
+				while ((ttmp = ttmp->nextt))
 					printf(",%s%s",
 					       (ttmp->yes == 0) ? "" : "!",
 					       ttmp->value);
@@ -501,7 +503,7 @@ AnInstance *inst;
 	    !strcmp(inst->hostname->value, "*"))
 		return 0;
 	/* check matches on IP addresses */
-	if (ttmp = inst->address)
+	if ((ttmp = inst->address))
 		while (ttmp)
 		    {
 			if (ttmp->baseip)
@@ -519,7 +521,7 @@ AnInstance *inst;
 			ttmp = ttmp->nextt;
 		    }
 	/* check matches on hostnames */
-	if (ttmp = inst->hostname)
+	if ((ttmp = inst->hostname))
 	    {
 		if (cldata[cl].state & A_GOTH)
 		    {

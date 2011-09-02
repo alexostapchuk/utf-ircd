@@ -150,7 +150,7 @@ char *path;
 {
 	char *lastslash;
 
-	if (lastslash = rindex(path, '/'))
+	if ((lastslash = rindex(path, '/')))
 		return(lastslash + 1);
 	return path;
 }
@@ -626,7 +626,7 @@ char	*MyRealloc(char *x, size_t y)
  */
 char *make_version()
 {
-	int ve, re, mi, dv, pl;
+	int ve, re, mi;
 	int rv1, rv2, rv3, rd;
 	char ver[45];
 #ifdef ADD_VERSION

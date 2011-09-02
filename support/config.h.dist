@@ -29,6 +29,7 @@
 #define KILLSCONF_PATH IRCDCONF_DIR "/kills.conf"
 #define RUSNETCONF_PATH IRCDCONF_DIR "/rusnet.conf"
 #define IRCDMOTD_PATH IRCDCONF_DIR "/ircd.motd"
+#define IRCDRMOTD_PATH IRCDCONF_DIR "/ircd.rmotd"
 #define IAUTHCONF_PATH IRCDCONF_DIR "/iauth.conf"
 */
 
@@ -75,7 +76,6 @@
 #define NETWORKNAME "RusNet"
 
 #define RUSNET_RLINES
-#define IRCDRMOTD_PATH IRCDCONF_DIR "/ircd.rmotd"
 
 /*
  * Define if you want wallops to be directed to &WALLOPS channel.

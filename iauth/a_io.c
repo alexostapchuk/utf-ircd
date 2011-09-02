@@ -198,7 +198,7 @@ static void	parse_ircd(void)
 	int cl = -1, ncl;
 
 	iobuf[iob_len] = '\0';
-	while (ch = index(buf, '\n'))
+	while ((ch = index(buf, '\n')))
 	    {
 		*ch = '\0';
 		DebugLog((ALOG_DSPY, 0, "parse_ircd(): got [%s]", buf));
@@ -585,6 +585,7 @@ void	loop_io(void)
 	pfd = poll_fdarray;
 #endif
 	if (nfds == -1)
+	{
 		if (errno == EINTR)
 			return;
 		else
@@ -594,6 +595,7 @@ void	loop_io(void)
 				   strerror(errno));
 			exit(1);
 		    }
+	}
 	if (nfds == 0)	/* end of timeout */
 		return;
 
