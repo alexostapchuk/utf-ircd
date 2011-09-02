@@ -375,10 +375,12 @@ s_service.o: ../ircd/s_service.c $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -c -o $@ ../ircd/s_service.c
 
 s_user.o: ../ircd/s_user.c $(SERVER_DEPS)
-	$(CC) $(S_CFLAGS) -DLOG_DIR="\"$(ircd_log_dir)\"" -c -o $@ ../ircd/s_user.c
+	$(CC) $(S_CFLAGS) -DLOG_DIR="\"$(ircd_log_dir)\"" \
+				-c -o $@ ../ircd/s_user.c
 
 ssl.o: ../ircd/ssl.c $(SERVER_DEPS)
-	$(CC) $(S_CFLAGS) -c -o $@ ../ircd/ssl.c
+	$(CC) $(S_CFLAGS) -DIRCDCONF_DIR="\"$(ircd_conf_dir)\"" \
+				-c -o $@ ../ircd/ssl.c
 
 s_zip.o: ../ircd/s_zip.c $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -c -o $@ ../ircd/s_zip.c
