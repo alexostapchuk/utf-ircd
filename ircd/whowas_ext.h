@@ -42,8 +42,10 @@ EXTERN void off_history(Reg aClient *cptr);
 EXTERN void initwhowas();
 EXTERN int m_whowas(aClient *cptr, aClient *sptr, int parc,
 			 char *parv[]);
-EXTERN void count_whowas_memory(int *wwu, int *wwa, u_long *wwam,
-				     int *wwuw);
+EXTERN void count_whowas_memory(int *wwu, int *wwa, u_long *wwam, int *wwuw);
+EXTERN int release_locks_byserver(char *, time_t);
+EXTERN int lock_nick(char *nick, char *server);
+EXTERN int remove_locks(time_t timelimit);
 #ifndef USE_OLD8BIT
 EXTERN void transcode_history(conversion_t *old);
 #endif

@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_zip.c,v 1.7 2005/08/27 16:05:24 skold Exp $
  */
 
 #include "os.h"
@@ -148,10 +147,10 @@ int	*length;
 	    }
 	if (*length)
 	    {
-		zin->next_in = buffer;
+		zin->next_in = (unsigned char *)buffer;
 		zin->avail_in = *length;
 	    }
-	zin->next_out = unzipbuf;
+	zin->next_out = (unsigned char *)unzipbuf;
 	zin->avail_out = UNZIP_BUFFER_SIZE;
 	switch (r = inflate(zin, Z_PARTIAL_FLUSH))
 	  {
@@ -228,9 +227,9 @@ int	*length, flush;
 			CBurst(cptr))))
 		return NULL;
 
-	zout->next_in = cptr->zip->outbuf;
+	zout->next_in = (unsigned char *)cptr->zip->outbuf;
 	zout->avail_in = cptr->zip->outcount;
-	zout->next_out = zipbuf;
+	zout->next_out = (unsigned char *)zipbuf;
 	zout->avail_out = ZIP_BUFFER_SIZE;
 
 	switch (r = deflate(zout, Z_PARTIAL_FLUSH))

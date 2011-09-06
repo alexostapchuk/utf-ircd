@@ -2,17 +2,35 @@
 --------------------------------------------------------------------------
 Версия 2.0
 --------------
+2011-09-06 erra <erra@ya.ru>
+	* ircd/s_user.c: режим +I для пользователя разрешён только
+			посредством SVSMODE
+
 2011-09-02 erra <erra@ya.ru>
-	* common/sys_def.h, contrib/ircdwatch/ircdwatch.c, ircd/chkconf.c,
-		ircd/hash.c, iauth/mod_dnsbl.c, iauth/mod_rfc931.c,
-		iauth/mod_socks.c, iauth/mod_pipe.c, iserv/i_io.c,
-		iserv/iserv.c, iserv/i_log.c: зачистка кода (сборка без
+	* common/conversion.c, common/conversion.h.in, common/match.c,
+		common/match_ext.h, common/packet.c, common/send.c,
+		common/support.c, common/support_ext.h, common/struct_def.h,
+		common/sys_def.h, contrib/ircdwatch/ircdwatch.c,
+		iauth/a_conf.c, iauth/a_io.c, iauth/a_log.c, iauth/mod_dnsbl.c,
+		iauth/mod_pipe.c, iauth/mod_rfc931.c, iauth/mod_socks.c,
+		iauth/mod_webproxy.c, ircd/channel.c, ircd/channel_ext.h,
+		ircd/chkconf.c, ircd/config_read.c, ircd/hash.c, ircd/ircd.c,
+		ircd/res.c, ircd/s_auth.c, ircd/s_bsd.c, ircd/s_bsd_ext.h,
+		ircd/s_conf.c, ircd/s_conf_ext.h, ircd/s_id.c, ircd/s_misc.c,
+		ircd/s_user.c, ircd/s_user_ext.h, ircd/s_zip.c,
+		ircd/s_zip_ext.h, ircd/version.c.SH.in, ircd/whowas.c,
+		ircd/whowas_ext.h, iserv/i_io.c, iserv/i_log.c,
+		iserv/iserv.c, iserv/iserv.h, rusnet/rusnet_cmds.c,
+		rusnet/rusnet_virtual.c: зачистка кода (сборка без
 			лишних сообщений)
 	* ircd/s_user.c: сервисам разрешены сообщения пользователям,
 			включившим режим +R (сообщения только от
 			зарегистрированных пользователей)
 	* support/config.h.dist, support/Makefile.in: убраны дубликаты макросов
+	* support/configure, support/configure.in: для компилятора gcc параметры
+			сборки изменены на -Wall -funsigned-char
 
+2011-09-02 erra <erra@ya.ru>
 2011-09-01 erra <erra@ya.ru>
 	* common/numeric_def.h, ircd/s_err.c: добавлен RPL_IDENTIFIED
 	* ircd/s_user.c: вывод RPL_IDENTIFIED добавлен в send_whois; вывод "I"

@@ -24,7 +24,7 @@
 #undef SUPPORT_C
 
 char	*mystrdup(s)
-char	*s;
+const char	*s;
 {
 	/* Portable strdup(), contributed by mrg, thanks!  -roy */
 
@@ -1065,8 +1065,8 @@ size_t unistrcut (char *line, size_t maxchars)
     if (UseUnicode > 0)		/* let's count chars - works for utf* only!!! */
     {
       register size_t chsize = 0;
-      register unsigned char *ch = (unsigned char *)line;
-      register unsigned char *chmax = &line[len];
+      register char *ch = line;
+      register char *chmax = &line[len];
 
       while (chsize < maxchars && ch < chmax && *ch) /* go for max chars */
       {
@@ -1075,11 +1075,12 @@ size_t unistrcut (char *line, size_t maxchars)
 	    ch++;				/* skip rest of octets */
 	chsize++;				/* char counted */
       }
-      len = (char *)ch - line;
+      len = ch - line;
     }
     else			/* 8bit encoding - just let's cut it */
 #endif
-      len = maxchars;
+	len = maxchars;
+
     line[len] = '\0';
   }
   return len;

@@ -788,6 +788,7 @@ char	*comment;
 				** it makes MyConnect == False - krys
 				*/
 				if (sptr != cptr)
+				{
 					if (*lp->value.chptr->chname == '!')
 					    {
 						if (!(sptr->flags & FLAGS_QUIT) && !(sptr->flags & FLAGS_KILLED))
@@ -800,6 +801,7 @@ char	*comment;
 #endif
 						 is_chan_op(sptr, lp->value.chptr))
 						lp->value.chptr->history = timeofday + DELAYCHASETIMELIMIT;
+				}
 				if (IsAnonymous(lp->value.chptr) &&
 				    !IsQuiet(lp->value.chptr))
 					sendto_channel_butserv(lp->value.chptr, sptr, ":%s PART %s :None", sptr->name, lp->value.chptr->chname);
@@ -861,11 +863,13 @@ char	*comment;
 	    }
 
 	if (sptr->flags & FLAGS_COLLMAP)
+	{
 		if (!MyConnect(sptr) && sptr->from)	/* it can't be local client */
 			del_from_collision_map(sptr->name, sptr->from->serv->crc);
 		else
 			sendto_flag(SCH_ERROR, "Found local %s in collision map",
 				sptr->name);
+	}
 	/* Remove sptr from the client list */
 	if (del_from_client_hash_table(sptr->name, sptr) != 1)
 		Debug((DEBUG_ERROR, "%#x !in tab %s[%s] %#x %#x %#x %d %d %#x",
@@ -1028,9 +1032,8 @@ void read_rmotd(filename)
 char *filename;
 {
 	FILE *fd;
-	int len;
 	register aMotd *temp, *last;
-	char line[80], *head, *tail;
+	char line[80];
 	register char *tmp;
 	
 	if ((fd = fopen(filename, "r")) == NULL)
@@ -1081,7 +1084,7 @@ char *filename;
 #ifndef USE_OLD8BIT
 	conversion_t *conv;
 	char line2[512];
-	unsigned char *rline;
+	char *rline;
 #endif
 	size_t len;
 

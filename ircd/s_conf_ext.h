@@ -69,7 +69,7 @@ EXTERN int initconf(int opt, int init_flags);
 EXTERN int check_tlines(aClient *cptr, int doall, char **comment, char *nick, 
 	aConfItem **iconf, aConfItem *aconf);
 #ifdef RUSNET_RLINES
-EXTERN int do_restrict(aClient *cptr);
+EXTERN void do_restrict(aClient *cptr);
 #endif
 EXTERN int find_two_masks(char *name, char *host, int stat);
 EXTERN int find_conf_flags(char *name, char *key, int stat);

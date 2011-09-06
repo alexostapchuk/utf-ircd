@@ -32,7 +32,7 @@
 EXTERN aClient *next_client(Reg aClient *next, Reg char *ch);
 EXTERN int hunt_server(aClient *cptr, aClient *sptr, char *command,
 			    int server, int parc, char *parv[]);
-EXTERN int do_nick_name(unsigned char *nick, int server);
+EXTERN int do_nick_name(char *nick, int server);
 EXTERN int ereject_user(aClient *, char, char *);
 EXTERN int register_user(aClient *, aClient *, char *, char *);
 EXTERN char *canonize(char *buffer);

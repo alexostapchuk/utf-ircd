@@ -29,7 +29,7 @@
 #else /* SUPPORT_C */
 #define EXTERN
 #endif /* SUPPORT_C */
-EXTERN char *mystrdup (char *s);
+EXTERN char *mystrdup (const char *s);
 #if !defined(HAVE_STRTOKEN)
 EXTERN char *strtoken (char **save, char *str, char *fs);
 #endif /* HAVE_STRTOKEN */

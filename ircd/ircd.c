@@ -127,6 +127,7 @@ char	*mesg;
 }
 
 
+#if 0
 /*
 ** try_connections
 **
@@ -246,6 +247,7 @@ static	time_t	try_connections_old(time_t currenttime)
 	    }
 	return (next);
 }
+#endif
 
 /*
 ** try_connections
@@ -563,7 +565,7 @@ time_t	currenttime;
 					    {
 						cptr->exitc = EXITC_AUTHTOUT;
 						sendto_iauth("%d T", cptr->fd);
-						ereject_user(cptr, " Timeout ",
+						ereject_user(cptr, 'T',
 						     "Authentication Timeout");
 						continue;
 					    }
@@ -816,6 +818,7 @@ char	*argv[];
 		int	flag = *p++;
 
 		if (flag == '\0' || *p == '\0')
+		{
 			if (argc > 1 && argv[1][0] != '-')
 			    {
 				p = *++argv;
@@ -823,6 +826,7 @@ char	*argv[];
 			    }
 			else
 				p = "";
+		}
 
 		switch (flag)
 		    {

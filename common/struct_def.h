@@ -276,7 +276,7 @@ typedef struct        Syslog  aSyslog;
 #endif /* USE_SSL */
 #ifdef RUSNET_RLINES
 # define SetRMode(x)		((x)->user->flags = (x)->user->flags \
-				    | FLAGS_RMODE & ~FLAGS_VHOST)
+				    | (FLAGS_RMODE & ~FLAGS_VHOST))
 # define SetRLine(x)		(((x)->flags |= FLAGS_RLINE) && SetRMode(x))
 #endif
 #define	DoingDNS(x)		((x)->flags & FLAGS_DOINGDNS)

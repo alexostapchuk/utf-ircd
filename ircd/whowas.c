@@ -254,6 +254,49 @@ char	*server;
 }
 
 /*
+** remove_locks
+**	Remove all out-of-date NDELAY locks and reallocate memory. -kmale
+*/
+int remove_locks(timelimit)
+time_t	timelimit;
+{
+	int old = 0;
+	Reg	aLock	*lp, *nlp;
+
+	if (!lk_index)
+		return (0);
+
+	for (lp = &locked[lk_index-1];lp >= locked;lp--)
+		if (lp->logout < timelimit)
+			old++;
+
+	if (old)
+	{
+		lk_index -= old;
+		if ((lk_size -= old) < MINLOCKS)
+			lk_size = MINLOCKS;
+		lp = (aLock *)(locked + old);
+		/*
+		** Allocate memory for all up-to-date elements.
+		*/
+		nlp = (aLock *)MyMalloc(sizeof(*locked) * lk_size);
+		bzero(nlp,sizeof(*locked) * lk_size);
+
+		if (lk_index)
+			memcpy((aLock *)nlp,(aLock *)lp,
+					sizeof(*lp) * lk_index);
+		MyFree(locked);
+		locked = nlp;
+		return (1);
+	}
+	else
+	/*
+	** No out-of-date elements found, do nothing
+	*/
+		return (0);
+}
+
+/*
 ** release_locks_byserver
 **	Release locks placed on users came from specified
 **	server recently. -kmale
@@ -296,49 +339,6 @@ time_t	timelimit;
 	}
 
         return (1);
-}
-
-/*
-** remove_locks
-**	Remove all out-of-date NDELAY locks and reallocate memory. -kmale
-*/
-int remove_locks(timelimit)
-time_t	timelimit;
-{
-	int old = 0;
-	Reg	aLock	*lp, *nlp;
-
-	if (!lk_index)
-		return (0);
-
-	for (lp = &locked[lk_index-1];lp >= locked;lp--)
-		if (lp->logout < timelimit)
-			old++;
-
-	if (old)
-	{
-		lk_index -= old;
-		if ((lk_size -= old) < MINLOCKS)
-			lk_size = MINLOCKS;
-		lp = (aLock *)(locked + old);
-		/*
-		** Allocate memory for all up-to-date elements.
-		*/
-		nlp = (aLock *)MyMalloc(sizeof(*locked) * lk_size);
-		bzero(nlp,sizeof(*locked) * lk_size);
-
-		if (lk_index)
-			memcpy((aLock *)nlp,(aLock *)lp,
-					sizeof(*lp) * lk_index);
-		MyFree(locked);
-		locked = nlp;
-		return (1);
-	}
-	else
-	/*
-	** No out-of-date elements found, do nothing
-	*/
-		return (0);
 }
 			
 /*

@@ -71,7 +71,7 @@ time_t l;
     idrpl[CHIDLEN] = '\0';
     do
 	{
-	    idrpl[c] = id_alphabet[l % CHIDNB];
+	    idrpl[(int)c] = id_alphabet[l % CHIDNB];
 	    l /= CHIDNB;
 	}
     while (c-- > 0);
@@ -86,9 +86,9 @@ char *id;
     unsigned long l = 0;
     char c = CHIDLEN-1;
 
-    l = alphabet_id[*id++];
+    l = alphabet_id[(int)*id++];
     while (c-- > 0)
-	l = l * CHIDNB + alphabet_id[*id++];
+	l = l * CHIDNB + alphabet_id[(int)*id++];
     return l;
 }
 
@@ -114,7 +114,7 @@ char *id;
 	    curid = get_chid();
 	    current = curid[0];
 	}
-    if (id_alphabet[1 + alphabet_id[current]] == id[1])
+    if (id_alphabet[1 + alphabet_id[(int)current]] == id[1])
 	    return 1;
     if (id[0] == current &&
 	idtol(id) >= (timeofday % (u_int) pow(CHIDNB, CHIDLEN)))
@@ -198,7 +198,7 @@ char *name;
 
     while (l <= CHIDLEN)
 	{
-	    if (alphabet_id[name[l]] == -1)
+	    if (alphabet_id[(int)name[l]] == -1)
 		    return 0;
 	    l += 1;
 	}

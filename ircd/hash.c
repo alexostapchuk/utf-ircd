@@ -294,7 +294,7 @@ char * find_collision(const char *nick, unsigned long id)
 #ifndef USE_OLD8BIT
 void transcode_collmaps(conversion_t *old)
 {
-  static unsigned char buff[UNINICKLEN+1];
+  static char buff[UNINICKLEN+1];
   int i;
 
   for (i = 0; i < collnum; i++)

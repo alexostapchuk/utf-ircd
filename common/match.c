@@ -556,11 +556,11 @@ char	*pattern;
 */
 
 int mycmp(s1, s2)
-char    *s1;
-char    *s2;
+const char    *s1;
+const char    *s2;
     {
-        Reg     unsigned char   *str1 = (unsigned char *)s1;
-        Reg     unsigned char   *str2 = (unsigned char *)s2;
+        Reg     char   *str1 = (char *)s1;
+        Reg     char   *str2 = (char *)s2;
         Reg     int     res;
 
         while ((res = toupper(*str1) - toupper(*str2)) == 0)
@@ -574,12 +574,12 @@ char    *s2;
 }
 
 int myncmp(str1, str2, n)
-char    *str1;
-char    *str2;
+const char    *str1;
+const char    *str2;
 int     n;
     {
-        Reg     unsigned char   *s1 = (unsigned char *)str1;
-        Reg     unsigned char   *s2 = (unsigned char *)str2;
+        Reg     char   *s1 = (char *)str1;
+        Reg     char   *s2 = (char *)str2;
         Reg     int             res;
 
         while ((res = toupper(*s1) - toupper(*s2)) == 0)

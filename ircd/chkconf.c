@@ -34,6 +34,7 @@ static	char	*configfile = IRCDCONF_PATH;
 #define CK_FILE filelist->file
 #define CK_LINE filelist->linenum
 static aConfig *findConfLineNumber(int);
+static	void	config_free(aConfig *);
 static aConfig *files;
 
 static	void	new_class(int);
@@ -797,3 +798,32 @@ static aConfig *findConfLineNumber(int nr)
 		mynr++;
 	return p;
 }
+/* should be called with topmost config struct */
+static void config_free(aConfig *cnf)
+{
+	aConfig *p;
+	aFile *pf, *pt;
+
+	if (cnf == NULL)
+	{
+		return;
+	}
+
+	pf = cnf->file;
+	while(pf)
+	{
+		pt = pf;
+		pf = pf->next;
+		MyFree(pt->filename);
+		MyFree(pt);
+	}
+	while (cnf)
+	{
+		p = cnf;
+		cnf = cnf->next;
+		MyFree(p->line);
+		MyFree(p);
+	}
+	return;
+}
+

@@ -112,7 +112,7 @@ char	*str;
 	int	retval;
 	aClient	*acpt = cptr->acpt;
 #if !defined(CLIENT_COMPILE) && defined(USE_OLD8BIT)
-	unsigned char *rusnet_buf;	/* RusNet extensions */
+	char	*rusnet_buf;	/* RusNet extensions */
 #endif
 
 #ifdef	DEBUGMODE
@@ -361,7 +361,7 @@ int	len;
 			if (IsService(to) || IsServer(to))
 			{
 				sprintf(ebuf,
-				"Max SendQ limit exceeded for %s: %d > %d",
+				"Max SendQ limit exceeded for %s: %d > %ld",
 					get_client_name(to, FALSE),
 					DBufLength(&to->sendQ), get_sendq(to));
 			}
@@ -388,7 +388,7 @@ int	len;
 		mark = 0;
 #endif
 	    msg = convbuf;
-	    len = conv_do_out(to->conv, msgs, len, (unsigned char **)&msg,
+	    len = conv_do_out(to->conv, msgs, len, &msg,
 			      sizeof(convbuf));
 #ifndef DO_TEXT_REPLACE
 	    /* Avoid "No text to send" warning message */
@@ -597,7 +597,7 @@ static	aClient	anon = { NULL, NULL, NULL, &ausr, NULL, NULL, 0, 0,/*flags*/
 # ifndef USE_OLD8BIT
 			 "",
 # endif
-			 0, "",
+			 0, "", NULL,
 # ifdef	ZIP_LINKS
 			 NULL,
 # endif
@@ -625,7 +625,7 @@ static size_t end_line(char *line, size_t len)
     if (UseUnicode)	/* let's count chars - works for utf* only!!! */
     {
       register size_t chsize = 0;
-      register unsigned char *ch = (unsigned char *)line;
+      register char *ch = line;
 
       while (chsize < len && *ch)		/* go for max 512 chars */
       {
@@ -658,82 +658,6 @@ static	int	vsendprep(char *pattern, va_list va)
 	len = vsprintf(sendbuf, pattern, va);
 	return end_line(sendbuf, len);
 }
-
-#ifndef CLIENT_COMPILE
-
-static	int	vsendpreprep_old(aClient *to, aClient *from, char *pattern, va_list va)
-{
-	Reg	anUser	*user;
-	int	flag = 0, len;
-
-	Debug((DEBUG_L10, "sendpreprep(%#x(%s),%#x(%s),%s)",
-		to, to->name, from, from->name, pattern));
-	if (to && from && MyClient(to) && IsPerson(from) &&
-	    !strncmp(pattern, ":%s", 3))
-	    {
-		char	*par = va_arg(va, char *);
-		if (from == &anon || !strcasecmp(par, from->name))
-		    {
-			user = from->user;
-			(void)strcpy(psendbuf, ":");
-			(void)strcat(psendbuf, from->name);
-			if (user)
-			    {
-				if (*user->username)
-				    {
-					(void)strcat(psendbuf, "!");
-					(void)strcat(psendbuf, user->username);
-				    }
-				if (*user->host && !MyConnect(from))
-				    {
-					(void)strcat(psendbuf, "@");
-					(void)strcat(psendbuf,
-						(user->flags & FLAGS_VHOST) ?
-						user->host : from->sockhost);
-					flag = 1;
-				    }
-			    }
-			/*
-			** flag is used instead of index(newpat, '@') for speed and
-			** also since username/nick may have had a '@' in them. -avalon
-			*/
-			if (!flag && MyConnect(from) && *user->host)
-			    {
-				(void)strcat(psendbuf, "@");
-				if (user->flags & FLAGS_VHOST
-#ifdef UNIXPORT
-							|| IsUnixSocket(from)
-#endif
-				)
-				    (void)strcat(psendbuf, user->host);
-				else
-				    (void)strcat(psendbuf, from->sockhost);
-			    }
-		    }
-		else
-		    {
-			(void)strcpy(psendbuf, ":");
-			(void)strcat(psendbuf, par);
-		    }
-
-		len = strlen(psendbuf);
-		len += vsprintf(psendbuf+len, pattern+3, va);
-	    }
-	else
-		len = vsprintf(psendbuf, pattern, va);
-
-	if (len > 510)
-#ifdef	IRCII_KLUDGE
-		len = 511;
-#else
-		len = 510;
-	psendbuf[len++] = '\r';
-#endif
-	psendbuf[len++] = '\n';
-	psendbuf[len] = '\0';
-	return len;
-}
-#endif /* CLIENT_COMPILE */
 
 /*
  * sendpreprep: takes care of building the string according to format & args,
@@ -934,6 +858,7 @@ int	sendto_serv_v(aClient *one, int ver, char *pattern, ...)
 	for (i = fdas.highest; i >= 0; i--)
 		if ((cptr = local[fdas.fd[i]]) &&
 		    (!one || cptr != one->from) && !IsMe(cptr))
+		{
 			if (cptr->serv->version & ver)
 			    {
 				if (!len)
@@ -947,30 +872,7 @@ int	sendto_serv_v(aClient *one, int ver, char *pattern, ...)
 			    }
 			else
 				rc = 1;
-	return rc;
-}
-
-int	sendto_serv_notv(aClient *one, int ver, char *pattern, ...)
-{
-	Reg	int	i, len=0, rc=0;
-	Reg	aClient *cptr;
-
-	for (i = fdas.highest; i >= 0; i--)
-		if ((cptr = local[fdas.fd[i]]) &&
-		    (!one || cptr != one->from) && !IsMe(cptr))
-			if ((cptr->serv->version & ver) == 0)
-			    {
-				if (!len)
-				    {
-					va_list	va;
-					va_start(va, pattern);
-					len = vsendprep(pattern, va);
-					va_end(va);
-				    }
-				(void)send_message(cptr, sendbuf, len);
-			    }
-			else
-				rc = 1;
+		}
 	return rc;
 }
 
@@ -1096,7 +998,7 @@ void	sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
 	Reg	Link	*lp;
 	Reg	aClient	*acptr, *lfrm = from;
 	int	len = 0;
-	char	*msg, err[] = "message discarded (colors disallowed)";
+	char *msg = psendbuf, err[] = "message discarded (colors disallowed)";
 
 	if (MyClient(from))
 	    {	/* Always send to the client itself */
@@ -1116,6 +1018,7 @@ void	sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
 	for (lp = chptr->clist; lp; lp = lp->next)
 		if (MyClient(acptr = lp->value.cptr) && acptr != from)
 		    {
+			/* only perform initialization once if needed */
 			if (!len)
 			    {
 				va_list	va;
@@ -1125,8 +1028,6 @@ void	sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
 				if (chptr->mode.mode & MODE_NOCOLOR &&
 							strchr(psendbuf, 0x03))
 					msg = err;
-				else
-					msg = psendbuf;
 			    }
 
 			(void)send_message(acptr, msg, len);
@@ -1465,9 +1366,12 @@ void	sendto_flag(u_int chan, char *pattern, ...)
 
 void log_open(aConfItem *conf)
 {
-    aLogger **log = NULL;
-    aLogger *newlog;
-    int logf, prio;
+    aLogger	**log = NULL;
+    aLogger	*newlog;
+    int		logf;
+#ifdef USE_SYSLOG
+    int		prio;
+#endif
 
     /* find the log type */
     if (!strcasecmp (conf->host, "CONN"))

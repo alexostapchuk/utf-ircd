@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: conversion.h.in,v 1.1 2010-11-10 13:39:22 gvs Exp $
  */
 #ifndef _CONVERSION_H_
 #define _CONVERSION_H_
@@ -35,7 +34,7 @@ typedef struct conversion
 } conversion_t;
 
 /* for internal use only, see macros below */
-size_t conv_do_conv(iconv_t, const unsigned char *, size_t, unsigned char **, size_t);
+size_t conv_do_conv(iconv_t, char *, size_t, char **, size_t);
 
 /* public functions */
 conversion_t *conv_get_conversion(const char *);
@@ -49,11 +48,11 @@ conversion_t *conv_set_internal(conversion_t **old, const char *);
 /* helpers for transcoding fields to new internal codepage from old one (conv)
  * note: new codepage must be different from current!
  * note2: buff size for conv_transcode() must not be less of field size! */
-#define conv_transcode(conv,field,buff) do { unsigned char *c=buff;\
+#define conv_transcode(conv,field,buff) do { char *c=buff;\
 					    size_t sz=conv_do_conv(conv->cdin,field,strlen(field),&c,sizeof(field)-1);\
 					    memcpy(field,buff,sz);\
 					    field[sz]=0;} while(0)
-#define conv_transcode_realloc(conv,field,buff) do { unsigned char *c=buff;\
+#define conv_transcode_realloc(conv,field,buff) do { char *c=buff;\
 						    size_t sz=conv_do_conv(conv->cdin,field,strlen(field),&c,sizeof(buff));\
 						    MyFree(field);\
 						    field=MyMalloc(sz+1);\

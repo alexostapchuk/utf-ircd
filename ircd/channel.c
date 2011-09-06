@@ -1140,10 +1140,13 @@ char	*parv[], *mbuf, *pbuf;
 	while (curr && *curr && count >= 0)
 	    {
 		if (compat == -1 && *curr != '-' && *curr != '+')
+		{
 			if (*curr == 'e' || *curr == 'I')
 				compat = 1;
 			else
 				compat = 0;
+		}
+
 		switch (*curr)
 		{
 		case '+':
@@ -1244,9 +1247,8 @@ char	*parv[], *mbuf, *pbuf;
 				break;
 			    }
 #ifdef RUSNET_RLINES
-			if (IsRMode(who)) {
+			if (IsRMode(who))
 				break;
-			}
 #endif
 			if (who == cptr && whatt == MODE_ADD && *curr == 'o')
 				break;
@@ -1639,6 +1641,7 @@ char	*parv[], *mbuf, *pbuf;
 		 * together on the same line
 		 */
 		if (MyClient(sptr) && curr && *curr != '-' && *curr != '+')
+		{
 			if (*curr == 'e' || *curr == 'I')
 			    {
 				if (compat == 0)
@@ -1646,6 +1649,7 @@ char	*parv[], *mbuf, *pbuf;
 			    }
 			else if (compat == 1)
 				*curr = '\0';
+		}
 	    } /* end of while loop for MODE processing */
 
 	whatt = 0;
@@ -1722,6 +1726,7 @@ char	*parv[], *mbuf, *pbuf;
 			 * make sure we have correct mode change sign
 			 */
 			if (whatt != (lp->flags & (MODE_ADD|MODE_DEL)))
+			{
 				if (lp->flags & MODE_ADD)
 				    {
 					*mbuf++ = '+';
@@ -1732,6 +1737,7 @@ char	*parv[], *mbuf, *pbuf;
 					*mbuf++ = '-';
 					whatt = MODE_DEL;
 				    }
+			}
 			len = strlen(pbuf);
 			/*
 			 * get c as the mode char and tmp as a pointer to
@@ -1845,14 +1851,14 @@ char	*parv[], *mbuf, *pbuf;
 			case MODE_CHANOP : /* fall through case */
 				if (
 				    is_op && lp->value.cptr == sptr &&
-				    lp->flags == MODE_CHANOP|MODE_DEL)
+				    lp->flags == (MODE_CHANOP|MODE_DEL))
 					chptr->reop = timeofday + 
 						LDELAYCHASETIMELIMIT;
 			case MODE_UNIQOP :
 			case MODE_HALFOP :
 				/* only allow half-ops to -h themselves */
-				if (!(is_op || lp->flags & MODE_DEL &&
-						lp->value.cptr == sptr))
+				if (!(is_op || (lp->flags & MODE_DEL &&
+						lp->value.cptr == sptr)))
 					break;
 			case MODE_VOICE :
 				*mbuf++ = c;
@@ -1931,11 +1937,13 @@ char	*key;
 		if (lp->value.chptr == chptr)
 			break;
 
-	if (banned = match_modeid(CHFL_BAN, sptr, chptr))
+	if ((banned = match_modeid(CHFL_BAN, sptr, chptr)))
+	{
 		if (match_modeid(CHFL_EXCEPTION, sptr, chptr))
 			banned = NULL;
 		else if (lp == NULL)
 			return (ERR_BANNEDFROMCHAN);
+	}
 
 	if (chptr->chname[0] == '&')
 	{
@@ -1967,7 +1975,7 @@ char	*key;
 
 	if (chptr->mode.mode & MODE_7BIT)
 	{
-		unsigned char *i;
+		char *i;
 
 		for (i = sptr->name; *i != 0; i++)
 		    if (*i & 0x80)
@@ -1988,7 +1996,7 @@ char	*key;
 */
 
 void	clean_channelname(ch)
-Reg	unsigned char *ch;
+Reg	char *ch;
 {
 	for (ch++; *ch; ch++)
 #ifdef USE_OLD8BIT
@@ -2053,7 +2061,7 @@ int	flag;
     {
 	Reg	aChannel *chptr;
 	size_t	len;
-	unsigned char newchname[MB_LEN_MAX*CHANNELLEN+1]; /* chname may be const --LoSt */
+	char newchname[MB_LEN_MAX*CHANNELLEN+1]; /* chname may be const --LoSt */
 
 	if (BadPtr(chname))
 		return NULL;
@@ -2062,8 +2070,8 @@ int	flag;
 	if (MyClient(cptr))
 	{
 #if defined(LOCALE_STRICT_NAMES) && !defined(USE_OLD8BIT)
-	    unsigned char ch8[CHANNELLEN];
-	    unsigned char *nch, *ch2 = ch8;
+	    char ch8[CHANNELLEN];
+	    char *nch, *ch2 = ch8;
 	    conversion_t *conv = conv_get_conversion(CHARSET_8BIT);
 
 	    /* do validation of channel name: remove all but CHARSET_8BIT chars */
@@ -2303,10 +2311,12 @@ char	*parv[];
 	    {
 #ifdef RUSNET_RLINES
 		if (MyClient(sptr) && IsRMode(sptr))
+		{
 		    if (j > 0)
 			break;
 		    else
 			j++;
+		}
 #endif
 		if (check_channelmask(sptr, cptr, name) == -1)
 			continue;
@@ -2653,7 +2663,7 @@ char	*parv[];
 			if (*cbuf)
 				strcat(cbuf, ",");
 			strcat(cbuf, name);
-			if (chop)
+			if (*chop)
 				strcat(cbuf, chop);
 		    }
 	    }
@@ -2684,7 +2694,7 @@ char	*parv[];
 #endif
 	char *q, *name, *target, mbuf[MAXMODEPARAMS + 2];
 	char *p = NULL;
-	int chop, cnt = 0, nj = 0;
+	int chop, cnt = 0;
 	aChannel *chptr = NULL;
 	aClient *acptr;
 
@@ -3024,7 +3034,7 @@ char	*parv[];
 	int	chasing = 0, penalty = 0;
 	char	*comment, *name, *p = NULL, *user, *p2 = NULL;
 	char	*tmp, *tmp2;
-	int	mlen, len = 0, nlen;
+	int	mlen, nlen;
 
 	if (parc < 3 || *parv[1] == '\0')
 	    {
@@ -3153,12 +3163,7 @@ Reg	aChannel	*chptr;
 	    {
 		if (chptr->users) /* don't count channels in history */
 #ifdef	SHOW_INVISIBLE_LUSERS
-			if (SecretChannel(chptr))
-			    {
-				if (IsAnOper(sptr))
-					count++;
-			    }
-			else
+			if (!SecretChannel(chptr) || IsAnOper(sptr))
 #endif
 				count++;
 	    }
@@ -3195,7 +3200,7 @@ char	*parv[];
 	if (!chptr)
 	    {
 		sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL, parv[0]), parv[1]);
-		return 0;
+		return 2;
 	    }
 
 	set_at = atol(parv[3]);
@@ -3236,6 +3241,8 @@ char	*parv[];
 			sendto_match_servs_v(chptr, acptr, SV_RUSNET1,
 				":%s TOPIC %s :%s", parv[2], parv[1], parv[4]);
 	    }
+
+	return 0;
     }
 
 /*
@@ -3273,8 +3280,8 @@ char	*parv[];
 		if (parc > 1 && IsChannelName(name))
 		    {
 			chptr = find_channel(name, NullChn);
-			if (!chptr || !IsMember(sptr, chptr)
-					&& !IsRusnetServices(sptr))
+			if (!chptr || !(IsMember(sptr, chptr)
+					|| !IsRusnetServices(sptr)))
 			    {
 				sendto_one(sptr, err_str(ERR_NOTONCHANNEL,
 					   parv[0]), name);
@@ -3381,6 +3388,7 @@ char	*parv[];
 	chptr = find_channel(parv[2], NullChn);
 
 	if (!chptr)
+	{
 	    if (IsRusnetServices(sptr))
 	    {
 		sendto_prefix_one(acptr, sptr, ":%s INVITE %s :%s",
@@ -3400,6 +3408,7 @@ char	*parv[];
 		sendto_one(sptr, err_str(ERR_NOSUCHCHANNEL, parv[0]), parv[2]);
 		return 1;
 	    }
+	}
 
 	if (!IsMember(sptr, chptr) && !IsRusnetServices(sptr))
 	    {
@@ -3490,7 +3499,8 @@ char	*parv[];
 			if (*name == '!')
 			    {
 				chptr = NULL;
-				while (chptr=hash_find_channels(name+1, chptr))
+				while ((chptr = hash_find_channels(name + 1,
+									chptr)))
 				    {
 					int scr = SecretChannel(chptr) &&
 							!IsMember(sptr, chptr);
@@ -3669,7 +3679,7 @@ char	*parv[];
   		aChannel *ch3ptr;
 		int	showflag = 0, secret = 0;
 
-		if (!IsPerson(c2ptr) || IsInvisible(c2ptr) && !IsOper(sptr))
+		if (!IsPerson(c2ptr) || (IsInvisible(c2ptr) && !IsOper(sptr)))
 			continue;
 		if (!MyConnect(sptr) && (BadPtr(para) || (rlen > CHREPLLEN)))
 			break;
@@ -3828,7 +3838,7 @@ aChannel *chptr;
 			{
 			    mbuf[cnt] = '\0';
 			    if (lp != chptr->members)
-				sendto_channel_butone(chptr, &me,
+				sendto_channel_butone(&me, &me, chptr, 0,
 						   ":%s MODE %s +%s %s",
 							ME, chptr->chname,
 							mbuf, nbuf);
@@ -3849,7 +3859,8 @@ aChannel *chptr;
 	    if (cnt)
 		{
 		    mbuf[cnt] = '\0';
-		    sendto_channel_butone(chptr, &me, ":%s MODE %s +%s %s",
+		    sendto_channel_butone(&me, &me, chptr, 0,
+						":%s MODE %s +%s %s",
 					   ME, chptr->chname, mbuf, nbuf);
 		}
 	}
@@ -3877,11 +3888,11 @@ aChannel *chptr;
 	    if (op.value.cptr == NULL)
 		    return 0;
 	    sendto_channel_butone(&me, &me, chptr, 0,
-			   ":%s NOTICE %s :Enforcing channel mode +r (%d)", ME,
-					   chptr->chname, now - chptr->reop);
+			   ":%s NOTICE %s :Enforcing channel mode +r (%d)",
+					ME, chptr->chname, now - chptr->reop);
 	    op.flags = MODE_ADD|MODE_CHANOP;
 	    change_chan_flag(&op, chptr);
-	    sendto_channel_butone(chptr, &me, ":%s MODE %s +o %s",
+	    sendto_channel_butone(&me, &me, chptr, 0, ":%s MODE %s +o %s",
 				   ME, chptr->chname, op.value.cptr->name);
 	}
     chptr->reop = 0;

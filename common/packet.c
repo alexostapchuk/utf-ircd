@@ -51,7 +51,7 @@ Reg	int	length;
 	Reg	char	*ch1;
 	Reg	char	*ch2, *bufptr;
 #if !defined(CLIENT_COMPILE) && !defined(USE_OLD8BIT)
-	unsigned char	*ch3;
+	char	*ch3;
 #endif
 	aClient	*acpt = cptr->acpt;
 	int	r = 1;

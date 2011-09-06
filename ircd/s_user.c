@@ -262,10 +262,10 @@ int	server, parc;
 */
 
 int	do_nick_name(nick, server)
-unsigned char	*nick;
-int		server;
+char	*nick;
+int	server;
 {
-	Reg	unsigned char	*ch;
+	Reg	char	*ch;
 
 	if (*nick == '-') /* first character '-' */
 		return 0;
@@ -289,9 +289,9 @@ int		server;
 	    **   note: conversion is always in use for CHARSET_8BIT
 	    */
 	    conversion_t *conv = conv_get_conversion(CHARSET_8BIT);
-	    unsigned char nick8[NICKLEN+1];
+	    char nick8[NICKLEN+1];
 	    register size_t sz;
-	    unsigned char *ch2;
+	    char *ch2;
 
 	    ch2 = nick8;
 	    /* convert at most NICKLEN chars */
@@ -1236,6 +1236,7 @@ char	*parv[];
 	** nickname or somesuch)
 	*/
 	if (acptr == sptr)
+	{
 		if (strcmp(acptr->name, nick) != 0)
 			/*
 			** Allows change of case in his/her nick
@@ -1265,6 +1266,7 @@ char	*parv[];
 			** version would treat it as nick collision.
 			*/
 			return 2; /* NICK Message ignored */
+	}
 	/*
 	** Note: From this point forward it can be assumed that
 	** acptr != sptr (point to different client structures).
@@ -2484,8 +2486,8 @@ char	*parv[];
 			 */
 			invis = (isop) ? 0 : (acptr->user) ?
 				(acptr->user->flags & FLAGS_INVISIBLE) : 0;
-			member = (isop ||
-				  acptr->user && acptr->user->channel) ? 1 : 0;
+			member = (isop || (acptr->user &&
+						acptr->user->channel)) ? 1 : 0;
 			showperson = (wilds && !invis && !member) || !wilds;
 			for (lp = (acptr->user) ? acptr->user->channel : NULL;
 			     lp; lp = lp->next)
@@ -3538,7 +3540,8 @@ char	*parv[];
 		    !IsServer(cptr))
 			ClearOper(sptr);
 
-		if (!(setflags & FLAGS_IDENTIFIED) && !IsServer(cptr))
+		/* only allow +I via SVSMODE */
+		if (!(setflags & FLAGS_IDENTIFIED) && !IsMe(cptr))
 			ClearIdentified(sptr);
 #ifdef NO_DIRECT_VHOST
 		if (!(setflags & FLAGS_VHOST) && HasVHost(sptr) &&

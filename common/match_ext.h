@@ -24,12 +24,12 @@
 /*  External definitions for global variables.
  */
 #ifndef MATCH_C
-extern unsigned char tolowertab[];
-extern unsigned char touppertab[];
-extern unsigned char char_atribs[];
-extern unsigned int  CharAttrs[];
+extern char tolowertab[];
+extern char touppertab[];
+extern char char_atribs[];
+extern int  CharAttrs[];
 #if defined(USE_OLD8BIT) || defined(LOCALE_STRICT_NAMES)
-extern unsigned char validtab[];
+extern char validtab[];
 #endif
 #endif /* MATCH_C */
 
@@ -42,8 +42,8 @@ extern unsigned char validtab[];
 #endif /* MATCH_C */
 EXTERN int match (char *mask, char *name);
 EXTERN char *collapse (char *pattern);
-EXTERN int mycmp (char *s1, char *s2);
-EXTERN int myncmp (char *str1, char *str2, int n);
+EXTERN int mycmp (const char *s1, const char *s2);
+EXTERN int myncmp (const char *str1, const char *str2, int n);
 #if defined(USE_OLD8BIT) || defined(LOCALE_STRICT_NAMES)
 EXTERN void setup_validtab (void);
 #endif

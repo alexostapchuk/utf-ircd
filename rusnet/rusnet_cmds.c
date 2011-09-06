@@ -38,23 +38,25 @@ static void rusnet_changecodepage(struct Client *cptr, char *pageid, char *id)
     {
 	if (cptr->conv != conv) /*send nickchange to client */
 	{
-	    unsigned char nick1[UNINICKLEN+1];
-	    unsigned char nick2[UNINICKLEN+1];
-	    unsigned char *oldnick = nick1, *newnick = nick2;
+	    char nick1[UNINICKLEN+1];
+	    char nick2[UNINICKLEN+1];
+	    char *oldnick = nick1, *newnick = nick2;
 	    size_t s;
 
 	    if (cptr->conv)
 	    {
-		s = conv_do_out(cptr->conv, cptr->name, strlen(cptr->name),
-				&oldnick, UNINICKLEN);
+		s = conv_do_out(cptr->conv, cptr->name,
+				strlen(cptr->name), &oldnick, UNINICKLEN);
 		oldnick[s] = '\0'; /* nick in old charset */
 	    }
-	    s = conv_do_out(conv, cptr->name, strlen(cptr->name),
-			    &newnick, UNINICKLEN);
+	    s = conv_do_out(conv, cptr->name,
+				strlen(cptr->name), &newnick, UNINICKLEN);
 	    newnick[s] = '\0'; /* nick in new charset */
 	    conv_free_conversion(cptr->conv);
 	    cptr->conv = NULL;
-	    if (strcmp(oldnick, newnick)) /* check if it was not changed */
+
+		 /* check whether it was changed */
+	    if (strcmp((char *)oldnick, (char *)newnick))
 		sendto_one(cptr, ":%s NICK %s", oldnick, newnick);
 	}
 	else

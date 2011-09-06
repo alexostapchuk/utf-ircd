@@ -185,27 +185,27 @@ conversion_t *conv_set_internal(conversion_t **old, const char *charset)
  * max size sz
  * returns size of converted string
 */
-size_t conv_do_conv(iconv_t cd, const unsigned char *line, size_t sl,
-		    unsigned char **buf, size_t sz)
+size_t conv_do_conv(iconv_t cd, char *line, size_t sl,
+		    char **buf, size_t sz)
 {
   char *sbuf;
 #ifdef DO_TEXT_REPLACE
   int seq = 0;
 #endif
 
+  /* conversion unavailable, return source line intact */
   if (cd == NULL)
   {
-    *buf = (unsigned char *)line;
-    if (sl > sz) /* input line is too long? */
-      return sz;
-    return sl;
+    *buf = line;
+    return (sl > sz) ? sz : sl; /* input line is too long? */
   }
-  sbuf = *(char **)buf;
+  sbuf = *buf;
 #ifdef DO_TEXT_REPLACE
   while (sl && sz)
   {
     size_t last = sz;
-    if (iconv(cd, (const char **)&line, &sl, &sbuf, &sz) != (size_t)(-1) ||
+
+    if (iconv(cd, &line, &sl, &sbuf, &sz) != (size_t)(-1) ||
 	errno != EILSEQ) /* success or unrecoverable error */
       break;
     /* replace char */
@@ -223,10 +223,10 @@ size_t conv_do_conv(iconv_t cd, const unsigned char *line, size_t sl,
     sl--;
   }
 #else
-  if (iconv(cd, (const char **)&line, &sl, &sbuf, &sz) == (size_t)(-1)) /* error */
+  if (iconv(cd, &line, &sl, &sbuf, &sz) == (size_t)(-1)) /* error */
     Debug((DEBUG_NOTICE, "conversion error: %lu chars left unconverted", sz));
 #endif
-  return ((unsigned char *)sbuf - *buf);
+  return (sbuf - *buf);
 }
 
 /*
@@ -276,13 +276,13 @@ size_t rfcstrtoupper(char *dst, char *src, size_t ds)
 		ch = buf;
 		rest = sizeof(buf);
 		/* use iconv() since conv_* doesn't do that we want */
-		iconv(conv->cdout, (const char **)&src, &ss, &ch, &rest);
+		iconv(conv->cdout, &src, &ss, &ch, &rest);
 		processed = ch - buf;
 		for (ch = buf; ch < &buf[processed]; ch++)
-		    *ch = toupper(*(unsigned char *)ch);
+		    *ch = toupper(*ch);
 		rest = ds;
 		ch = buf;
-		iconv(conv->cdin, (const char **)&ch, &processed, &dst, &ds);
+		iconv(conv->cdin, &ch, &processed, &dst, &ds);
 		sout += (rest - ds);
 		/* there still may be unconvertable chars in buffer! */
 		if (rest == ds)
@@ -299,7 +299,7 @@ size_t rfcstrtoupper(char *dst, char *src, size_t ds)
 	    register char *ch;
 	    char c[MB_LEN_MAX];
 
-	    for (ch = (unsigned char *)src, ss = strlen(ch); *ch; )
+	    for (ch = src, ss = strlen(ch); *ch; )
 	    {
 		len = mbtowc(&wc, ch, ss);
 		if (len < 1)
@@ -332,7 +332,7 @@ size_t rfcstrtoupper(char *dst, char *src, size_t ds)
 	    register char ch;
 
 	    for (ch = *src++; ch && ds; ch = *src++, sout++, ds--)
-		*dst++ = toupper((unsigned char)ch);
+		*dst++ = toupper(ch);
 	}
     }
     *dst = 0;

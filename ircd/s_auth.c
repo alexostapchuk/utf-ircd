@@ -189,7 +189,7 @@ void	read_iauth(void)
 	    olen += i;
 	    buf[olen] = '\0';
 	    start = buf;
-	    while (end = index(start, '\n'))
+	    while ((end = index(start, '\n')))
 		{
 		    *end++ = '\0';
 		    last = *start;
@@ -238,7 +238,7 @@ void	read_iauth(void)
 			{
 			    aExtCf *ectmp;
 
-			    while (ectmp = iauth_conf)
+			    while ((ectmp = iauth_conf))
 				{
 				    iauth_conf = iauth_conf->next;
 				    MyFree(ectmp->line);
@@ -265,7 +265,7 @@ void	read_iauth(void)
 			{
 			    aExtData *ectmp;
 
-			    while (ectmp = iauth_stats)
+			    while ((ectmp = iauth_stats))
 				{
 				    iauth_stats = iauth_stats->next;
 				    MyFree(ectmp->line);

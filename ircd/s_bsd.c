@@ -2785,7 +2785,6 @@ struct	hostent	*hp;
 	Reg	aClient *cptr, *c2ptr;
 	Reg	char	*s;
 	int	i, len;
-	extern struct	sockaddr_in		virtual_addr;
 	static char	interface_name[256] =	"[Default]";
 
 #ifdef INET6

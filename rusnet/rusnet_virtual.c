@@ -15,6 +15,7 @@
 
 #include "os.h"
 #include "s_defines.h"
+#include "s_externs.h"
 
 #ifdef	INET6
 	/* A macro to fill an address structure */
@@ -105,7 +106,9 @@ int rusnet_bind_interface_address(int fd, struct SOCKADDR_IN *raddr,
 	struct rusnet_route *work;
 	int rc, rc2;
 	struct SOCKADDR_IN test;
+#ifdef DEBUGMODE
 	char	addr[48];
+#endif
 
 	work = hdr_rusnet_route;
 

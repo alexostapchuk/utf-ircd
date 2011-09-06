@@ -404,15 +404,15 @@ aClient *cptr;
 							 cptr->auth, USERLEN))
 						ucnt++;
 				    }
-			if (ConfMaxHLocal(aconf) > 0 &&
-			    hcnt >= ConfMaxHLocal(aconf)
+			if ((ConfMaxHLocal(aconf) > 0 &&
+			    hcnt >= ConfMaxHLocal(aconf))
 #ifdef RUSNET_RLINES
 			    || (IsRMode(cptr) && hcnt >= 2 )
 #endif			    
 			    )
 				return -4;	/* for error message */
-			if (ConfMaxUHLocal(aconf) > 0 &&
-			    ucnt >= ConfMaxUHLocal(aconf)
+			if ((ConfMaxUHLocal(aconf) > 0 &&
+			    ucnt >= ConfMaxUHLocal(aconf))
 #ifdef RUSNET_RLINES
 			    || (IsRMode(cptr) && ucnt >= 2 )
 #endif			    
@@ -441,8 +441,8 @@ aClient *cptr;
 
 				if (!strcmp(cptr->sockhost, acptr->sockhost))
 				    {
-					if (ConfMaxHGlobal(aconf) > 0 &&
-					    ++ghcnt >= ConfMaxHGlobal(aconf)
+					if ((ConfMaxHGlobal(aconf) > 0 &&
+					    ++ghcnt >= ConfMaxHGlobal(aconf))
 #ifdef RUSNET_RLINES
 					    || (IsRMode(cptr) && ghcnt >= 2)
 #endif
@@ -794,6 +794,7 @@ static int find_conf_listener (char *charset)
 	    if (aconf->status == CONF_LISTEN_PORT &&
 		!strcasecmp (charset, aconf->passwd))
 			return aconf->port;
+	return 0;
 }
 #endif
 
@@ -1180,7 +1181,7 @@ int	init_flags;
 #ifndef USE_OLD8BIT
 	conversion_t *conv;
 	char	line2[4096];
-	unsigned char *rline;
+	char	*rline;
 	size_t	len;
   
 	UseUnicode = -1;
@@ -1805,7 +1806,7 @@ badlookup:
 }
 
 #ifdef RUSNET_RLINES
-int do_restrict(cptr)
+void do_restrict(cptr)
 aClient	*cptr;
 {
 /* Unrestrict is nonsence. Umode -b never happens */
@@ -1897,7 +1898,7 @@ aConfItem	*aconf;
     char	userip[sizeof(userhost)];
     char 	*host, *ip, *user;
     aConfItem 	*tmp = NULL;
-    int		now, check;
+    int		now = 0, check;
     static char reply[256];
     
     if (!cptr->user || !nick || !cptr->name || !iconf || !(*iconf))
@@ -1928,10 +1929,11 @@ aConfItem	*aconf;
     sprintf(userhost, "%s@%s", user, host);
     
 #if	defined(INET6) && defined(USE_VHOST6)
-    if (strstr(host, ip) == host) {
+    if (strstr(host, ip) == host)
 #else	/* INET6 && USE_VHOST6 */
-    if (!strcmp(host, ip)) {
+    if (!strcmp(host, ip))
 #endif	/* INET6 && USE_VHOST6 */
+    {
 	*userip = '\0'; /* we don't have a name for the ip# */
     } else {
 	sprintf(userip, "%s@%s", user, ip);
@@ -2042,6 +2044,8 @@ aConfItem	*aconf;
 
  	return (tmp ? -1 : 0);
     }
+
+    return 0;
 }
 
 
@@ -2168,6 +2172,7 @@ int	class, fd;
 			continue;
 
 		if (fd >= 0)
+		{
 			/*
 			** early rejection,
 			** connection class and hostname are unknown
@@ -2194,6 +2199,7 @@ int	class, fd;
 			    }
 			else
 				continue;
+		}
 
 		/* fd < 0 */
 		/*

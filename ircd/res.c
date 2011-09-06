@@ -254,6 +254,7 @@ time_t	now;
 		r2ptr = rptr->next;
 		tout = rptr->sentat + rptr->timeout;
 		if (now >= tout)
+		{
 			if (--rptr->retries <= 0)
 			    {
 #ifdef DEBUG
@@ -291,6 +292,7 @@ time_t	now;
 				       rptr->cinfo.value.cptr));
 #endif
 			    }
+		}
 		if (!next || tout < next)
 			next = tout;
 	    }
@@ -979,22 +981,27 @@ char	*lp;
 		sendto_flag(SCH_ERROR, "%s", buffer);
 		Debug((DEBUG_DNS, "%s", buffer));
 	}
-	else if (a == -3) {
+	else if (a == -3)
+	{
 #ifdef INET6
 		addrstr = inetntop(AF_INET, &sin.sin_addr, mydummy2, MYDUMMY_SIZE);
 #else
 		addrstr = inetntoa((char *)&sin.sin_addr);
 #endif
-		snprintf(buffer, sizeof(buffer), "Bad CNAME answer returned from %s in reply about ", addrstr ? addrstr : "<bad address>");
+		max = snprintf(buffer, sizeof(buffer), "Bad CNAME "
+				"answer returned from %s in reply about ",
+					addrstr ? addrstr : "<bad address>");
 		/*
 		 * Let's try to report some info helpful to identify
 		 * the failed request. -kmale
 		 */
-		if (rptr->name) {
+		if (rptr->name)
+		{
 			/* If there is a name in the request, report it */
-			strncat(buffer, rptr->name, sizeof(buffer));
+			strncat(buffer, rptr->name, sizeof(buffer) - max);
 		}
-		else if (WHOSTENTP(rptr->addr.S_ADDR)) {
+		else if (WHOSTENTP(rptr->addr.S_ADDR))
+		{
 			/* If there is no name in the request, try to report address */
 #ifdef INET6
 			addrstr = inetntop(AF_INET6, &rptr->addr, mydummy2,
@@ -1003,13 +1010,14 @@ char	*lp;
 			addrstr = inetntoa((char *)&rptr->addr);
 #endif
 			if (addrstr)
-				strncat(buffer, addrstr, sizeof(buffer));
+				strncat(buffer, addrstr, sizeof(buffer) - max);
 			else
-				strncat(buffer, "<bad address>", sizeof(buffer));
+				strncat(buffer, "<bad address>",
+							sizeof(buffer) - max);
 		}
 		else {
 			/* I doubt it's possible for valid request */
-			strncat(buffer, "<unknown>", sizeof(buffer));
+			strncat(buffer, "<unknown>", sizeof(buffer) - max);
 		}
 		sendto_flag(SCH_ERROR, "%s", buffer);
 		Debug((DEBUG_DNS, "%s", buffer));

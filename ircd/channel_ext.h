@@ -36,7 +36,7 @@ extern aChannel *channel;
 #endif /* CHANNEL_C */
 EXTERN void remove_user_from_channel(aClient *sptr, aChannel *chptr);
 EXTERN int is_chan_op(aClient *cptr, aChannel *chptr);
-EXTERN int is_chan_halfop(aClient *cptr, aChannel *chptr);
+EXTERN int is_chan_anyop(aClient *cptr, aChannel *chptr);
 EXTERN int has_voice(aClient *cptr, aChannel *chptr);
 EXTERN int can_send(aClient *cptr, aChannel *chptr);
 EXTERN aChannel *find_channel(Reg char *chname, Reg aChannel *chptr);
@@ -46,10 +46,9 @@ EXTERN void channel_modes(aClient *cptr, Reg char *mbuf, Reg char *pbuf,
 EXTERN void send_channel_modes(aClient *cptr, aChannel *chptr);
 EXTERN void send_channel_members(aClient *cptr, aChannel *chptr);
 EXTERN int m_mode(aClient *cptr, aClient *sptr, int parc, char *parv[]);
-EXTERN void clean_channelname(Reg unsigned char *cn);
+EXTERN void clean_channelname(Reg char *cn);
 EXTERN void del_invite(aClient *cptr, aChannel *chptr);
-EXTERN int m_join(Reg aClient *cptr, Reg aClient *sptr, int parc,
-		       char *parv[]);
+EXTERN int m_join(Reg aClient *cptr, Reg aClient *sptr, int parc, char *parv[]);
 EXTERN int m_njoin(Reg aClient *cptr, Reg aClient *sptr, int parc,
 		        char *parv[]);
 EXTERN int m_part(aClient *cptr, aClient *sptr, int parc, char *parv[]);
@@ -63,6 +62,7 @@ EXTERN int m_list(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int m_names(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN void send_user_joins(aClient *cptr, aClient *user);
 EXTERN time_t collect_channel_garbage(time_t now);
+EXTERN void send_channel_topic(aClient *cptr, aChannel *chptr);
 #ifndef USE_OLD8BIT
 EXTERN void transcode_channels(conversion_t *old);
 #endif

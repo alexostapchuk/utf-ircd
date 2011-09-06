@@ -318,12 +318,12 @@ aClient	*cptr;
 		cptr->hopcount = SV_UNKNOWN;
 		return 1; /* no version checked (e.g. older than RusNet 1.4) */
 	    }
-	if (id = index(cptr->info, ' '))
+	if ((id = index(cptr->info, ' ')))
 	    {
 		*id++ = '\0';
-		if (link = index(id, ' '))
+		if ((link = index(id, ' ')))
 			*link++ = '\0';
-		if (misc = index(id, '|'))
+		if ((misc = index(id, '|')))
 			*misc++ = '\0';
 		else
 		    {
@@ -2076,9 +2076,7 @@ aClient *cptr, *sptr;
 int	parc;
 char	*parv[];
     {
-	char	*message, *pv[4];
-
-	message = parc > 1 ? parv[1] : NULL;
+	char	*message = parc > 1 ? parv[1] : NULL;
 
 	if (BadPtr(message))
 	    {
@@ -2823,6 +2821,252 @@ char	*command;
 /* end of sendto_slaves */
 }
 
+int nonwilds(char *name, char *user, char *host)
+/* Originally from hybrid ircd */
+{
+    register int  nonwild = 0;
+    register char tmpch;
+    register int  wild = 0 ;
+    char	  *p;
+
+    p = name;
+    while ((tmpch = *p++))
+    {
+	if (!IsLWildChar(tmpch))
+	{
+	/*
+	 * If we find enough non-wild characters, we can
+	 * break - no point in searching further.
+	 */
+	    if (++nonwild >= NONWILDCHARS)
+		break;
+	} else {
+	    wild++;
+	}
+    }
+    
+    Debug((DEBUG_INFO, "%d nonwild chars found in name %s",
+		    nonwild, name));
+    if (!wild)
+	return NONWILDCHARS;
+    wild = 0;
+    if (nonwild < NONWILDCHARS)
+    {
+    /*
+     * The nammae portion did not contain enough non-wild
+     * characters, try the user.
+     */
+	p = user;
+	while ((tmpch = *p++))
+	{
+	    if (!IsLWildChar(tmpch)) {
+    		if (++nonwild >= NONWILDCHARS)
+    		    break;
+	    } else {
+		wild++;
+	    }
+	}
+    }
+    Debug((DEBUG_INFO, "%d non wild chars found in user %s",
+		    nonwild, user));
+    if (!wild)
+	return NONWILDCHARS;
+    wild = 0 ;
+    if (nonwild < NONWILDCHARS)
+    {
+    /*
+     * The user portion did not contain enough non-wild
+     * characters, try the host.
+     */
+	p = host;
+	while ((tmpch = *p++))
+	{
+	    if (!IsLWildChar(tmpch)) {
+    		if (++nonwild >= NONWILDCHARS)
+    		    break;
+	    } else {
+		wild++;
+	    }
+	}
+    }
+    Debug((DEBUG_INFO, "%d non wild chars found in host %s",
+		    nonwild, host));
+    if (!wild)
+	return NONWILDCHARS;
+    else
+	return nonwild;
+}
+
+ /*
+ ** line1 is less than line2 if usermask of line1 is mached by usermask of line2
+ ** and expire time of line1 is less than expire time of line2.
+ ** They are equal if masks are equal.
+ ** Returns -1 if line1 < line2,
+ ** 0 if line1 == line2,
+ ** 1 if line1 > line2
+ ** -2 if line1 is incomparable with line2
+ */
+
+ /* line1 stands for new line, line2 is for existing one */
+int match_tline(aConfItem *line1, aConfItem *line2)
+{
+    int line12_uh;
+    int line21_uh;
+    char *p;
+/* TODO: port matching here and everywhere in this code (now ignoring) -skold */
+    if (line1->status != line2->status)
+	return -2;
+    if (((p = index(line1->host, '@')) && (*(++p) == '=')) ||
+	((p = index(line2->host, '@')) && (*(++p) == '='))) 
+    {
+	int line12_h = strcmp(line1->host, line2->host);
+	line12_uh = match(line1->name, line2->name);
+	line21_uh = match(line2->name, line1->name);
+	if (line12_h)
+	    return -2;
+	else if (!line12_uh && !line21_uh)
+	    return 0;
+	else if (!line12_uh)
+	    return 1;
+	else if (!line21_uh)
+	    return -1;
+	else
+	    return -2;
+    }
+    line12_uh = match(line1->host, line2->host) + 
+	    match(line1->name, line2->name);
+    line21_uh = match(line2->host, line1->host) + 
+	    match(line2->name, line1->name);
+
+    Debug((DEBUG_INFO, "Lines match: %s!%s => %s!%s: %d/%d",
+	    line1->name, line1->host,
+	    line2->name, line2->host, line12_uh, line21_uh));
+
+    if ((line12_uh + line21_uh) == 0) /* lines are equal */
+	return 0;
+    if ((line12_uh >= 1) && (line21_uh >= 1)) /* incomp. */
+	return -2;
+    if (line12_uh == 0 && (line1->hold <= 0 ||
+	    (line1->hold >= line2->hold))) /* line1 >= line2 */
+    {
+	return 1;
+    }
+    if (line21_uh == 0 && (line2->hold == 0 ||
+	    (line2->hold >= line1->hold))) /* line1 <= line2 */
+    {
+	return -1;
+    }
+    return -2; /* reached only if line matched but expiration is not */
+}
+
+int send_tline_one(aConfItem *aconf) {
+    char type;
+    switch (aconf->status) {
+	case CONF_KILL:
+	    type = 'K';
+	    break;
+	case CONF_EXEMPT:
+	    type = 'E';
+	    break;
+	case CONF_RUSNETRLINE:
+	    type = 'R';
+	    break;
+	default:
+	    return 0;
+    }
+	sendto_iserv("%c%c%s%c%s%c%s%c%s%c%d",
+	    type, IRCDCONF_DELIMITER,
+	    aconf->host, IRCDCONF_DELIMITER,
+	    aconf->passwd, IRCDCONF_DELIMITER,
+	    aconf->name,  IRCDCONF_DELIMITER,
+	    "", IRCDCONF_DELIMITER,
+		    aconf->hold);
+	sendto_flag(SCH_ISERV, "%c%c%s%c%s%c%s%c%s%c%s",
+	    type, IRCDCONF_DELIMITER,
+	    aconf->host, IRCDCONF_DELIMITER,
+	    aconf->passwd, IRCDCONF_DELIMITER,
+	    aconf->name,  IRCDCONF_DELIMITER,
+	    "", IRCDCONF_DELIMITER,
+				(aconf->hold > 0) ? myctime(aconf->hold) : 
+				    ((aconf->hold == 0) ? "permanent" : "remove"));
+	return 0;    
+}
+
+void rehash_tline(aConfItem **confstart, aConfItem *aconf)
+{
+    int		i = 0;
+    Reg	aClient	*cptr;
+    char	*reason;
+    int klined = 0;
+#ifdef RUSNET_RLINES
+    int rlined = 0;
+#endif
+    
+    for (i = highest_fd; i >= 0; i--)
+    {
+	if (!(cptr = local[i]) || IsListener(cptr))
+	    continue;
+	if (IsPerson(cptr))
+	{
+	    if (check_tlines(cptr, 1, &reason, cptr->name, confstart, aconf)) {
+		if (aconf->status == CONF_KILL) {
+		    char buf[300];
+		    Debug((DEBUG_DEBUG, "Found K-line for user %s!%s@%s", cptr->name,
+			                        cptr->user->username, cptr->sockhost));
+		    sendto_flag(SCH_NOTICE, "Kill line active for %s",
+				get_client_name(cptr, FALSE));
+		    klined ++;
+		    cptr->exitc = EXITC_KLINE;
+		    if (!BadPtr(reason))
+			sprintf(buf, "Kill line active: %.256s", reason);
+		    (void)exit_client(cptr, cptr, &me, (reason) ?
+				buf : "Kill line active");
+		}
+#ifdef RUSNET_RLINES
+		if (aconf->status == CONF_RUSNETRLINE) {
+		    if (!IsRMode(cptr))
+		    {
+			int old = (cptr->user->flags & ALL_UMODES);
+			do_restrict(cptr);
+			send_umode_out(cptr, cptr, old);			
+			Debug((DEBUG_DEBUG, "Active R-Line for user %s!%s@%s", cptr->name,
+			                cptr->user->username, cptr->sockhost));
+			sendto_flag(SCH_NOTICE,"R line active for %s",
+					get_client_name(cptr, FALSE));
+			rlined++;
+		    }
+		}
+#endif
+	    }
+	}
+    }
+
+    if (klined)
+#ifdef WALLOPS_TO_CHANNEL
+    {
+	sendto_serv_butone(NULL, ":%s WALLOPS : %d user%s klined",
+				ME, klined, (klined > 1) ? "s" : "");
+	sendto_flag(SCH_WALLOPS, "%s: %d user%s klined",
+				ME, klined, (klined > 1) ? "s" : "");
+    }
+#else
+	sendto_ops_butone(NULL, &me, "%s: %d user%s klined",
+				ME, klined, (klined > 1) ? "s" : "");
+#endif
+    if (rlined)
+#ifdef WALLOPS_TO_CHANNEL
+    {
+	sendto_serv_butone(NULL, ":%s WALLOPS : %d user%s restricted",
+				ME, rlined, (rlined > 1) ? "s" : "");
+	sendto_flag(SCH_WALLOPS, "%s: %d user%s restricted",
+				ME, rlined, (rlined > 1) ? "s" : "");
+    }
+#else
+	sendto_ops_butone(NULL, &me, "%s: %d user%s restricted",
+				ME, rlined, (rlined > 1) ? "s" : "");
+#endif
+}
+
 
 /* Server syntax:
      * LINE server nickmask usermask hostmask [hours|E] [:reason]
@@ -2851,7 +3095,6 @@ int	parc;
 char	*parv[];
 char	*command;
 {
-    aClient *acptr;
     char *user, *host, *name, *reason = NULL;
     time_t  tline_time = 0, now = time(NULL);
     char *str;
@@ -2888,7 +3131,7 @@ char	*command;
 
 	char	*p;
 	int	nonwild = 0;
-	int	buffer[HOSTLEN];
+
 	if (!MyClient(sptr)) {
 	    sendto_one(sptr, err_str(ERR_NOPRIVILEGES, parv[0]));
 	    return 0;
@@ -2916,14 +3159,14 @@ char	*command;
 	    }
 	}
 	name = parv[1];
-	if (p = index(parv[1], '!')) {
+	if ((p = index(parv[1], '!'))) {
 	    *p = '\0';
 	    user = ++p;
 	} else {
 	    name = NULL;
 	    user = parv[1];
 	}
-	if (p = index(user, '@')) {
+	if ((p = index(user, '@'))) {
 	    *p = '\0';
 	    host = ++p;
 	} else {
@@ -3023,7 +3266,7 @@ char	*command;
 	istat.is_confmem += aconf->name ? strlen(aconf->name) + 1 : 0;
 	prev = confstart;
 	
-	while(tmp = *prev)
+	while ((tmp = *prev))
 	{
 	    int match_res = match_tline(aconf, tmp);
 	    conf_delete = 0;
@@ -3103,8 +3346,13 @@ single_line: /* never reached in this code -skold */
 #endif
 }
 
-int check_tconfs() {
 #ifdef DEBUGMODE
+/*
+ * Actually this one is never called, so it can be removed safely
+ * if nobody finds it useful  --erra
+ *
+ */
+int check_tconfs() {
     aConfItem **confstart;
     aConfItem *tmp;
     confstart = &kconf;
@@ -3122,251 +3370,8 @@ int check_tconfs() {
 	Debug((DEBUG_INFO, "Rconf: %s %s %s", tmp->host, tmp->name, tmp->passwd));
 	confstart = &(tmp->next);
     }
-#endif
 }
-int send_tline_one(aConfItem *aconf) {
-    char type;
-    switch (aconf->status) {
-	case CONF_KILL:
-	    type = 'K';
-	    break;
-	case CONF_EXEMPT:
-	    type = 'E';
-	    break;
-	case CONF_RUSNETRLINE:
-	    type = 'R';
-	    break;
-	default:
-	    return 0;
-    }
-	sendto_iserv("%c%c%s%c%s%c%s%c%s%c%d",
-	    type, IRCDCONF_DELIMITER,
-	    aconf->host, IRCDCONF_DELIMITER,
-	    aconf->passwd, IRCDCONF_DELIMITER,
-	    aconf->name,  IRCDCONF_DELIMITER,
-	    "", IRCDCONF_DELIMITER,
-		    aconf->hold);
-	sendto_flag(SCH_ISERV, "%c%c%s%c%s%c%s%c%s%c%s",
-	    type, IRCDCONF_DELIMITER,
-	    aconf->host, IRCDCONF_DELIMITER,
-	    aconf->passwd, IRCDCONF_DELIMITER,
-	    aconf->name,  IRCDCONF_DELIMITER,
-	    "", IRCDCONF_DELIMITER,
-				(aconf->hold > 0) ? myctime(aconf->hold) : 
-				    ((aconf->hold == 0) ? "permanent" : "remove"));
-	return 0;    
-}
-
-int rehash_tline(aConfItem **confstart, aConfItem *aconf)
-{
-    int		i = 0;
-    Reg	aClient	*cptr;
-    char	*reason;
-    int klined = 0;
-#ifdef RUSNET_RLINES
-    int rlined = 0;
 #endif
-    
-    for (i = highest_fd; i >= 0; i--)
-    {
-	if (!(cptr = local[i]) || IsListener(cptr))
-	    continue;
-	if (IsPerson(cptr))
-	{
-	    if (check_tlines(cptr, 1, &reason, cptr->name, confstart, aconf)) {
-		if (aconf->status == CONF_KILL) {
-		    char buf[300];
-		    Debug((DEBUG_DEBUG, "Found K-line for user %s!%s@%s", cptr->name,
-			                        cptr->user->username, cptr->sockhost));
-		    sendto_flag(SCH_NOTICE, "Kill line active for %s",
-				get_client_name(cptr, FALSE));
-		    klined ++;
-		    cptr->exitc = EXITC_KLINE;
-		    if (!BadPtr(reason))
-			sprintf(buf, "Kill line active: %.256s", reason);
-		    (void)exit_client(cptr, cptr, &me, (reason) ?
-				buf : "Kill line active");
-		}
-#ifdef RUSNET_RLINES
-		if (aconf->status == CONF_RUSNETRLINE) {
-		    if (!IsRMode(cptr))
-		    {
-			int old = (cptr->user->flags & ALL_UMODES);
-			do_restrict(cptr);
-			send_umode_out(cptr, cptr, old);			
-			Debug((DEBUG_DEBUG, "Active R-Line for user %s!%s@%s", cptr->name,
-			                cptr->user->username, cptr->sockhost));
-			sendto_flag(SCH_NOTICE,"R line active for %s",
-					get_client_name(cptr, FALSE));
-			rlined++;
-		    }
-		}
-#endif
-	    }
-	}
-    }
-    if (klined)
-#ifdef WALLOPS_TO_CHANNEL
-    {
-	sendto_serv_butone(NULL, ":%s WALLOPS : %d user%s klined",
-				ME, klined, (klined > 1) ? "s" : "");
-	sendto_flag(SCH_WALLOPS, "%s: %d user%s klined",
-				ME, klined, (klined > 1) ? "s" : "");
-    }
-#else
-	sendto_ops_butone(NULL, &me, "%s: %d user%s klined",
-				ME, klined, (klined > 1) ? "s" : "");
-#endif
-    if (rlined)
-#ifdef WALLOPS_TO_CHANNEL
-    {
-	sendto_serv_butone(NULL, ":%s WALLOPS : %d user%s restricted",
-				ME, rlined, (rlined > 1) ? "s" : "");
-	sendto_flag(SCH_WALLOPS, "%s: %d user%s restricted",
-				ME, rlined, (rlined > 1) ? "s" : "");
-    }
-#else
-	sendto_ops_butone(NULL, &me, "%s: %d user%s restricted",
-				ME, rlined, (rlined > 1) ? "s" : "");
-#endif
-}
- /*
- ** line1 is less than line2 if usermask of line1 is mached by usermask of line2
- ** and expire time of line1 is less than expire time of line2.
- ** They are equal if masks are equal.
- ** Returns -1 if line1 < line2,
- ** 0 if line1 == line2,
- ** 1 if line1 > line2
- ** -2 if line1 is incomparable with line2
- */
- /* line1 stands for new line, line2 is for existing one */
-int match_tline(aConfItem *line1, aConfItem *line2)
-{
-    int line12_uh;
-    int line21_uh;
-    char *p;
-/* TODO: port matching here and everywhere in this code (now ignoring) -skold */
-    if (line1->status != line2->status)
-	return -2;
-    if (((p = index(line1->host, '@')) && (*(++p) == '=')) ||
-	((p = index(line2->host, '@')) && (*(++p) == '='))) 
-    {
-	int line12_h = strcmp(line1->host, line2->host);
-	line12_uh = match(line1->name, line2->name);
-	line21_uh = match(line2->name, line1->name);
-	if (line12_h)
-	    return -2;
-	else if (!line12_uh && !line21_uh)
-	    return 0;
-	else if (!line12_uh)
-	    return 1;
-	else if (!line21_uh)
-	    return -1;
-	else
-	    return -2;
-    }
-    line12_uh = match(line1->host, line2->host) + 
-	    match(line1->name, line2->name);
-    line21_uh = match(line2->host, line1->host) + 
-	    match(line2->name, line1->name);
-
-    Debug((DEBUG_INFO, "Lines match: %s!%s => %s!%s: %d/%d",
-	    line1->name, line1->host,
-	    line2->name, line2->host, line12_uh, line21_uh));
-
-    if ((line12_uh + line21_uh) == 0) /* lines are equal */
-	return 0;
-    if ((line12_uh >= 1) && (line21_uh >= 1)) /* incomp. */
-	return -2;
-    if (line12_uh == 0 && (line1->hold <= 0 ||
-	    (line1->hold >= line2->hold))) /* line1 >= line2 */
-    {
-	return 1;
-    }
-    if (line21_uh == 0 && (line2->hold == 0 ||
-	    (line2->hold >= line1->hold))) /* line1 <= line2 */
-    {
-	return -1;
-    }
-    return -2; /* reached only if line matched but expiration is not */
-}
-
-int nonwilds(char *name, char *user, char *host)
-/* Originally from hybrid ircd */
-{
-    register int  nonwild = 0;
-    register char tmpch;
-    register int  wild = 0 ;
-    char	  *p;
-
-    p = name;
-    while ((tmpch = *p++))
-    {
-	if (!IsLWildChar(tmpch))
-	{
-	/*
-	 * If we find enough non-wild characters, we can
-	 * break - no point in searching further.
-	 */
-	    if (++nonwild >= NONWILDCHARS)
-		break;
-	} else {
-	    wild++;
-	}
-    }
-    
-    Debug((DEBUG_INFO, "%d nonwild chars found in name %s",
-		    nonwild, name));
-    if (!wild)
-	return NONWILDCHARS;
-    wild = 0;
-    if (nonwild < NONWILDCHARS)
-    {
-    /*
-     * The nammae portion did not contain enough non-wild
-     * characters, try the user.
-     */
-	p = user;
-	while ((tmpch = *p++))
-	{
-	    if (!IsLWildChar(tmpch)) {
-    		if (++nonwild >= NONWILDCHARS)
-    		    break;
-	    } else {
-		wild++;
-	    }
-	}
-    }
-    Debug((DEBUG_INFO, "%d non wild chars found in user %s",
-		    nonwild, user));
-    if (!wild)
-	return NONWILDCHARS;
-    wild = 0 ;
-    if (nonwild < NONWILDCHARS)
-    {
-    /*
-     * The user portion did not contain enough non-wild
-     * characters, try the host.
-     */
-	p = host;
-	while ((tmpch = *p++))
-	{
-	    if (!IsLWildChar(tmpch)) {
-    		if (++nonwild >= NONWILDCHARS)
-    		    break;
-	    } else {
-		wild++;
-	    }
-	}
-    }
-    Debug((DEBUG_INFO, "%d non wild chars found in host %s",
-		    nonwild, host));
-    if (!wild)
-	return NONWILDCHARS;
-    else
-	return nonwild;
-}
-
 
 /* Below are the command wrappers, codeless */
 int m_kline(cptr, sptr, parc, parv)
