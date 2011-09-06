@@ -1,6 +1,6 @@
 TODO
 -----
-This is a roadmap for features and changes planned in rusnet-ircd, 
+This is a roadmap for features and changes wanted in rusnet-ircd,
 description in short and developers volunteered.
 
 Legend
@@ -12,21 +12,27 @@ Legend
 [R] refused or postponed
 
 
-Version 2.0
+Version 3.0
 -------------
-[$] Topic burst on connect
-[$] Usermode +I (identified nick) -erra
-[$] Usermode +R (registered nicks only) -erra
-[$] Chanmode +R (registered nicks only) -erra
-[ ] Add nick-user-host and timestamp to b/e/I modelists  -erra
+[ ] Fully localized messages via gettext, LANG command
+[ ] Add nick-user-host and timestamp to b/e/I modelists
 [ ] Re-write iauth, add sendheaders[], etc
-[$] STATS l to show l:lines (logging)  -erra
 [ ] Implement EOB protocol commands
 [ ] Masked server groups support with EOB
-[$] libidn support (UTF domain names)  -erra
+[ ] DALNet-like built-in antispam protection (T:lines)
+[ ] Multipath support (splitless network)
+
+Version 2.0
+-------------
+[+] Topic burst on connect  -erra
+[+] Usermode +I (identified nick) -erra
+[+] Usermode +R (registered nicks only) -erra
+[+] Chanmode +R (registered nicks only) -erra
+[+] STATS l to show l:lines (logging)  -erra
+[+] libidn support (UTF domain names)  -erra
 [$] Prohibit colored messages in PART and QUIT for colorless (+c) channels -erra
-[$] SVSNICK/SVSMODE support  -erra
-[$] Guardian timeout (1 minute) for enforced nick changes  -erra
+[+] SVSNICK/SVSMODE support  -erra
+[+] Guardian timeout (optional, 1 minute) for enforced nick changes  -erra
 
 Version 1.5
 -------------
@@ -38,7 +44,7 @@ Version 1.5
 
 Version 1.4
 -------------
-[+] SSL support for client links - p: lines in ircd.conf
+[+] SSL support for client links - p: lines in ircd.conf  -cj
 [R] LazyLinks. We definitely do not need this at the moment -skold
 [R] Move all .h to /include, the same about iauth  -skold
 [+] Chanmode +h (half-ops)  -erra
@@ -60,4 +66,4 @@ Version 1.4
 [+] open/close listeners on rehash
 [+] flexible logging configuration in ircd.conf  -lost
 [+] disregard bounce (B:) and seek for another I: when server not
-    in a network  -erra
+    in the network  -erra

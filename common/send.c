@@ -26,7 +26,8 @@
 
 static	char	sendbuf[2048];
 static	int	send_message (aClient *, char *, int);
-static void	vsendto_prefix_one(aClient *, aClient *, char *, va_list);
+static	void	vsendto_prefix_one(aClient *, aClient *, char *, va_list);
+static	char	no_color_msg[] = "message discarded (colors disallowed)";
 
 
 #ifndef CLIENT_COMPILE
@@ -36,7 +37,7 @@ static void	vsendto_prefix_one(aClient *, aClient *, char *, va_list);
 static	char	convbuf[3072];
 #endif
 static	char	psendbuf[2048];
-static	int	sentalong[MAXCONNECTIONS];
+static u_int8_t	sentalong[MAXCONNECTIONS];
 #endif
 
 #ifdef DEBUGMODE
@@ -889,6 +890,7 @@ void	sendto_common_channels(aClient *user, char *pattern, ...)
 	Reg	aClient *cptr;
 	Reg	Link	*channels, *lp;
 	int	len = 0;
+	char	*msg = psendbuf;
 
 /*      This is kind of funky, but should work.  The first part below
 	is optimized for HUB servers or servers with few clients on
@@ -916,11 +918,13 @@ void	sendto_common_channels(aClient *user, char *pattern, ...)
 				continue;
 			for (lp = user->user->channel; lp; lp = lp->next)
 			    {
-				if (!IsMember(cptr, lp->value.chptr))
+				aChannel *chptr = lp->value.chptr;
+
+				if (!IsMember(cptr, chptr))
 					continue;
-				if (IsAnonymous(lp->value.chptr))
+				if (IsAnonymous(chptr))
 					continue;
-				if (!IsQuiet(lp->value.chptr))
+				if (!IsQuiet(chptr))
 				    {
 #ifndef DEBUGMODE
 					if (!len) /* This saves little cpu,
@@ -929,14 +933,32 @@ void	sendto_common_channels(aClient *user, char *pattern, ...)
 					    {
 					      va_list	va;
 					      va_start(va, pattern);
-					      len = vsendpreprep(cptr, user, pattern, va);
+					      len = vsendpreprep(cptr, user,
+								pattern, va);
 					      va_end(va);
 					    }
-					(void)send_message(cptr, psendbuf,
-							   len);
+
+					if (chptr->mode.mode & MODE_NOCOLOR &&
+							strchr(psendbuf, 0x03))
+					{
+						/* postpone forced message
+						 * until there's nothing else
+						 * left in channels list  --erra
+						 */
+						msg = no_color_msg;
+						continue;
+					}
+
+					(void)send_message(cptr, psendbuf, len);
+
+					/* do not send forced message later */
+					msg = psendbuf;
 					break;
 				    }
 			    }
+
+			if (msg == no_color_msg)
+				(void)send_message(cptr, msg, sizeof(msg));
 		    }
 	    }
 	else
@@ -954,22 +976,22 @@ void	sendto_common_channels(aClient *user, char *pattern, ...)
 		    }
 		if (!user->user)
 			return;
-		for (channels=user->user->channel; channels;
-		     channels=channels->next)
+		for (channels = user->user->channel; channels;
+		     channels = channels->next)
 		    {
-			if (IsQuiet(channels->value.chptr))
+			aChannel *chptr = channels->value.chptr;
+
+			if (IsQuiet(chptr))
 				continue;
-			if (IsAnonymous(channels->value.chptr))
+			if (IsAnonymous(chptr))
 				continue;
-			for (lp=channels->value.chptr->clist;lp;
-			     lp=lp->next)
+			for (lp = chptr->clist; lp; lp = lp->next)
 			    {
 				cptr = lp->value.cptr;
 				if (user == cptr)
 					continue;
 				if (!cptr->user || sentalong[cptr->fd])
 					continue;
-				sentalong[cptr->fd]++;
 #ifndef DEBUGMODE
 				if (!len) /* This saves little cpu,
 					     but breaks the debug code.. */
@@ -980,9 +1002,48 @@ void	sendto_common_channels(aClient *user, char *pattern, ...)
 					len = vsendpreprep(cptr, user, pattern, va);
 					va_end(va);
 				    }
+
+				if (chptr->mode.mode & MODE_NOCOLOR &&
+						strchr(psendbuf, 0x03))
+				{
+					/* postpone forced message
+					 * until there's nothing else
+					 * left in channels list  --erra
+					 */
+					msg = no_color_msg;
+					continue;
+				}
+
 				(void)send_message(cptr, psendbuf, len);
+				sentalong[cptr->fd]++;
 			    }
 		    }
+
+		/* now deliver postponed forced messages if any */
+		if (msg == no_color_msg)
+			for (channels = user->user->channel; channels;
+			     channels = channels->next)
+			    {
+				aChannel *chptr = channels->value.chptr;
+
+				/* it only works for colorless channels
+				 * so don't waste our time for others --erra
+				 */
+				if (!(chptr->mode.mode & MODE_NOCOLOR))
+					continue;
+
+				for (lp = chptr->clist; lp; lp = lp->next)
+				    {
+					cptr = lp->value.cptr;
+					if (user == cptr)
+						continue;
+					if (!cptr->user || sentalong[cptr->fd])
+						continue;
+					(void)send_message(cptr, no_color_msg,
+							sizeof(no_color_msg));
+					sentalong[cptr->fd]++;
+				    }
+			    }
 	    }
 	return;
 }
@@ -998,7 +1059,7 @@ void	sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
 	Reg	Link	*lp;
 	Reg	aClient	*acptr, *lfrm = from;
 	int	len = 0;
-	char *msg = psendbuf, err[] = "message discarded (colors disallowed)";
+	char	*msg = psendbuf;
 
 	if (MyClient(from))
 	    {	/* Always send to the client itself */
@@ -1027,7 +1088,10 @@ void	sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
 				va_end(va);
 				if (chptr->mode.mode & MODE_NOCOLOR &&
 							strchr(psendbuf, 0x03))
-					msg = err;
+				{
+					msg = no_color_msg;
+					len = sizeof(no_color_msg);
+				}
 			    }
 
 			(void)send_message(acptr, msg, len);
