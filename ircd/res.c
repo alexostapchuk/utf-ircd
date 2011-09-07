@@ -1850,15 +1850,15 @@ char	*nick;
 /*
  * here we can use libidn to obtain domain name in UTF-8  --erra
  */
-static	int	bad_hostname(name, len
 #ifdef USE_LIBIDN
-				, convert
-#endif
-					)
+static	int	bad_hostname(name, len, convert)
 char *name;
 int len;
-#ifdef USE_LIBIDN
 int convert;
+#else
+static	int	bad_hostname(name, len)
+char *name;
+int len;
 #endif
 {
 	char	*s, c;
@@ -1898,7 +1898,11 @@ int convert;
 			return -1;
 #endif /* RESTRICT_HOSTNAMES */
 #ifdef USE_LIBIDN
-	if (strcasestr(name, IDNA_ACE_PREFIX))	/* "xn--" */
+	/* libidn does NOT recognize uppercase */
+	for (s = name; *s; s++)
+		*s = tolower(*s);
+
+	if (strstr(name, IDNA_ACE_PREFIX))	/* "xn--" */
 	{
 		char	*idn = NULL;
 		int	rc = idna_to_unicode_8z8z(name, &idn, 0);
