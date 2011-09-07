@@ -766,6 +766,9 @@ HEADER	*hptr;
 				hp->h_name =(char *)MyMalloc(len+1);
 				(void)strcpy(hp->h_name, hostbuf);
 			    }
+			else
+				Debug((DEBUG_INFO, "keeping %s for %s",
+							hp->h_name, hostbuf));
 			ans++;
 			adr++;
 			cp += dlen;
@@ -1895,15 +1898,23 @@ int convert;
 			return -1;
 #endif /* RESTRICT_HOSTNAMES */
 #ifdef USE_LIBIDN
-	if (strstr(name, IDNA_ACE_PREFIX))	/* "xn--" */
+	if (strcasestr(name, IDNA_ACE_PREFIX))	/* "xn--" */
 	{
-		char	*idn;
+		char	*idn = NULL;
 		int	rc = idna_to_unicode_8z8z(name, &idn, 0);
 
-		if (rc == IDNA_SUCCESS && convert)
-			strcpy(name, idn);
+		if (rc == IDNA_SUCCESS)
+		{
+			if (convert)
+				strcpy(name, idn);
+		}
+		else
+			Debug((DEBUG_INFO, "IDN decode error for %s", name));
 
-		free(idn);
+/* do not use our internal malloc/free here */
+#undef	free
+		if (idn)
+			free(idn);
 
 		return rc;
 	}

@@ -526,6 +526,8 @@ void	open_listener(aClient *cptr)
 #endif
 	{
 #ifndef USE_OLD8BIT
+		aConfItem *mline = find_me();
+
 		if (!aconf->passwd || !*aconf->passwd ||
 		    !(cptr->conv = conv_get_conversion(aconf->passwd)))
 		{
@@ -533,7 +535,7 @@ void	open_listener(aClient *cptr)
 			cptr->fd = -1;
 			return;
 		}
-		if ((find_me())->port == aconf->port)
+		if (mline && mline->port == aconf->port)
 			set_internal_encoding(cptr, aconf);
 #endif
 		if (inetport(cptr, aconf->host, aconf->name, aconf->port,
