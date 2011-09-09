@@ -441,7 +441,7 @@ char	*parv[];
 	    {
 		(void)strncpy(info, parv[2], sizeof(info)-1);
 		i = strlen(info);
-		if (parc > 3 && ((i + 2) < sizeof(info)-1))
+		if (parc > 3 && ((unsigned)(i + 2) < sizeof(info)-1))
 		    {
 			info[i] = ' ';
                 	(void)strncpy(info + i + 1, parv[3], sizeof(info) - i - 2);
@@ -1326,7 +1326,7 @@ char	*parv[];
 #define	REP_ARRAY_SIZE	18
 #endif
 
-static int report_array[REP_ARRAY_SIZE][3] = {
+static u_int report_array[REP_ARRAY_SIZE][3] = {
 		{ CONF_ZCONNECT_SERVER,	  RPL_STATSCLINE, 'c'},
 		{ CONF_CONNECT_SERVER,	  RPL_STATSCLINE, 'C'},
 		{ CONF_NOCONNECT_SERVER,  RPL_STATSNLINE, 'N'},
@@ -1356,8 +1356,9 @@ char	*to;
 int	mask;
 {
 	static	char	null[] = "<NULL>";
+	unsigned int	port;
 	aConfItem *tmp;
-	int	*p, port;
+	u_int	*p;
 	char	c, *host, *pass, *name;
 	time_t	hold;
 	aClient *acptr = find_client(to, NULL);
@@ -1375,7 +1376,7 @@ int	mask;
 					break;
 			if (!*p)
 				continue;
-			c = (char)*(p+2);
+			c = (char)*(p + 2);
 			host = BadPtr(tmp->host) ? null : tmp->host;
 			pass = BadPtr(tmp->passwd) ? NULL : tmp->passwd;
 			name = BadPtr(tmp->name) ? null : tmp->name;
@@ -1759,10 +1760,8 @@ char	*parv[];
 ** m_help
 **	parv[0] = sender prefix
 */
-int	m_help(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_help(aClient *cptr _UNUSED_, aClient *sptr,
+			int parc _UNUSED_, char *parv[])
     {
 	int i;
 
@@ -2161,10 +2160,7 @@ char	*parv[];
 **	parv[0] = sender prefix
 ** 	parv[1] - subsystem to rehash, empty to rehash all.
 */
-int	m_rehash(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_rehash(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 {
 	int status = 0;
 	
@@ -2232,14 +2228,18 @@ char	*parv[];
 				status |= REHASH_Y;
 				break;
 			default:
-				sendto_one(sptr, err_str(ERR_NOREHASHPARAM, parv[0]), parv[1]);
+				sendto_one(sptr, err_str(ERR_NOREHASHPARAM,
+							parv[0]), parv[1]);
 				return 1;
 		}
 
-	sendto_one(sptr, rpl_str(RPL_REHASHING, parv[0]), mybasename(configfile), (parv[1]) ? parv[1] : "ALL");
-	sendto_flag(SCH_NOTICE, "%s is rehashing Server config file [%s]", parv[0], (parv[1]) ? parv[1] : "ALL");
+	sendto_one(sptr, rpl_str(RPL_REHASHING, parv[0]),
+			mybasename(configfile), (parv[1]) ? parv[1] : "ALL");
+
+	sendto_flag(SCH_NOTICE, "%s is rehashing Server config file [%s]",
+					parv[0], (parv[1]) ? parv[1] : "ALL");
 	
-	return rehash(cptr, sptr, 0, status);
+	return rehash(0, status);
 }
 #endif
 
@@ -2248,10 +2248,8 @@ char	*parv[];
 ** m_restart
 **
 */
-int	m_restart(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_restart(aClient *cptr _UNUSED_, aClient *sptr,
+			int parc _UNUSED_, char *parv[] _UNUSED_)
 {
 	Reg	aClient	*acptr;
 	Reg	int	i;
@@ -2517,10 +2515,8 @@ char	*parv[];
 /*
 ** m_close - added by Darren Reed Jul 13 1992.
 */
-int	m_close(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_close(aClient *cptr _UNUSED_, aClient *sptr,
+			int parc _UNUSED_, char *parv[])
 {
 	Reg	aClient	*acptr;
 	Reg	int	i;
@@ -2550,6 +2546,7 @@ char	*parv[];
 	return 1;
 }
 
+#ifdef HAVE_EOB
 /* End Of Burst command
 ** parv[0] - server sending the EOB
 ** parv[1] - optional comma separated list of servers for which this EOB
@@ -2564,12 +2561,11 @@ int	m_eoback(aClient *cptr, aClient *sptr, int parc, char *parv[])
 {
 	return 0;
 }
+#endif
 
 #if defined(OPER_DIE) || defined(LOCOP_DIE)
-int	m_die(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_die(aClient *cptr _UNUSED_, aClient *sptr,
+		int parc _UNUSED_, char *parv[] _UNUSED_)
 {
 	Reg	aClient	*acptr;
 	Reg	int	i;
@@ -2777,9 +2773,8 @@ static void report_listeners(aClient *sptr, char *to)
 
 #define NONWILDCHARS 4
 
-int sendto_slaves(cptr, sptr, parc, parv, command)
-aClient	*cptr, *sptr;
-int	parc;
+int sendto_slaves(cptr, parv, command)
+aClient	*cptr;
 char	*parv[];
 char	*command;
 {
@@ -3119,7 +3114,7 @@ char	*command;
 	name = parv[2];
 	user = parv[3];
 	host = parv[4];
-	if (sendto_slaves(cptr, sptr, parc, parv, command) < 0)
+	if (sendto_slaves(cptr, parv, command) < 0)
 		return 0;
 	if (parv[5]) {
 	    if (*parv[5] == 'E')
@@ -3252,7 +3247,9 @@ char	*command;
 		    free_conf(aconf);
 		    return 0; /* At the moment I decided to return here since sending the line 
 				having no idea about what it is for is not smart -skold*/
+#if 0
 		    goto single_line;
+#endif
 	}
 
 	sprintf(buf, "%s@%s", user, host);
@@ -3322,7 +3319,7 @@ char	*command;
 	    free_conf(aconf);
 	}
 	return 0;
-	
+#if 0
 single_line: /* never reached in this code -skold */
 	sendto_iserv("%c%c%s@%s%c%s%c%s%c%s%c%d",
 		    type, IRCDCONF_DELIMITER,
@@ -3342,6 +3339,7 @@ single_line: /* never reached in this code -skold */
 				(expire > 0) ? myctime(expire) : 
 				    ((expire == 0) ? "permanent" : "remove"));
 
+#endif
     }
 #endif
 }

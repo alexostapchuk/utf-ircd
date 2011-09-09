@@ -20,6 +20,12 @@
 #include "os.h"
 #include "s_defines.h"
 #include "s_externs.h"
+ 
+#if defined(__GNUC__) && !defined(SOLARIS_10UP)
+#define _ICONV_CHAR_	(char ** __restrict__)
+#else	/* __GNUC__ */
+#define _ICONV_CHAR_	(const char **)
+#endif	/* __GNUC__ */
 
 static conversion_t *Conversions = NULL;
 static conversion_t *internal = NULL;
@@ -205,8 +211,8 @@ size_t conv_do_conv(iconv_t cd, char *line, size_t sl,
   {
     size_t last = sz;
 
-    if (iconv(cd, &line, &sl, &sbuf, &sz) != (size_t)(-1) ||
-	errno != EILSEQ) /* success or unrecoverable error */
+    if (iconv(cd, _ICONV_CHAR_ &line, &sl, &sbuf, &sz) != (size_t)(-1)
+	|| errno != EILSEQ) /* success or unrecoverable error */
       break;
     /* replace char */
     if (seq == 0 || last != sz) /* some text was converted */
@@ -223,8 +229,10 @@ size_t conv_do_conv(iconv_t cd, char *line, size_t sl,
     sl--;
   }
 #else
-  if (iconv(cd, &line, &sl, &sbuf, &sz) == (size_t)(-1)) /* error */
+  if (iconv(cd, _ICONV_CHAR_ &line, &sl, &sbuf, &sz) == (size_t)(-1))
+  {
     Debug((DEBUG_NOTICE, "conversion error: %lu chars left unconverted", sz));
+  }
 #endif
   return (sbuf - *buf);
 }
@@ -276,13 +284,13 @@ size_t rfcstrtoupper(char *dst, char *src, size_t ds)
 		ch = buf;
 		rest = sizeof(buf);
 		/* use iconv() since conv_* doesn't do that we want */
-		iconv(conv->cdout, &src, &ss, &ch, &rest);
+		iconv(conv->cdout, _ICONV_CHAR_ &src, &ss, &ch, &rest);
 		processed = ch - buf;
 		for (ch = buf; ch < &buf[processed]; ch++)
 		    *ch = toupper(*ch);
 		rest = ds;
 		ch = buf;
-		iconv(conv->cdin, &ch, &processed, &dst, &ds);
+		iconv(conv->cdin, _ICONV_CHAR_ &ch, &processed, &dst, &ds);
 		sout += (rest - ds);
 		/* there still may be unconvertable chars in buffer! */
 		if (rest == ds)
@@ -318,7 +326,7 @@ size_t rfcstrtoupper(char *dst, char *src, size_t ds)
 		len = wctomb(c, wc); /* first get the size of lowercase mbchar */
 		if (len < 1)
 		    continue; /* tolower() returned unknown char? ignore it */
-		if (len >= ds)
+		if ((size_t)len >= ds)
 		    break; /* oops, out of output size! */
 		memcpy(dst, c, len); /* really convert it */
 		ds -= len; /* it's at least 1 now */

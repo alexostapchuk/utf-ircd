@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: dbuf_ext.h,v 1.7 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -41,10 +40,12 @@ extern dbufbuf *freelist;
 #endif /* DBUF_C */
 EXTERN void dbuf_init();
 EXTERN int dbuf_malloc_error(dbuf *dyn);
-EXTERN int dbuf_put(dbuf *dyn, char *buf, int length);
-EXTERN char *dbuf_map(dbuf *dyn, int *length);
-EXTERN int dbuf_delete(dbuf *dyn, int length);
-EXTERN int dbuf_get(dbuf *dyn, char *buf, int length);
-EXTERN int dbuf_copy(dbuf *dyn, register char *buf, int length);
-EXTERN int dbuf_getmsg(dbuf *dyn, char *buf, register int length);
+EXTERN long dbuf_put(dbuf *dyn, char *buf, long length);
+EXTERN char *dbuf_map(dbuf *dyn, long *length);
+EXTERN long dbuf_delete(dbuf *dyn, long length);
+EXTERN long dbuf_get(dbuf *dyn, char *buf, long length);
+/*
+EXTERN long dbuf_copy(dbuf *dyn, register char *buf, long length);
+*/
+EXTERN long dbuf_getmsg(dbuf *dyn, char *buf, register long length);
 #undef EXTERN

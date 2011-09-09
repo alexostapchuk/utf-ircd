@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_service_ext.h,v 1.7 2005/08/27 16:05:24 skold Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -39,18 +38,15 @@ EXTERN aService *make_service(aClient *cptr);
 EXTERN void free_service(aClient *cptr);
 #ifdef	USE_SERVICES
 EXTERN void check_services_butone(long action, char *server,
-				       aClient *cptr, char *fmt, ...);
+					       aClient *cptr, char *fmt, ...);
 EXTERN aClient *best_service(char *name, aClient *cptr);
 EXTERN void check_services_num(aClient *sptr, char *umode);
-EXTERN aConfItem *find_conf_service(aClient *cptr, int type,
-					 aConfItem *aconf);
-EXTERN int m_servset(aClient *cptr, aClient *sptr, int parc,
-			  char *parv[]);
+EXTERN aConfItem *find_conf_service(aClient *cptr, int type, aConfItem *aconf);
+EXTERN int m_servset(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 #endif /* USE_SERVICES */
-EXTERN int m_service(aClient *cptr, aClient *sptr, int parc,
-			  char *parv[]);
-EXTERN int m_servlist(aClient *cptr, aClient *sptr, int parc,
-			   char *parv[]);
-EXTERN int m_squery(aClient *cptr, aClient *sptr, int parc,
-			 char *parv[]);
+EXTERN int m_service(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+EXTERN int m_servlist(aClient *cptr _UNUSED_, aClient *sptr,
+						int parc, char *parv[]);
+EXTERN int m_squery(aClient *cptr _UNUSED_, aClient *sptr,
+						int parc, char *parv[]);
 #undef EXTERN

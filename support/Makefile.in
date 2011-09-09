@@ -58,7 +58,6 @@ MKDIRHIER = ../support/mkdirhier
 #
 # Binary names
 #
-CLIENT = irc
 SERVER = ircd
 IAUTH = iauth
 ISERV = iserv
@@ -132,9 +131,6 @@ ircd_mode = 711
 # Please don't change anything below this point - no need really - I hope.
 
 RM = rm -f
-
-CLIENT_COMMON_OBJS = cldbuf.o clpacket.o clsend.o clmatch.o \
-                     clparse.o clsupport.o
 
 SERVER_COMMON_OBJS = dbuf.o fileio.o packet.o send.o match.o parse.o \
                      support.o @newconvobjs@
@@ -257,20 +253,8 @@ install-server: server
 install-locale: @irc_cv_locale@
 	/bin/cp -r locale $(ircd_locale_dir)
 
-cldbuf.o: ../common/dbuf.c $(CLIENT_DEPS)
-	$(CC) $(C_CFLAGS) -c -o $@ ../common/dbuf.c
-
-clpacket.o: ../common/packet.c $(CLIENT_DEPS)
-	$(CC) $(C_CFLAGS) -c -o $@ ../common/packet.c
-
-clsend.o: ../common/send.c $(CLIENT_DEPS)
-	$(CC) $(C_CFLAGS) -c -o $@ ../common/send.c
-
 clmatch.o: ../common/match.c $(CLIENT_DEPS)
 	$(CC) $(C_CFLAGS) -c -o $@ ../common/match.c
-
-clparse.o: ../common/parse.c $(CLIENT_DEPS)
-	$(CC) $(C_CFLAGS) -c -o $@ ../common/parse.c
 
 clsupport.o: ../common/support.c $(CLIENT_DEPS) ../common/patchlevel.h
 	$(CC) $(C_CFLAGS) -c -o $@ ../common/support.c
@@ -481,6 +465,7 @@ clean:
 	,* *~ *.a .emacs_* tags TAGS make.log MakeOut "#"* version.c
 
 distclean:
+	$(RM) ../common/conversion.h
 	@echo "To make distclean, just delete the current directory."
 
 rcs:

@@ -158,7 +158,7 @@ Reg	aClient	*cptr, *nodelay;
 
 	if (np->ww_logout != 0)
 	    {
-		int     elapsed = timeofday - np->ww_logout;
+		unsigned int     elapsed = timeofday - np->ww_logout;
 
 		/* some stats */
 		ircstp->is_wwcnt++;
@@ -223,7 +223,7 @@ char	*server;
 {
 	if (locked[lk_index].logout)
 	{
-	        int elapsed = timeofday - locked[lk_index].logout;
+	        unsigned int elapsed = timeofday - locked[lk_index].logout;
 		/* some stats first */
 		ircstp->is_lkcnt++;
 		ircstp->is_lkt += elapsed;

@@ -166,7 +166,7 @@ int write_my_pid(void)
     return(-1);
   }
 
-  fprintf(f, "%d\n", getpid());
+  fprintf(f, "%d\n", (int)getpid());
   fclose(f);
 
   return(0);

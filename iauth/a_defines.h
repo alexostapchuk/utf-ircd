@@ -15,14 +15,13 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: a_defines.h,v 1.7 2005/08/23 22:28:22 skold Exp $
  */
 
 /*  This file includes all files defining constants, macros and types
     definitions used by the authentication process.
  */
 
-#undef IAUTH_DEBUG
+#undef	IAUTH_DEBUG
 
 #include "config.h"
 #include "patchlevel.h"
@@ -38,3 +37,15 @@
 #include "a_conf_def.h"
 #include "a_struct_def.h"
 #include "a_log_def.h"
+ 
+#ifdef	__GNUC__
+#define _UNUSED_	__attribute__((unused))
+#else	/* __GNUC__ */
+#define _UNUSED_
+#endif	/* __GNUC__ */
+
+#ifdef	IAUTH_DEBUG
+#define	_A_UNUSED_
+#else
+#define	_A_UNUSED_	_UNUSED_
+#endif

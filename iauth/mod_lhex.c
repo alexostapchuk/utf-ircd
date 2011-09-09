@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: mod_lhex.c,v 1.5 2005/08/23 22:28:22 skold Exp $
  */
 
 
@@ -24,6 +23,12 @@
 #define MOD_LHEX_C
 #include "a_externs.h"
 #undef MOD_LHEX_C
+
+#ifdef	INET6
+#define	_UNUSED6_	_UNUSED_
+#else
+#define	_UNUSED6_
+#endif
 
 /****************************** PRIVATE *************************************/
 #define LHEXPORT	9674
@@ -44,15 +49,13 @@ struct lhex_private
  *	Returns NULL if everything went fine,
  *	an error message otherwise.
  */
-char *
-lhex_init(self)
-AnInstance *self;
+char * lhex_init(AnInstance *self _UNUSED6_)
 {
-	struct lhex_private *mydata;
-
 #if defined(INET6)
 	return "IPv6 unsupported.";
-#endif
+#else
+	struct lhex_private *mydata;
+
 	if(self->opt == NULL)
 		return "Aie! no option(s): no LHEx server to connect to!";
 	if(!inetaton(self->opt,NULL))
@@ -65,6 +68,7 @@ AnInstance *self;
 	self->popt = mystrdup(self->opt);
 	self->data = mydata;
 	return NULL;
+#endif
 }
 
 /*

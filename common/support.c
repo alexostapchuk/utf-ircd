@@ -251,9 +251,9 @@ int	inetpton(int af, const char *src, void *dst)
 		i = inet_pton(AF_INET, src, dst);
 
 		/* ugly hack */
-		memcpy(dst + 12, dst, 4);
+		memcpy((char *)dst + 12, dst, 4);
 		memset(dst, 0, 10);
-		memset(dst + 10, 0xff, 2);
+		memset((char *)dst + 10, 0xff, 2);
 		return i;
 	    }
 	return inet_pton(af, src, dst);

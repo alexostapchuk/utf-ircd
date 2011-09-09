@@ -141,8 +141,10 @@ int rusnet_bind_interface_address(int fd, struct SOCKADDR_IN *raddr,
 			if (rc)
 				perror("bind"); 
 			if (rc2 == EINPROGRESS || rc2 == EWOULDBLOCK)
+			{
 				Debug((DEBUG_ERROR,
 					"EINPROGRESS or EWOULDBLOCK"));
+			}
 
 			Debug((DEBUG_ERROR,"bind() retcode = %d", rc));
 			strncpyzt(desc, work->description, len);

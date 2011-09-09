@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: ssl.h,v 1.4 2005/08/23 13:52:08 skold Exp $
  */
  
 #ifndef SSL_C
@@ -28,10 +27,10 @@
 EXTERN int sslable;
 EXTERN int ssl_read(aClient *, void *, int);
 EXTERN int ssl_write(aClient *, const void *, int);
-EXTERN int ssl_accept(aClient *, int);
-EXTERN int ssl_shutdown(struct SSL *);
+EXTERN int ssl_accept(aClient *);
+EXTERN int ssl_shutdown(SSL *);
 EXTERN int ssl_init(void);
-EXTERN int ssl_rehash(void);
+EXTERN void ssl_rehash(void);
 
 #endif /* USE_SSL */
 #undef EXTERN

@@ -163,7 +163,7 @@ void add_to_collision_map(const char *nick, const char *collnick,
 	** existing should never happen. But running in the "collmap-v1" 
 	** environment can easily cause this.
 	*/
-	int i;
+	u_int i;
 	for (i = 0; i < collnum; i++)
 		if (!strcmp(collmap[i].collnick, collnick) &&
 			!strcmp(collmap[i].nick, nick))
@@ -192,7 +192,7 @@ void add_to_collision_map(const char *nick, const char *collnick,
 
 void del_from_collision_map(const char *nick, unsigned long id)
 {
-	int i;
+	u_int i;
 
 	if (!nick || !collnum)
 		return;
@@ -216,7 +216,7 @@ void del_from_collision_map(const char *nick, unsigned long id)
 
 void expire_collision_map(time_t time)
 {
-	int i;
+	u_int i;
 	time -= COLLMAP_HOLDTIME;
 
 	for (i = 0; i < collnum; i++)
@@ -278,7 +278,7 @@ void expire_collision_map(time_t time)
 
 char * find_collision(const char *nick, unsigned long id)
 {
-	int i;
+	u_int i;
 
 	for (i = 0; i < collnum; i++)
 		if (collmap[i].id == id &&
@@ -295,7 +295,7 @@ char * find_collision(const char *nick, unsigned long id)
 void transcode_collmaps(conversion_t *old)
 {
   static char buff[UNINICKLEN+1];
-  int i;
+  u_int i;
 
   for (i = 0; i < collnum; i++)
   {
@@ -639,9 +639,7 @@ aChannel	*chptr;
 /*
  * add_to_server_hash_table
  */
-int	add_to_server_hash_table(sptr, cptr)
-aServer	*sptr;
-aClient	*cptr;
+int	add_to_server_hash_table(aServer *sptr, aClient *cptr _D_UNUSED_)
 {
 	Reg	u_int	hashv;
 
@@ -662,8 +660,7 @@ aClient	*cptr;
 /*
  * del_from_client_hash_table
  */
-int	del_from_client_hash_table(name, cptr)
-char	*name;
+int	del_from_client_hash_table(cptr)
 aClient	*cptr;
 {
 	Reg	aClient	*tmp, *prev = NULL;
@@ -706,8 +703,7 @@ aClient	*cptr;
 /*
  * del_from_channel_hash_table
  */
-int	del_from_channel_hash_table(name, chptr)
-char	*name;
+int	del_from_channel_hash_table(chptr)
 aChannel	*chptr;
 {
 	Reg	aChannel	*tmp, *prev = NULL;
@@ -750,9 +746,8 @@ aChannel	*chptr;
 /*
  * del_from_server_hash_table
  */
-int	del_from_server_hash_table(sptr, cptr)
+int	del_from_server_hash_table(sptr)
 aServer	*sptr;
-aClient	*cptr;
 {
 	Reg	aServer	*tmp, *prev = NULL;
 	Reg	u_int	hashv;
@@ -1027,10 +1022,7 @@ void	*dummy;
  *       -avalon
  */
 
-int	m_hash(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_hash(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 {
 #ifdef DEBUGMODE
 	register	int	l, i;

@@ -24,6 +24,10 @@
 #include "s_externs.h"
 #undef S_BSD_C
 
+#if defined(SOLARIS_10UP) && (!defined(_LP64) || defined(__lint))
+#include <stdio_ext.h>
+#endif
+
 #ifndef IN_LOOPBACKNET
 #define IN_LOOPBACKNET	0x7f
 #endif
@@ -80,7 +84,7 @@ static	char	readbuf[READBUF_SIZE];
 
 void	add_local_domain(hname, size)
 char	*hname;
-int	size;
+u_int	size;
 {
 #ifdef RES_INIT
 	/* Remove ending dot */
@@ -791,7 +795,7 @@ void	init_sys(void)
 			exit(-1);
 		    }
 	    }
-# if defined(SOLARIS_10UP) && !defined(__amd64__)
+# if defined(SOLARIS_10UP) && (!defined(_LP64) || defined(__lint))
 	if (enable_extended_FILE_stdio (-1, -1) == -1)
 	    {
 		(void)fprintf(stderr, "error calling enable_extended_FILE_stdio()\n");
@@ -1317,7 +1321,7 @@ check_serverback:
 #ifdef INET6
 	    AND16(c_conf->ipnum.s6_addr) == 255
 #else
-	    c_conf->ipnum.s_addr == -1
+	    c_conf->ipnum.s_addr == INADDR_NONE
 #endif
 #ifdef UNIXPORT
 	    && !IsUnixSocket(cptr)
@@ -1984,7 +1988,7 @@ int	fd;
 	    {
 		SSL_set_fd(acptr->ssl, fd);
 	
-		if (!ssl_accept(acptr, fd))
+		if (!ssl_accept(acptr))
 		    {	    
 ssl_refuse:
 			SSL_set_shutdown(acptr->ssl, SSL_RECEIVED_SHUTDOWN);
@@ -2290,9 +2294,8 @@ int	msg_ready;
 		if (length && dbuf_put(&cptr->recvQ, readbuf, length) < 0)
 			return exit_client(cptr, cptr, &me, "dbuf_put fail");
 
-		if (IsPerson(cptr) &&
-			    DBufLength(&cptr->recvQ) >
-				(cptr->flood ? cptr->flood : CLIENT_FLOOD))
+		if (IsPerson(cptr) && DBufLength(&cptr->recvQ) >
+			(long)(cptr->flood ? cptr->flood : CLIENT_FLOOD))
 		    {
 			cptr->exitc = EXITC_FLOOD;
 			return exit_client(cptr, cptr, &me, "Excess Flood");
@@ -2397,7 +2400,7 @@ int	ro;
         	if (cptr->ssl != NULL && IsSSL(cptr) && /* Client only */
                     !SSL_is_init_finished(cptr->ssl))
         	{
-            	    if(IsDead(cptr) || (!ssl_accept(cptr, cptr->fd)))
+            	    if(IsDead(cptr) || (!ssl_accept(cptr)))
                 	close_connection(cptr);
             		continue;
         	}
@@ -2828,7 +2831,7 @@ struct	hostent	*hp;
 #ifdef INET6
 		if (!inetpton(AF_INET6, s, aconf->ipnum.s6_addr))
 #else
-		if ((aconf->ipnum.s_addr = inetaddr(s)) == -1)
+		if ((aconf->ipnum.s_addr = inetaddr(s)) == INADDR_NONE)
 #endif
 		    {
 #ifdef INET6
@@ -2877,7 +2880,7 @@ free_client:
 	 * Non-zero return code means the failed attempt
 	 */
 
-	if (!rusnet_bind_interface_address(cptr->fd, (struct sockaddr_in *)svp,
+	if (!rusnet_bind_interface_address(cptr->fd, (struct SOCKADDR_IN *)svp,
 					interface_name, sizeof(interface_name)))
 	{
 		sendto_flag(SCH_NOTICE, "Binding to %s to connect", 
@@ -3009,9 +3012,9 @@ int	*lenp;
 		inetpton(AF_INET6, aconf->host,aconf->ipnum.s6_addr);
 	if (AND16(aconf->ipnum.s6_addr) == 255)
 #else
-	if (isdigit(*aconf->host) && (aconf->ipnum.s_addr == -1))
+	if (isdigit(*aconf->host) && (aconf->ipnum.s_addr == INADDR_NONE))
 		aconf->ipnum.s_addr = inetaddr(aconf->host);
-	if (aconf->ipnum.s_addr == -1)
+	if (aconf->ipnum.s_addr == INADDR_NONE)
 #endif
 	    {
 		hp = cptr->hostp;
@@ -3410,7 +3413,7 @@ aConfItem *aconf;
 #ifdef INET6
 	if (!aconf->ipnum.s6_addr || AND16(aconf->ipnum.s6_addr) == 255 || !cp->port)
 #else
-	if (!aconf->ipnum.s_addr || aconf->ipnum.s_addr == -1 || !cp->port)
+	if (!aconf->ipnum.s_addr || aconf->ipnum.s_addr == INADDR_NONE || !cp->port)
 #endif
 		return;
 	if (aconf->class->conFreq == 0) /* avoid flooding */
@@ -3470,7 +3473,7 @@ int	len;
 
 	(void)gettimeofday(&tv, NULL);
 
-	if (len < sizeof(pi) + 8)
+	if (len < (int)sizeof(pi) + 8)
 		return -1;
 
 	bcopy(buf, (char *)&pi, sizeof(pi));	/* ensure nice byte align. */
@@ -3599,16 +3602,18 @@ static	void	polludp(void)
 
 	readbuf[n] = '\0';
 	ircstp->is_udpok++;
-	if (n  < 8)
+
+	if (n < 8)
 		return;
 
-	bcopy(s = readbuf, (char *)&pi, MIN(n, sizeof(pi)));
+	bcopy(s = readbuf, (char *)&pi, MIN(n, (int)sizeof(pi)));
 	pi.pi_id = ntohl(pi.pi_id);
 	Debug((DEBUG_INFO, "\tpi_id %#x pi_seq %d pi_cp %#x",
 		pi.pi_id, pi.pi_seq, pi.pi_cp));
 
 	if ((pi.pi_id == (PING_CPING|PING_REPLY) ||
-	     pi.pi_id == (PING_CPING|(PING_REPLY << 24))) && n >= sizeof(pi))
+	     pi.pi_id == (PING_CPING|(PING_REPLY << 24))) &&
+					n >= (int)sizeof(pi))
 	    {
 		check_ping(s, n);
 		return;
@@ -3620,7 +3625,7 @@ static	void	polludp(void)
 	 */
 	pi.pi_id |= PING_REPLY;
 	pi.pi_id = htonl(pi.pi_id);
-	bcopy((char *)&pi, s, MIN(n, sizeof(pi)));
+	bcopy((char *)&pi, s, MIN(n, (int)sizeof(pi)));
 	s += n;
 	(void)strcpy(s, ME);
 	s += strlen(s)+1;

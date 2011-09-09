@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: a_io_ext.h,v 1.8 2005/08/23 22:28:22 skold Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -40,6 +39,6 @@ EXTERN void vsendto_ircd (char *, va_list);
 EXTERN void sendto_ircd (char *, ...);
 EXTERN void init_io (void);
 EXTERN void loop_io (void);
-EXTERN int tcp_connect (char *, char *, u_short, char **);
+EXTERN int tcp_connect (char *, char *, unsigned int, char **);
 
 #undef EXTERN

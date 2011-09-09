@@ -51,7 +51,6 @@
  * SOFTWARE.
  * -
  * --Copyright--
- *   $Id: res_mkquery.c,v 1.5 2005/08/23 22:28:22 skold Exp $
  */
 
 #include "os.h"
@@ -65,13 +64,12 @@
  * Returns the size of the result or -1.
  */
 int
-ircd_res_mkquery(op, dname, class, type, data, datalen, newrr_in, buf, buflen)
+ircd_res_mkquery(op, dname, class, type, data, datalen, buf, buflen)
 	int op;			/* opcode of query */
 	const char *dname;	/* domain name */
 	int class, type;	/* class and type of query */
 	const u_char *data;	/* resource record data */
 	int datalen;		/* length of data */
-	const u_char *newrr_in;	/* new rr for modify or append */
 	u_char *buf;		/* buffer to put query */
 	int buflen;		/* size of buffer */
 {

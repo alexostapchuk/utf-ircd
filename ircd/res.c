@@ -362,8 +362,10 @@ int	len, rcount;
 			sent++;
 		    }
 		else
+		    {
 			Debug((DEBUG_ERROR,"s_r_m:sendto: %d on %d",
 				errno, resfd));
+		    }
 	    }
 
 	return (sent) ? sent : -1;
@@ -562,8 +564,8 @@ ResRQ	*rptr;
 	HEADER	*hptr;
 
 	bzero(buf, sizeof(buf));
-	r = ircd_res_mkquery(QUERY, name, class, type, NULL, 0, NULL,
-			(u_char *)buf, sizeof(buf));
+	r = ircd_res_mkquery(QUERY, name, class, type, NULL, 0,
+						(u_char *)buf, sizeof(buf));
 	if (r <= 0)
 	    {
 		h_errno = NO_RECOVERY;
@@ -683,7 +685,7 @@ HEADER	*hptr;
 			int tmplen = strlen(ircd_res.defdname);
 
 			if (len + 1 /* dot */ + tmplen + 1 /* \0 */
-				>= sizeof(hostbuf))
+				>= (int)sizeof(hostbuf))
 			{
 				/* some SCH_ERROR perhaps? */
 				return -1;
@@ -713,7 +715,7 @@ HEADER	*hptr;
 #endif
 		case T_A :
 #ifdef INET6
-			if (dlen != ((type==T_AAAA) ? sizeof(dr) : 
+			if (dlen != (int)((type==T_AAAA) ? sizeof(dr) : 
 				     sizeof(struct in_addr)))
 #else
 			if (dlen != sizeof(dr))
@@ -767,8 +769,10 @@ HEADER	*hptr;
 				(void)strcpy(hp->h_name, hostbuf);
 			    }
 			else
+			    {
 				Debug((DEBUG_INFO, "keeping %s for %s",
 							hp->h_name, hostbuf));
+			    }
 			ans++;
 			adr++;
 			cp += dlen;
@@ -885,7 +889,7 @@ char	*lp;
 #endif
 
 	(void)alarm((unsigned)0);
-	if (rc <= sizeof(HEADER))
+	if (rc <= (int)sizeof(HEADER))
 		goto getres_err;
 	/*
 	 * convert DNS reply reader from Network byte order to CPU byte order.
@@ -1748,10 +1752,8 @@ void	flush_cache()
 		rem_cache(cp);
 }
 
-int	m_dns(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_dns(aClient *cptr _UNUSED_, aClient *sptr,
+			int parc _UNUSED_, char *parv[])
 {
 	Reg	aCache	*cp;
 	Reg	int	i;
@@ -1913,7 +1915,9 @@ int len;
 				strcpy(name, idn);
 		}
 		else
+		{
 			Debug((DEBUG_INFO, "IDN decode error for %s", name));
+		}
 
 /* do not use our internal malloc/free here */
 #undef	free

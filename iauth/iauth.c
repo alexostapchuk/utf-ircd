@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: iauth.c,v 1.5 2005/08/23 22:28:22 skold Exp $
  */
 
 #include "os.h"
@@ -26,8 +25,7 @@
 
 static int do_log = 0;
 
-RETSIGTYPE dummy(s)
-int s;
+RETSIGTYPE dummy(int s _UNUSED_)
 {
 	/* from common/bsd.c */
 #ifndef HAVE_RELIABLE_SIGNALS
@@ -73,7 +71,7 @@ int s;
 # else  
         (void)signal(SIGUSR2, s_log);
 # endif
-        do_log = 1;
+        do_log = s;
 }
 
 void

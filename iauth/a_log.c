@@ -62,16 +62,16 @@ void	init_syslog(void)
 #endif
 }
 
-void	vsendto_log(int flags, int slflag, char *pattern, va_list va)
+void	vsendto_log(int flags, int slflag _I_UNUSED_, char *pattern, va_list va)
 {
 	char	logbuf[4096];
 
 	logbuf[0] = '>';
-	vsprintf(logbuf+1, pattern, va);
+	vsprintf(logbuf + 1, pattern, va);
 
 #if defined(USE_SYSLOG)
 	if (slflag)
-		syslog(slflag, "%s", logbuf+1);
+		syslog(slflag, "%s", logbuf + 1);
 #endif
 
 	strcat(logbuf, "\n");
@@ -79,7 +79,7 @@ void	vsendto_log(int flags, int slflag, char *pattern, va_list va)
 #if defined(IAUTH_DEBUG)
 	if ((flags & ALOG_DALL) && (flags & debuglevel) && debug)
 	    {
-		fprintf(debug, "%s", logbuf+1);
+		fprintf(debug, "%s", logbuf + 1);
 		fflush(debug);
 	    }
 #endif
@@ -94,14 +94,14 @@ void	vsendto_log(int flags, int slflag, char *pattern, va_list va)
 #if defined(IAUTH_DEBUG)
 		if ((ALOG_DSPY & debuglevel) && debug)
 		    {
-			fprintf(debug, "To ircd: %s", logbuf+1);
+			fprintf(debug, "To ircd: %s", logbuf + 1);
 			fflush(debug);
 		    }
 #endif
 	    }
 }
 
-void	sendto_log(int flags, int slflag, char *pattern, ...)
+void	sendto_log(int flags, int slflag _I_UNUSED_, char *pattern, ...)
 {
         va_list va;
         va_start(va, pattern);

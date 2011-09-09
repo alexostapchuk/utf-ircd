@@ -805,8 +805,7 @@ static int find_conf_listener (char *charset)
  * as a result of an operator issuing this command, else assume it has been
  * called as a result of the server receiving a HUP signal.
  */
-int	rehash(cptr, sptr, sig, status)
-aClient	*cptr, *sptr;
+int	rehash(sig, status)
 int	sig;
 int	status;
 {
@@ -1124,14 +1123,10 @@ char	*orig;
 
 	i = inetpton(AF_INET6, orig, addr.s6_addr);
 
-	if (i > 0)
-	    {
-		t = inetntop(AF_INET6, addr.s6_addr, dummy, MYDUMMY_SIZE);
-	    }
+	t = (i > 0) ?
+		inetntop(AF_INET6, addr.s6_addr, dummy, MYDUMMY_SIZE) : orig;
 	
 	j = len - 1;
-	if (!((i > 0) && t))
-		t = orig;
 
 	len += strlen(t);
 	buf = (char *)MyRealloc(buf, len);
@@ -1596,18 +1591,26 @@ int	init_flags;
 #ifdef USE_SSL
 				 || aconf->status == CONF_SSL_LISTEN_PORT
 #endif
-				 )) {
-				    if (add_listener(aconf))
-				    {
-					Debug((DEBUG_NOTICE, "Not adding new listener: %s %d: port opening error",
-					    aconf->host, aconf->port));
+				 ))
+			{
+				if (add_listener(aconf))
+				{
+					Debug((DEBUG_NOTICE, "Not adding new"
+						" listener: %s %d: port"
+						" opening error",
+						aconf->host, aconf->port));
 					aconf->status |= CONF_ILLEGAL;
-				    }
-				    else
-					Debug((DEBUG_NOTICE, "Adding new listener: %s %d %s", 
-					aconf->host, aconf->port,
-					(aconf->status == CONF_LISTEN_PORT) ? "Non-SSL" : "SSL"));
 				}
+				else
+				{
+					Debug((DEBUG_NOTICE,
+						"Adding new listener: %s %d %s",
+						aconf->host, aconf->port,
+						(aconf->status ==
+							CONF_LISTEN_PORT) ?
+							"Non-SSL" : "SSL"));
+				}
+			}
 		    }
 		if (aconf->status & CONF_SERVICE)
 			aconf->port &= SERVICE_MASK_ALL;
@@ -1773,7 +1776,7 @@ Reg	aConfItem	*aconf;
 	ln.flags = ASYNC_CONF;
 
 #ifdef INET6
-	if(inetpton(AF_INET6, s, aconf->ipnum.s6_addr))
+	if (inetpton(AF_INET6, s, aconf->ipnum.s6_addr))
 		;
 #else
 	if (isdigit(*s))
@@ -1787,17 +1790,13 @@ Reg	aConfItem	*aconf;
 		goto badlookup;
 
 #else
-	if (aconf->ipnum.s_addr == -1)
-		goto badlookup;
+	if (aconf->ipnum.s_addr != INADDR_NONE)
+		return 0;
 #endif
-
-	return 0;
 
 badlookup:
 #ifdef INET6
 	if (AND16(aconf->ipnum.s6_addr) == 255)
-#else
-	if (aconf->ipnum.s_addr == -1)
 #endif
 		bzero((char *)&aconf->ipnum, sizeof(struct IN_ADDR));
 	Debug((DEBUG_ERROR,"Host/server name error: (%s) (%s)",
@@ -2055,7 +2054,7 @@ aConfItem	*aconf;
  */
 int	find_two_masks(name, host, stat)
 char	*name, *host;
-int	stat;
+u_int	stat;
 {
 	aConfItem *tmp;
 
@@ -2073,8 +2072,8 @@ int	stat;
  * Return -1 for match, 0 for no-match.
  */
 int	find_conf_flags(name, key, stat)
-char	*name, *key;
-int	stat;
+char		*name, *key;
+unsigned int	stat;
 {
 	aConfItem *tmp;
 	int l;

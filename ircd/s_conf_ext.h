@@ -63,7 +63,7 @@ EXTERN aConfItem *find_conf_host(Reg Link *lp, char *host,
 EXTERN aConfItem *find_conf_ip(Link *lp, char *ip, char *user,
 				    int statmask);
 EXTERN aConfItem *find_conf_entry(aConfItem *aconf, u_int mask);
-EXTERN int rehash(aClient *cptr, aClient *sptr, int sig, int status);
+EXTERN int rehash(int sig, int status);
 EXTERN int openconf(void);
 EXTERN int initconf(int opt, int init_flags);
 EXTERN int check_tlines(aClient *cptr, int doall, char **comment, char *nick, 
@@ -71,8 +71,8 @@ EXTERN int check_tlines(aClient *cptr, int doall, char **comment, char *nick,
 #ifdef RUSNET_RLINES
 EXTERN void do_restrict(aClient *cptr);
 #endif
-EXTERN int find_two_masks(char *name, char *host, int stat);
-EXTERN int find_conf_flags(char *name, char *key, int stat);
+EXTERN int find_two_masks(char *name, char *host, u_int stat);
+EXTERN int find_conf_flags(char *name, char *key, unsigned int stat);
 EXTERN int find_restrict(aClient *cptr);
 EXTERN int find_bounce(aClient *cptr, int class, int fd);
 EXTERN aConfItem *find_denied(char *name, int class);

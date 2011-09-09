@@ -267,14 +267,7 @@ ircd_getlong(msgp)
 	return (u);
 }
 
-void
-#if __STDC__
-ircd__putshort(register u_int16_t s, register u_char *msgp)	/* must match proto */
-#else
-ircd__putshort(s, msgp)
-	register u_int16_t s;
-	register u_char *msgp;
-#endif
+void ircd__putshort(register u_int16_t s, register u_char *msgp)
 {
 	PUTSHORT(s, msgp);
 }

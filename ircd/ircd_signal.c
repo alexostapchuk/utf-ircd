@@ -16,7 +16,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: ircd_signal.c,v 1.6 2005/08/23 22:28:22 skold Exp $
  */
 
 #include "os.h"
@@ -26,8 +25,7 @@
 #undef IRCD_SIGNAL_C
 
 
-RETSIGTYPE s_die(s)
-int s;
+RETSIGTYPE s_die(int s _UNUSED_)
 {
 #ifdef	USE_SYSLOG
 	(void)syslog(LOG_CRIT, "Server Killed By SIGTERM");
@@ -41,8 +39,7 @@ int s;
 	exit(-1);
 }
 
-RETSIGTYPE s_rehash(s)
-int s;
+RETSIGTYPE s_rehash(int s _UNUSED_)
 {
 #if POSIX_SIGNALS
 	struct	sigaction act;
@@ -58,8 +55,7 @@ int s;
 	dorehash = 1;
 }
 
-RETSIGTYPE s_restart(s)
-int s;
+RETSIGTYPE s_restart(int s _UNUSED_)
 {
 /*
  * TODO: logging here
@@ -67,8 +63,7 @@ int s;
 	dorestart = 1;
 }
 
-RETSIGTYPE dummy(s)
-int s;
+RETSIGTYPE dummy(int s _UNUSED_)
 {
 #ifndef HAVE_RELIABLE_SIGNALS
 	(void)signal(SIGALRM, dummy);

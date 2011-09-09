@@ -49,7 +49,7 @@ void	vsendto_ircd(char *pattern, va_list va)
 	vsprintf(ibuf, pattern, va);
 	DebugLog((ALOG_DSPY, 0, "To ircd: [%s]", ibuf));
 	strcat(ibuf, "\n");
-	if (write(0, ibuf, strlen(ibuf)) != strlen(ibuf))
+	if (write(0, ibuf, strlen(ibuf)) != (int)strlen(ibuf))
 	    {
 		sendto_log(ALOG_DMISC, LOG_NOTICE, "Daemon exiting. [w %s]",
 			   strerror(errno));
@@ -766,7 +766,7 @@ u_short port;
  */
 int	tcp_connect(ourIP, theirIP, port, error)
 char *ourIP, *theirIP, **error;
-u_short port;
+unsigned int port;
 {
 	int fd;
 	static char errbuf[BUFSIZ];

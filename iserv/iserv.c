@@ -9,7 +9,6 @@
 ** hope that it will be useful, but without any warranty. Without even the 
 ** implied warranty of merchantability or fitness for a particular purpose. 
 ** See the GNU General Public License for details.
-** $Id: iserv.c,v 1.8 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -34,8 +33,7 @@ static int flushOutBuffer(void);
 static int match_tline(isConfLine *, isConfLine *);
 static int checkPendingLines(isConfLine *);
 
-RETSIGTYPE dummy(s)
-int s;
+RETSIGTYPE dummy(int s _UNUSED_)
 {
 	/* from common/bsd.c */
 #ifndef HAVE_RELIABLE_SIGNALS
@@ -81,7 +79,7 @@ int s;
 # else  
         (void)signal(SIGHUP, s_rehash);
 # endif
-        do_log = 1;
+        do_log = s;
 }
 
 RETSIGTYPE s_die(s)
@@ -101,7 +99,7 @@ int s;
         (void)signal(SIGINT, s_die);
         (void)signal(SIGTERM, s_die);
 # endif
-        do_stop = 1;
+        do_stop = s;
 }
 
 void
@@ -490,7 +488,9 @@ int appendConfLine(isConfLine *isline)
 		(int)isline->expire);
 	outbuf_count += bytes; /* Next available position */
 	if (bytes >= ISMAXLINE) /* Should not happen, write anyway, so don't be stupid */
+	{
 	    DebugLog((DEBUG_IO, "Written line was truncated. Check yourself."));
+	}
 	*(isoutbuf + outbuf_count) = '\0';
 	DebugLog((DEBUG_IO, "%d bytes added to outgoing buffer", bytes));
 	DebugLog((DEBUG_RAW, "< appendConfLine()"));
@@ -559,8 +559,10 @@ static int flushPendingLines(void)
 		    isline = makePendingLine(buf);
 		    if (checkPendingLines(isline)) {
 			if (isline)
+			{
 			    DebugLog((DEBUG_MISC, "Config line is valid: %s!%s", isline->name ? isline->name : "NULL", 
 				    isline->userhost ? isline->userhost : "NULL"));
+			}
 			appendConfLine(isline);
 		    }
 		    delPendingLine(isline);

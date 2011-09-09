@@ -24,8 +24,14 @@
 # include "s_externs.h"
 #undef SEND_C
 
+#ifdef	INET6
+#define	_NO_IP_	{{0}}
+#else
+#define	_NO_IP_	0
+#endif
+
 static	char	sendbuf[2048];
-static	int	send_message (aClient *, char *, int);
+static	int	send_message (aClient *, char *, long);
 static	void	vsendto_prefix_one(aClient *, aClient *, char *, va_list);
 static	char	no_color_msg[] = "message discarded (colors disallowed)";
 
@@ -312,7 +318,7 @@ int	fd;
 static	int	send_message(to, msg, len)
 aClient	*to;
 char	*msg;	/* if msg is a null pointer, we are flushing connection */
-int	len;
+long	len;
 #if !defined(CLIENT_COMPILE)
 {
 	int i;
@@ -362,7 +368,7 @@ int	len;
 			if (IsService(to) || IsServer(to))
 			{
 				sprintf(ebuf,
-				"Max SendQ limit exceeded for %s: %d > %ld",
+				"Max SendQ limit exceeded for %s: %ld > %ld",
 					get_client_name(to, FALSE),
 					DBufLength(&to->sendQ), get_sendq(to));
 			}
@@ -508,7 +514,8 @@ int	send_queued(to)
 aClient *to;
 {
 	char	*msg;
-	int	len, rlen, more = 0;
+	long	len, rlen;
+	int	more = 0;
 
 	/*
 	** Once socket is marked dead, we cannot start writing to it,
@@ -589,6 +596,11 @@ aClient *to;
 
 
 #ifndef CLIENT_COMPILE
+# ifdef	DBUF_TAIL
+#define	DBUF_PHOLDER	{0, 0, NULL, NULL}
+# else
+#define	DBUF_PHOLDER	{0, 0, NULL}
+#endif
 static	anUser	ausr = { NULL, NULL, NULL, NULL, 0, 0, 0, 0, NULL,
 			 NULL, "anonymous", "anonymous.", "anonymous."};
 
@@ -602,11 +614,15 @@ static	aClient	anon = { NULL, NULL, NULL, &ausr, NULL, NULL, 0, 0,/*flags*/
 # ifdef	ZIP_LINKS
 			 NULL,
 # endif
-			 0, {0, 0, NULL }, {0, 0, NULL },
+			 0, DBUF_PHOLDER, DBUF_PHOLDER,
 			 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, 0, NULL, 0
-# if defined(__STDC__)	/* hack around union{} initialization	-Vesa */
-			 ,{0}, NULL, ""
-# endif
+			 ,{_NO_IP_}, NULL, "" ,'\0', 0
+#ifdef USE_SSL
+			 , NULL, NULL
+#endif
+#ifdef HOLD_ENFORCED_NICKS
+			 , 0
+#endif
 			};
 #endif
 
@@ -739,11 +755,11 @@ const char	*source, *channel, *msg;
 */
 int	vsendto_one(aClient *to, char *pattern, va_list va)
 {
-	int	len;
+	long	len;
 
 	len = vsendprep(pattern, va);
 	(void)send_message(to, sendbuf, len);
-	return len;
+	return (int)len;
 }
 
 int	sendto_one(aClient *to, char *pattern, ...)
@@ -768,7 +784,7 @@ void	sendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
 {
 	Reg	Link	*lp;
 	Reg	aClient *acptr, *lfrm = from;
-	int	len1, len2 = 0;
+	long	len1, len2 = 0;
 
 	if (IsAnonymous(chptr) && IsClient(from))
 	    {
@@ -833,7 +849,8 @@ void	sendto_channel_butone(aClient *one, aClient *from, aChannel *chptr,
  */
 void	sendto_serv_butone(aClient *one, char *pattern, ...)
 {
-	Reg	int	i, len=0;
+	Reg	int	i;
+	Reg	long	len=0;
 	Reg	aClient *cptr;
 
 	for (i = fdas.highest; i >= 0; i--)
@@ -853,7 +870,8 @@ void	sendto_serv_butone(aClient *one, char *pattern, ...)
 
 int	sendto_serv_v(aClient *one, int ver, char *pattern, ...)
 {
-	Reg	int	i, len=0, rc=0;
+	Reg	int	i, rc=0;
+	Reg	long	len=0;
 	Reg	aClient *cptr;
 
 	for (i = fdas.highest; i >= 0; i--)
@@ -889,7 +907,7 @@ void	sendto_common_channels(aClient *user, char *pattern, ...)
 	Reg	int	i;
 	Reg	aClient *cptr;
 	Reg	Link	*channels, *lp;
-	int	len = 0;
+	long	len = 0;
 	char	*msg = psendbuf;
 
 /*      This is kind of funky, but should work.  The first part below
@@ -964,7 +982,7 @@ void	sendto_common_channels(aClient *user, char *pattern, ...)
 	else
 	    {
 		/* This part optimized for client servers */
-		bzero((char *)&sentalong[0], sizeof(int) * MAXCONNECTIONS);
+		bzero((char *)&sentalong[0], sizeof(u_int8_t) * MAXCONNECTIONS);
 		if (MyConnect(user))
 		    {
 			va_list	va;
@@ -1058,7 +1076,7 @@ void	sendto_channel_butserv(aChannel *chptr, aClient *from, char *pattern, ...)
 {
 	Reg	Link	*lp;
 	Reg	aClient	*acptr, *lfrm = from;
-	int	len = 0;
+	long	len = 0;
 	char	*msg = psendbuf;
 
 	if (MyClient(from))
@@ -1130,7 +1148,8 @@ int	what;
  */
 void	sendto_match_servs(aChannel *chptr, aClient *from, char *format, ...)
 {
-	Reg	int	i, len=0;
+	Reg	int	i;
+	Reg	long	len=0;
 	Reg	aClient	*cptr;
 	char	*mask;
 
@@ -1165,7 +1184,8 @@ void	sendto_match_servs(aChannel *chptr, aClient *from, char *format, ...)
 int	sendto_match_servs_v(aChannel *chptr, aClient *from, int ver,
 		     char *format, ...)
 {
-	Reg	int	i, len=0, rc=0;
+	Reg	int	i, rc=0;
+	Reg	long	len=0;
 	Reg	aClient	*cptr;
 	char	*mask;
 
@@ -1206,7 +1226,8 @@ int	sendto_match_servs_v(aChannel *chptr, aClient *from, int ver,
 int	sendto_match_servs_notv(aChannel *chptr, aClient *from, int ver,
 			char *format, ...)
 {
-	Reg	int	i, len=0, rc=0;
+	Reg	int	i, rc=0;
+	Reg	long	len=0;
 	Reg	aClient	*cptr;
 	char	*mask;
 
@@ -1311,7 +1332,7 @@ void	sendto_ops_butone(aClient *one, aClient *from, char *pattern, ...)
 {
 	Reg	int	i;
 	Reg	aClient *cptr;
-	bzero((char *)&sentalong[0], sizeof(int) * MAXCONNECTIONS);
+	bzero((char *)&sentalong[0], sizeof(u_int8_t) * MAXCONNECTIONS);
 	for (cptr = client; cptr; cptr = cptr->next)
 	    {
 		if (IsService(cptr) || IsMe(cptr) || !IsRegistered(cptr))
@@ -1347,7 +1368,7 @@ void	sendto_ops_butone(aClient *one, aClient *from, char *pattern, ...)
  */
 void	sendto_prefix_one(aClient *to, aClient *from, char *pattern, ...)
 {
-	int	len;
+	long	len;
 
 	va_list	va;
 	va_start(va, pattern);
@@ -1359,7 +1380,7 @@ void	sendto_prefix_one(aClient *to, aClient *from, char *pattern, ...)
 
 static void	vsendto_prefix_one(aClient *to, aClient *from, char *pattern, va_list va)
 {
-	int	len;
+	long	len;
 
 	len = vsendpreprep(to, from, pattern, va);
 	send_message(to, psendbuf, len);
@@ -1480,22 +1501,28 @@ void log_open(aConfItem *conf)
 
 	if (!newlog)
 	  for (logf = 0; logf < SCH_MAX; logf++)
-	    for (newlog = svchans[logf].log; newlog; newlog = newlog->next) {
+	    for (newlog = svchans[logf].log; newlog; newlog = newlog->next)
+	    {
 		fstat(newlog->logf, &sb);
 		if (sb.st_dev == newsb.st_dev && sb.st_ino == newsb.st_ino)
 			break;
 	    }
 
-	if (newlog) {
+	if (newlog)
+	{
 		logf = dup(newlog->logf);
 		Debug((DEBUG_DEBUG, "fd %d = dup(fd %d) for log file \"%s\"",
 					logf, newlog->logf, conf->passwd));
-	} else {
+	}
+	else
+	{
 		logf = open(path, O_WRONLY|O_APPEND|O_NDELAY|O_CREAT,
 						S_IWUSR|S_IRUSR|S_IRGRP);
 		if (logf == -1)
+		{
 		    Debug((DEBUG_DEBUG, "Failed to create log file \"%s\": %s",
 							conf->passwd, strerror(errno)));
+		}
 	}
     }
     else

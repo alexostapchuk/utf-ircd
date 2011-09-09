@@ -24,6 +24,10 @@
 #include "s_externs.h"
 #undef MATCH_C
 
+#ifdef USE_LIBIDN
+#include <idna.h>		/* idna_to_ascii_8z()	*/
+#endif
+
 unsigned char tolowertab[] =
 		{ 0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa,
 		  0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x11, 0x12, 0x13, 0x14,
@@ -404,6 +408,23 @@ unsigned int CharAttrs[] = {
 /* 0xFF */   CHAN_CHAR|NONEOS_CHAR
 };
 
+#ifdef USE_LIBIDN
+static void idn_encode(subject)
+char **subject;
+{
+/* do not use our internal malloc/free here */
+#undef	free
+	char	*idn = NULL;
+	int	rc = idna_to_ascii_8z(*subject, &idn, 0);
+
+	if (rc == IDNA_SUCCESS)
+		strcpy(*subject, idn);
+
+	if (idn)
+		free(idn);
+#define	free(x)	MyFree(x)
+}
+#endif
 
 #define	MAX_ITERATIONS	512
 /*
@@ -430,6 +451,18 @@ char	*mask, *name;
 
 	if (!*mask)
 		return 1;
+#ifdef USE_LIBIDN
+	/*
+	 * WARNING! This solution can seriously dampen performance!
+	 * Something better must be invented -- perhaps, caching
+	 * converted copies somewhere  --erra
+	 */
+	else
+	{
+		idn_encode(&mask);
+		idn_encode(&name);
+	}
+#endif
 
 	while (1)
 	    {
@@ -490,7 +523,7 @@ char	*mask, *name;
 		    {
 			if (*n)
 			{
-#if !defined(CLIENT_COMPILE) && !defined(USE_OLD8BIT)
+#if !defined(CLIENT_COMPILE) && !defined(USE_OLD8BIT) && !defined(USE_LIBIDN)
 			    /* works for utf* only!!! */
 			    if (UseUnicode > 0 && *m == '?')
 			    {

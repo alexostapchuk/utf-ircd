@@ -69,11 +69,7 @@ static void rusnet_changecodepage(struct Client *cptr, char *pageid, char *id)
         sendto_one(cptr, err_str(ERR_NOCODEPAGE, id), pageid);
 }
 
-int m_codepage(cptr, sptr, parc, parv)
-aClient *cptr;
-aClient *sptr;
-int     parc;
-char    *parv[];
+int m_codepage(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 {
 #ifdef USE_OLD8BIT
     int  i;
@@ -94,10 +90,7 @@ char    *parv[];
     return 0;    
 }
 
-int m_svsnick(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int     parc;
-char    *parv[];
+int m_svsnick(aClient *cptr, aClient *sptr _UNUSED_, int parc, char *parv[])
 {
     aClient *acptr;
 
@@ -106,7 +99,7 @@ char    *parv[];
 
     /* Check if parv[2] is a registered nickname */
     if (find_client(parv[2], NULL) != NULL)
-	return -1; /* Could not force nickchange, new nick is registered */
+	return -1; /* Could not force nickchange, target nick is registered */
 
     /* Check if parv[1] exists */
     if ((acptr = find_client(parv[1], NULL)) == NULL)
@@ -120,7 +113,7 @@ char    *parv[];
 	return m_nick(acptr, acptr, 3, pparv);
     }
 
-	/* Propagate FORCE to single server where $nick is registered */
+	/* Propagate FORCE to single server where nick is registered */
 	acptr = acptr->from;
 	if (acptr != cptr)	/* Split horizon (prevent loops) */
 	{
@@ -147,10 +140,7 @@ char    *parv[];
  * parv[1] - username to change mode for
  * parv[2] - modes to change
  */
-int m_svsmode(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int     parc;
-char    *parv[];
+int m_svsmode(aClient *cptr, aClient *sptr _UNUSED_, int parc, char *parv[])
 {
     aClient *acptr;
     char    *s;
@@ -203,10 +193,7 @@ char    *parv[];
 	return m_svsmode(cptr, sptr, parc, parv);
 }
 
-int m_rcpage(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int     parc;
-char    *parv[];
+int m_rcpage(aClient *cptr, aClient *sptr _UNUSED_, int parc, char *parv[])
 {
     aClient *acptr, *workptr, *zptr;
 
@@ -225,9 +212,7 @@ char    *parv[];
 #ifdef USE_OLD8BIT
 	int i;
 
-#endif
         /* Do change codepage procedure */
-#ifdef USE_OLD8BIT
 	for (i = 0; parv[2][i] != '\0'; i++) parv[2][i] = toupper(parv[2][i]); 
 #endif
         rusnet_changecodepage(zptr, parv[2], parv[1]);
@@ -246,10 +231,7 @@ char    *parv[];
  * Internal method for usage with *serv commands e.g. /nickserv
  */
 
-int m_services(cptr, sptr, nick, parc, parv)
-aClient *cptr, *sptr;
-int     parc;
-char    *nick, *parv[];
+int m_services(aClient *cptr _UNUSED_, aClient *sptr, char *nick, int parc, char *parv[])
 {
     aClient *acptr;
 

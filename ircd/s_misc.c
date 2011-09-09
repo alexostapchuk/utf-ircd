@@ -704,8 +704,7 @@ char	*comment;
 				      ":%s SQUIT %s :%s", from->name,
 				      sptr->name, comment);
 #endif
-		(void) del_from_server_hash_table(sptr->serv, cptr ? cptr :
-						  sptr->from);
+		(void) del_from_server_hash_table(sptr->serv);
 	} else if (!IsPerson(sptr) && !IsService(sptr))
 		    /*
 		    ** This is condition for unauthorized and rejected
@@ -871,12 +870,14 @@ char	*comment;
 				sptr->name);
 	}
 	/* Remove sptr from the client list */
-	if (del_from_client_hash_table(sptr->name, sptr) != 1)
+	if (del_from_client_hash_table(sptr) != 1)
+	{
 		Debug((DEBUG_ERROR, "%#x !in tab %s[%s] %#x %#x %#x %d %d %#x",
 			sptr, sptr->name,
 			sptr->from ? sptr->from->sockhost : "??host",
 			sptr->from, sptr->next, sptr->prev, sptr->fd,
 			sptr->status, sptr->user));
+	}
 	remove_client_from_list(sptr);
 	return;
 }
@@ -1195,7 +1196,7 @@ void set_internal_encoding(aClient *cptr, aConfItem *aconf)
 	/* transcode all clients */
 	for (acptr = client; acptr; acptr = acptr->next)
 	{
-	    del_from_client_hash_table(acptr->name, acptr);
+	    del_from_client_hash_table(acptr);
 	    conv_transcode(old, acptr->name, buff);
 	    add_to_client_hash_table(acptr->name, acptr);
 	    if (acptr->info != DefInfo) /* it might be constant! */

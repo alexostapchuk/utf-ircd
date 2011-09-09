@@ -51,7 +51,6 @@
  * SOFTWARE.
  * -
  * --Copyright--
- *   $Id: res_init.c,v 1.8 2010-11-10 13:38:39 gvs Exp $
  */
 
 
@@ -60,6 +59,12 @@
 #define RES_INIT_C
 #include "s_externs.h"
 #undef RES_INIT_C
+
+#ifdef DEBUG
+#define	_D_UNUSED_
+#else
+#define	_D_UNUSED_	_UNUSED_
+#endif
 
 /*-------------------------------------- info about "sortlist" --------------
  * Marc Majka		1994/04/16
@@ -412,8 +417,7 @@ ircd_res_init()
 }
 
 static void
-ircd_res_setoptions(options, source)
-	char *options, *source;
+ircd_res_setoptions(char *options, char *source _D_UNUSED_)
 {
 	char *cp = options;
 	int i;
@@ -423,12 +427,14 @@ ircd_res_setoptions(options, source)
 		printf(";; ircd_res_setoptions(\"%s\", \"%s\")...\n",
 		       options, source);
 #endif
-	while (*cp) {
+	while (*cp)
+	{
 		/* skip leading and inner runs of spaces */
 		while (*cp == ' ' || *cp == '\t')
 			cp++;
 		/* search for and process individual options */
-		if (!strncmp(cp, "ndots:", sizeof("ndots:") - 1)) {
+		if (!strncmp(cp, "ndots:", sizeof("ndots:") - 1))
+		{
 			i = atoi(cp + sizeof("ndots:") - 1);
 			if (i <= RES_MAXNDOTS)
 				ircd_res.ndots = i;

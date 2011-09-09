@@ -432,7 +432,7 @@ struct	ConfItem	{
 	char	*passwd;
 	char	*name;
 	int	port;
-	u_int	pref;		/* preference value */
+	int	pref;		/* preference value */
 	u_int	localpref;	/* administrative preference value */
 	struct	CPing	*ping;
 	time_t	hold;	/* Hold action until this time (calendar time) */
@@ -537,7 +537,7 @@ struct	User	{
 				** by) and whowas array (field ww_user).
 				*/
 	int	joined;		/* number of channels joined */
-	int	flags;		/* user modes */
+	u_int	flags;		/* user modes */
         struct	Server	*servp;
 				/*
 				** In a perfect world the 'server' name
@@ -591,7 +591,7 @@ struct Client	{
 	aServer	*serv;		/* ...defined, if this is a server */
 	aService *service;
 	u_int	hashv;		/* raw hash value */
-	long	flags;		/* client flags */
+	u_int32_t flags;	/* client flags */
 	aClient	*from;		/* == self, if Local Client, *NEVER* NULL! */
 	int	fd;		/* >= 0, for local clients */
 	int	hopcount;	/* number of servers to this 0 = local */
@@ -647,8 +647,8 @@ struct Client	{
 	char	exitc;
 	u_int	flood;		/* client flood allowed (from I:line)  --erra */
 #ifdef USE_SSL
-	struct SSL *ssl;
-	struct X509 *client_cert;
+	SSL *ssl;
+	X509 *client_cert;
 #endif /* USE SSL */
 #ifdef HOLD_ENFORCED_NICKS
 	time_t	held;		/* prohibit instant nick change after SVSNICK */
@@ -764,7 +764,7 @@ struct	SLink	{
 #ifndef USE_OLD8BIT
 	char	*ucp;	/* uppercase value */
 #endif
-	int	flags;
+	u_int	flags;
 };
 
 /* channel structure */
@@ -1076,7 +1076,7 @@ typedef struct  {
 typedef	struct	Ignore {
 	char	user[NICKLEN+1];
 	char	from[USERLEN+HOSTLEN+2];
-	int	flags;
+	u_int	flags;
 	struct	Ignore	*next;
 } anIgnore;
 

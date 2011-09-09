@@ -29,6 +29,12 @@ extern int _CHANNELHASHSIZE;
 extern int _SERVERSIZE;
 #endif /* HASH_C */
 
+#ifdef DEBUGMODE
+#define	_D_UNUSED_
+#else
+#define	_D_UNUSED_	_UNUSED_
+#endif
+
 /*  External definitions for global functions.
  */
 #ifndef HASH_C
@@ -39,10 +45,10 @@ extern int _SERVERSIZE;
 EXTERN void inithashtables();
 EXTERN int add_to_client_hash_table(char *name, aClient *cptr);
 EXTERN int add_to_channel_hash_table(char *name, aChannel *chptr);
-EXTERN int add_to_server_hash_table(aServer *sptr, aClient *cptr);
-EXTERN int del_from_client_hash_table(char *name, aClient *cptr);
-EXTERN int del_from_channel_hash_table(char *name, aChannel *chptr);
-EXTERN int del_from_server_hash_table(aServer *sptr, aClient *cptr);
+EXTERN int add_to_server_hash_table(aServer *sptr, aClient *cptr _D_UNUSED_);
+EXTERN int del_from_client_hash_table(aClient *cptr);
+EXTERN int del_from_channel_hash_table(aChannel *chptr);
+EXTERN int del_from_server_hash_table(aServer *sptr);
 EXTERN aClient *hash_find_client(char *name, aClient *cptr);
 EXTERN aClient *hash_find_server(char *server, aClient *cptr);
 EXTERN aChannel *hash_find_channel(char *name, aChannel *chptr);

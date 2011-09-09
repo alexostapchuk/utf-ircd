@@ -17,6 +17,12 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
  
+#ifdef	__GNUC__
+#define _UNUSED_	__attribute__((unused))
+#else	/* __GNUC__ */
+#define _UNUSED_
+#endif	/* __GNUC__ */
+
 #if defined(DEBUGMODE) && !defined(CLIENT_COMPILE) && !defined(CHKCONF_COMPILE) && defined(DO_DEBUG_MALLOC)
 # define	free(x)		MyFree(x)
 #elif !defined CHKCONF_C

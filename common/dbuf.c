@@ -206,10 +206,10 @@ dbuf *dyn;
 **	returns	> 0, if operation successfull
 **		< 0, if failed (due memory allocation problem)
 */
-int	dbuf_put(dyn, buf, length)
+long	dbuf_put(dyn, buf, length)
 dbuf	*dyn;          /* Dynamic buffer header */
 char	*buf;          /* Pointer to data to be stored */
-int	length;        /* Number of bytes to store */
+long	length;        /* Number of bytes to store */
 {
 	Reg	dbufbuf	**h;
 	dbufbuf *d;
@@ -319,7 +319,7 @@ int	length;        /* Number of bytes to store */
 */
 char	*dbuf_map(dyn,length)
 dbuf	*dyn;                   /* Dynamic buffer header */
-int	*length;                /* Return number of bytes accessible */
+long	*length;                /* Return number of bytes accessible */
     {
 	if (dyn->head == NULL)
 	    {
@@ -335,9 +335,9 @@ int	*length;                /* Return number of bytes accessible */
 	return (dyn->head->data + dyn->offset);
     }
 
-int	dbuf_delete(dyn,length)
+long	dbuf_delete(dyn,length)
 dbuf	*dyn;                  /* Dynamic buffer header */
-int	length;                /* Number of bytes to delete */
+long	length;                /* Number of bytes to delete */
     {
 	dbufbuf *d;
 	int chunk;
@@ -390,20 +390,20 @@ int	length;                /* Number of bytes to delete */
 **		Negative return values indicate some unspecified
 **		error condition, rather fatal...
 */
-int	dbuf_get(dyn, buf, length)
+long	dbuf_get(dyn, buf, length)
 dbuf	*dyn;            /* Dynamic buffer header */
 char	*buf;            /* Pointer to buffer to receive the data */
-int	length;          /* Max amount of bytes that can be received */
+long	length;          /* Max amount of bytes that can be received */
     {
-	int	moved = 0;
-	int	chunk;
+	long	moved = 0;
+	long	chunk;
 	char	*b;
 
 	while (length > 0 && (b = dbuf_map(dyn, &chunk)) != NULL)
 	    {
 		if (chunk > length)
 			chunk = length;
-		bcopy(b, buf, (int)chunk);
+		bcopy(b, buf, (size_t)chunk);
 		(void)dbuf_delete(dyn, chunk);
 		buf += chunk;
 		length -= chunk;
@@ -413,10 +413,10 @@ int	length;          /* Max amount of bytes that can be received */
     }
 
 /*
-int	dbuf_copy(dyn, buf, length)
+long	dbuf_copy(dyn, buf, length)
 dbuf	*dyn;
 register char	*buf;
-int	length;
+long	length;
 {
 	register dbufbuf	*d = dyn->head;
 	register char	*s;
@@ -456,16 +456,16 @@ int	length;
 ** either a \r or \n prsent.  If so, copy as much as possible (determined by
 ** length) into buf and return the amount copied - else return 0.
 */
-int	dbuf_getmsg(dyn, buf, length)
+long	dbuf_getmsg(dyn, buf, length)
 dbuf	*dyn;
 char	*buf;
-register int	length;
+register long	length;
 {
 	dbufbuf	*d;
 	register char	*s;
-	register int	dlen;
-	register int	i;
-	int	copy;
+	register long	dlen;
+	register long	i;
+	long	copy;
 
 getmsg_init:
 	d = dyn->head;
@@ -504,7 +504,7 @@ getmsg_init:
 			if ((d = d->next))
 			    {
 				s = d->data;
-				i = MIN(DBUFSIZ, dlen);
+				i = MIN((long)DBUFSIZ, dlen);
 			    }
 		    }
 		else

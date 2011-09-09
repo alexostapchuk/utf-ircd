@@ -18,7 +18,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: ssl.c,v 1.7 2005/12/20 13:20:02 cj Exp $  
  */
 
 #include "os.h"
@@ -32,6 +31,18 @@
 #define SSL_READ	1
 #define SSL_WRITE	2
 #define SSL_ACCEPT	3
+
+#ifdef DEBUGMODE
+#define	_D_UNUSED_
+#else
+#define	_D_UNUSED_	_UNUSED_
+#endif
+
+#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
+#define	_B_UNUSED_	_UNUSED_
+#else
+#define	_B_UNUSED_
+#endif
 
 static int ssl_fatal(int, int, aClient *);
 extern int errno;
@@ -72,36 +83,47 @@ static void disable_ssl(int do_errors)
 static int add_rand_file(char *filename)
 {
     int readbytes;
+#ifdef WRITE_SEED_DATA
     int writebytes;
+#endif
 
-    if(readbytes = RAND_load_file(filename, 255))
+    if ((readbytes = RAND_load_file(filename, 255)))
     {
         Debug((DEBUG_DEBUG, "Got 255 random bytes from %s", filename));
     }
     else
     {
-        Debug((DEBUG_NOTICE, "Unable to retrieve any random data from %s", filename));
+        Debug((DEBUG_NOTICE,
+		"Unable to retrieve any random data from %s", filename));
     }
 #ifdef WRITE_SEED_DATA
     writebytes = RAND_write_file(WRITE_SEED_DATA);
-    if(writebytes == -1)
+    if (writebytes == -1)
+    {
         Debug((DEBUG_ERROR, "Failed to write strong random data to %s - "
             "may be a permissions or seeding problem", WRITE_SEED_DATA));
+    }
     else
-        Debug((DEBUG_DEBUG, "Wrote %d new random bytes to %s", writebytes, WRITE_SEED_DATA));
+    {
+        Debug((DEBUG_DEBUG, "Wrote %d new random bytes to %s",
+				writebytes, WRITE_SEED_DATA));
+    }
 #endif /* WRITE_SEED_DATA */
     return readbytes;
 }
 
-static int prng_seeded(int bytes)
+static int prng_seeded(int bytes _B_UNUSED_)
 {
 #if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-    if(RAND_status()){
-        Debug((DEBUG_DEBUG, "RAND_status claims sufficient entropy for the PRNG"));
+    if (RAND_status())
+    {
+        Debug((DEBUG_DEBUG,
+		"RAND_status claims sufficient entropy for the PRNG"));
         return 1;
     }
 #else
-    if(bytes >= 255) {
+    if (bytes >= 255)
+    {
         Debug((DEBUG_NOTICE, "Sufficient entropy in PRNG assumed (>= 255)"));
         return 1;
     }
@@ -112,10 +134,10 @@ static int prng_seeded(int bytes)
 static int prng_init(void)
 {
     int totbytes = 0;
-    int bytes = 0;
-
 #if SSLEAY_VERSION_NUMBER >= 0x0090581fL
 #ifdef EGD_SOCKET
+    int bytes = 0;
+
     if((bytes = RAND_egd(EGD_SOCKET)) == -1) {
         Debug((DEBUG_ERROR, "EGD Socket %s failed", EGD_SOCKET));
 	bytes = 0;
@@ -134,7 +156,8 @@ static int prng_init(void)
         return 0;
 #endif
     Debug((DEBUG_NOTICE, "PRNG seeded with %d bytes total", totbytes));
-    Debug((DEBUG_ERROR, "PRNG may not have been seeded with enough random bytes"));
+    Debug((DEBUG_ERROR,
+		"PRNG may not have been seeded with enough random bytes"));
     return -1; /* FAILED but we will deal with it*/
 }
 
@@ -182,7 +205,7 @@ int ssl_init(void)
 
 
 
-int ssl_rehash(void)
+void ssl_rehash(void)
 {
     if (sslable)
 	disable_ssl(0);
@@ -243,12 +266,15 @@ int ssl_write(aClient *acptr, const void *buf, int sz)
     return len;
 }
 
-int ssl_accept(aClient *acptr, int fd)
+int ssl_accept(aClient *acptr)
 {
 
     int ssl_err;
-    if((ssl_err = SSL_accept(acptr->ssl)) <= 0) {
-	switch(ssl_err = SSL_get_error(acptr->ssl, ssl_err)) {
+
+    if ((ssl_err = SSL_accept(acptr->ssl)) <= 0)
+    {
+	switch (ssl_err = SSL_get_error(acptr->ssl, ssl_err))
+	{
 	    case SSL_ERROR_SYSCALL:
 		if (errno == EINTR || errno == EWOULDBLOCK
 			|| errno == EAGAIN)
@@ -259,13 +285,11 @@ int ssl_accept(aClient *acptr, int fd)
 	    default:
 		return ssl_fatal(ssl_err, SSL_ACCEPT, acptr);
 	}
-	/* Never get here */
-	return -1;
     }
     return 1;
 }
 
-int ssl_shutdown(struct SSL *ssl) 
+int ssl_shutdown(SSL *ssl) 
 {
     int i;
     int retval = 0;
@@ -279,10 +303,12 @@ int ssl_shutdown(struct SSL *ssl)
     return retval;
 }
 
-static int ssl_fatal(int ssl_error, int where, aClient *sptr)
+static int ssl_fatal(int ssl_error, int where, aClient *sptr _D_UNUSED_)
 {
     int errtmp = errno;
+#if defined(USE_SYSLOG) || defined(DEBUGMODE)
     char *errstr = strerror(errtmp);
+#endif
     char *ssl_errstr, *ssl_func;
 #ifdef DEBUGMODE
     char buf[256];

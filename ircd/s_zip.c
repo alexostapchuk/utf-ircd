@@ -209,7 +209,8 @@ int	*length;
 char *	zip_buffer(cptr, buffer, length, flush)
 aClient	*cptr;
 char	*buffer;
-int	*length, flush;
+long	*length;
+int	flush;
 {
 	Reg	z_stream *zout = cptr->zip->out;
 	int	r;

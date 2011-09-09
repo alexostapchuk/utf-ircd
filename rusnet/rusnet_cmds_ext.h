@@ -11,16 +11,14 @@
  */
 #ifndef RUSNET_CMDS_H
 #define RUSNET_CMDS_H
-extern int m_codepage(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+extern int m_codepage(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[]);
 extern int m_force(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 extern int m_rmode(aClient *cptr, aClient *sptr, int parc, char *parv[]);
-extern int m_svsnick(aClient *cptr, aClient *sptr, int parc, char *parv[]);
-extern int m_svsmode(aClient *cptr, aClient *sptr, int parc, char *parv[]);
-extern int m_rcpage(aClient *cptr, aClient *sptr, int parc, char *parv[]);
+extern int m_svsnick(aClient *cptr, aClient *sptr _UNUSED_, int parc, char *parv[]);
+extern int m_svsmode(aClient *cptr, aClient *sptr _UNUSED_, int parc, char *parv[]);
+extern int m_rcpage(aClient *cptr, aClient *sptr _UNUSED_, int parc, char *parv[]);
 extern int m_nickserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 extern int m_chanserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 extern int m_memoserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
-extern int m_infoserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
-extern int m_statserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 extern int m_operserv(aClient *cptr, aClient *sptr, int parc, char *parv[]);
 #endif

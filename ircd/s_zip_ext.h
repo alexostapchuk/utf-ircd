@@ -32,7 +32,7 @@
 EXTERN int zip_init(aClient *cptr);
 EXTERN void zip_free(aClient *cptr);
 EXTERN char *unzip_packet(aClient *cptr, char *buffer, int *length);
-EXTERN char *zip_buffer(aClient *cptr, char *buffer, int *length,
+EXTERN char *zip_buffer(aClient *cptr, char *buffer, long *length,
 			     int flush);
 #endif /* ZIP_LINKS */
 #undef EXTERN

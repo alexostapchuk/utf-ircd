@@ -710,7 +710,8 @@ aClient	*cptr;
 	Debug((DEBUG_SEND, "sending [%s] to auth port %s.113",
 		authbuf, inetntoa((char *)&them.sin_addr)));
 #endif
-	if (write(cptr->authfd, authbuf, strlen(authbuf)) != strlen(authbuf))
+	if (write(cptr->authfd, authbuf, strlen(authbuf)) !=
+							(int)strlen(authbuf))
 	    {
 authsenderr:
 		ircstp->is_abad++;
@@ -790,8 +791,11 @@ Reg	aClient	*cptr;
 	cptr->count = 0;
 	cptr->authfd = -1;
 	ClearAuth(cptr);
+
 	if (len > 0)
+	{
 		Debug((DEBUG_INFO,"ident reply: [%s]", cptr->buffer));
+	}
 
 	if (!locp || !remp || !*ruser)
 	    {

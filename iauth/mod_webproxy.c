@@ -138,6 +138,7 @@ int cl, state;
  */
 static int 
 webproxy_check_cache(cl)
+int cl;
 {
 	struct webproxy_private *mydata = cldata[cl].instance->data;
 	struct proxylog **last, *pl;
@@ -266,7 +267,6 @@ webproxy_read(u_int cl)
 		webproxy_add_cache(cl, state);
 		return -1;
 	}
-	return 0;
 }
 
 /******************************** PUBLIC ************************************/
@@ -410,14 +410,14 @@ AnInstance *self;
 	struct webproxy_private *mydata = self->data;
 	char mybuf[256];
 	int len;
-	int i;
+	unsigned int i;
 
-	len=snprintf(mybuf, 256, "S webproxy port:open");
-	for (i=0;i<mydata->portcount;i++)
-		len+=snprintf(mybuf+len, 256-len, " %u:%u", 
+	len = snprintf(mybuf, 256, "S webproxy port:open");
+	for (i = 0; i < mydata->portcount; i++)
+		len += snprintf(mybuf + len, 256 - len, " %u:%u", 
 				mydata->ports[i], mydata->open[i]);
 
-	len+=snprintf(mybuf+len, 256-len, " closed %u noproxy %u",
+	len += snprintf(mybuf + len, 256 - len, " closed %u noproxy %u",
 			mydata->closed, mydata->noproxy);
 
 	sendto_ircd(mybuf);

@@ -390,10 +390,7 @@ char	*buffer;
 **	extracted from register_user for clarity
 **	early rejection of a user connection, with logging.
 */
-int
-ereject_user(cptr, shortm, longm)
-aClient *cptr;
-char shortm, *longm;
+int ereject_user(aClient *cptr, char shortm, char *longm)
 {
 #ifdef LOG_EVENTS
 	sendto_flog(cptr, shortm, "<none>",
@@ -1626,7 +1623,7 @@ nickkilldone:
 		sendto_serv_butone(cptr, ":%s NICK :%s", sptr->name, nick);
 
 		if (sptr->name[0])
-			(void)del_from_client_hash_table(sptr->name, sptr);
+			(void)del_from_client_hash_table(sptr);
 		(void)strcpy(sptr->name, nick);
 	    }
 	else
@@ -2149,12 +2146,8 @@ int oper;
 **	parv[1] = nickname mask list
 **	parv[2] = additional selection flag, only 'o' for now.
 */
-int	m_who(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_who(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 {
-	aChannel *chptr;
 	int	oper = parc > 2 ? (*parv[2] == 'o' ): 0; /* Show OPERS only */
 	int	penalty = 0;
 	char	*p, *mask, *channame;
@@ -2219,7 +2212,8 @@ char	*parv[];
 		
 		if (IsChannelName(channame))
 		{
-			chptr = find_channel(channame, NULL);
+			aChannel *chptr = find_channel(channame, NULL);
+
 			if (chptr)
 			{
 				who_channel(sptr, chptr, oper);
@@ -2272,12 +2266,8 @@ char	*parv[];
 
 /* send_whois() is used by m_whois() to send whois reply to sptr, for acptr */
 static void
-send_whois(sptr, acptr, parc, parv)
+send_whois(sptr, acptr)
 aClient	*sptr, *acptr;
-int     parc;
-char    *parv[];
-
-
 {
 	static anUser UnknownUser =
 	    {
@@ -2297,7 +2287,6 @@ char    *parv[];
 	    };
 	Link	*lp;
 	anUser	*user;
-	aChannel *chptr;
 	aClient *a2cptr;
 	int len, mlen;
 	char *name;
@@ -2326,7 +2315,8 @@ char    *parv[];
 	if (!IsRusnetServices(acptr))
 	    for (len = 0, lp = user->channel; lp; lp = lp->next)
 	    {
-		chptr = lp->value.chptr;
+		aChannel *chptr = lp->value.chptr;
+
 		if (((!IsAnonymous(chptr) || acptr == sptr) &&
 		    ShowChannel(sptr, chptr)) || IsAnOper(sptr))
 		    {
@@ -2414,7 +2404,6 @@ char	*parv[];
 {
 	Link	*lp;
 	aClient *acptr;
-	aChannel *chptr;
 	char	*nick, *tmp, *tmp2;
 	char	*p = NULL;
 	int	isop, found = 0;
@@ -2461,7 +2450,7 @@ char	*parv[];
 					   err_str(ERR_NOSUCHNICK, parv[0]),
 					   nick);
 			else
-				send_whois(sptr, acptr, parc, parv);
+				send_whois(sptr, acptr);
 			continue;
 		    }
 
@@ -2492,7 +2481,8 @@ char	*parv[];
 			for (lp = (acptr->user) ? acptr->user->channel : NULL;
 			     lp; lp = lp->next)
 			    {
-				chptr = lp->value.chptr;
+				aChannel *chptr = lp->value.chptr;
+
 				if (IsAnOper(sptr))
 				    {
 					showperson = 1;
@@ -2517,7 +2507,7 @@ char	*parv[];
 
 			found |= 0x10;
 
-			send_whois(sptr, acptr, parc, parv);
+			send_whois(sptr, acptr);
 		    }
 		if (!(found & 0x10))
 		    {
@@ -3259,10 +3249,7 @@ char	*parv[];
 **	parv[3] = server id & options (server only)
 **	parv[4] = (optional) link options (server only)                  
 */
-int	m_pass(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_pass(aClient *cptr, aClient *sptr _UNUSED_, int parc, char *parv[])
     {
 	char *password = parc > 1 ? parv[1] : NULL;
 
@@ -3298,10 +3285,8 @@ char	*parv[];
  * the need for complicated requests like WHOIS. It returns user/host
  * information only (no spurious AWAY labels or channels).
  */
-int	m_userhost(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_userhost(aClient *cptr _UNUSED_, aClient *sptr,
+					int parc, char *parv[])
 {
 	char	*p = NULL;
 	aClient	*acptr;
@@ -3364,14 +3349,11 @@ char	*parv[];
  * ISON :nicklist
  */
 
-int	m_ison(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_ison(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 {
 	Reg	aClient *acptr;
 	Reg	char	*s, **pav = parv;
-	Reg	int	len = 0, i;
+	Reg unsigned int len = 0, i;
 	char	*p = NULL;
 
 	if (parc < 2)

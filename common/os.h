@@ -226,8 +226,7 @@
 # include <wchar.h>
 #endif
 
-#if defined(USE_OPENSSL) && !defined(CLIENT_COMPILE) \
-    && !defined(CONTRIB_COMPILE)
+#if defined(USE_OPENSSL) && !defined(CONTRIB_COMPILE)
 #include <openssl/rsa.h>      
 #include <openssl/crypto.h>
 #include <openssl/x509.h>

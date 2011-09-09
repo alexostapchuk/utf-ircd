@@ -37,7 +37,7 @@ extern time_t timeofday;
 #else /* S_BSD_C */
 #define EXTERN
 #endif /* S_BSD_C */
-EXTERN void add_local_domain (char *hname, int size);
+EXTERN void add_local_domain (char *hname, u_int size);
 EXTERN void report_error (char *text, aClient *cptr);
 EXTERN int inetport (aClient *cptr, char *ip, char *ipmask, int port,
 		int dolisten);

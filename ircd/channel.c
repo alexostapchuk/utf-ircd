@@ -27,7 +27,7 @@
 aChannel *channel = NullChn;
 
 static	void	add_invite(aClient *, aChannel *);
-static	int	can_join(aClient *, aChannel *, char *);
+static	u_int	can_join(aClient *, aChannel *, char *);
 void	channel_modes(aClient *, char *, char *, aChannel *);
 static	int	check_channelmask(aClient *, aClient *, char *);
 static	aChannel *get_channel(aClient *, char *, int);
@@ -35,9 +35,9 @@ static	int	set_mode(aClient *, aClient *, aChannel *, int *, int,\
 				char **, char *,char *);
 static	void	free_channel(aChannel *);
 
-static	int	add_modeid(int, aClient *, aChannel *, char *);
-static	int	del_modeid(int, aChannel *, char *);
-static	Link	*match_modeid(int, aClient *, aChannel *);
+static	int	add_modeid(u_int, aClient *, aChannel *, char *);
+static	int	del_modeid(u_int, aChannel *, char *);
+static	Link	*match_modeid(u_int, aClient *, aChannel *);
 
 static	char	*PartFmt = ":%s PART %s :%s";
 
@@ -149,7 +149,7 @@ Reg     char    *nick, *name, *host;
  */
 
 static	int	add_modeid(type, cptr, chptr, modeid)
-int type;
+u_int type;
 aClient	*cptr;
 aChannel *chptr;
 char	*modeid;
@@ -229,7 +229,7 @@ char	*modeid;
  * if modeid is null, delete all ids belonging to chptr.
  */
 static	int	del_modeid(type, chptr, modeid)
-int type;
+u_int type;
 aChannel *chptr;
 char	*modeid;
 {
@@ -285,7 +285,7 @@ char	*modeid;
  * match_modeid - returns a pointer to the mode structure if matching else NULL
  */
 static	Link	*match_modeid(type, cptr, chptr)
-int type;
+u_int type;
 aClient *cptr;
 aChannel *chptr;
 {
@@ -892,7 +892,7 @@ aChannel *chptr;
 {
 	Reg	Link	*lp;
 	Reg	aClient *c2ptr;
-	Reg	int	cnt = 0, len = 0, nlen;
+	Reg	size_t	cnt = 0, len = 0, nlen;
 
 	if (check_channelmask(&me, cptr, chptr->chname) == -1)
 		return;
@@ -1106,7 +1106,7 @@ int	parc, *penalty;
 char	*parv[], *mbuf, *pbuf;
 {
 	static	Link	chops[MAXMODEPARAMS+3];
-	static	int	flags[] = {
+	static	u_int32_t flags[] = {
 				MODE_PRIVATE,    'p', MODE_SECRET,     's',
 				MODE_MODERATED,  'm', MODE_NOPRIVMSGS, 'n',
 				MODE_TOPICLIMIT, 't', MODE_INVITEONLY, 'i',
@@ -1117,8 +1117,8 @@ char	*parv[], *mbuf, *pbuf;
 
 	Reg	Link	*lp = NULL;
 	Reg	char	*curr = parv[0], *cp = NULL;
-	Reg	int	*ip;
-	u_int	whatt = MODE_ADD;
+	Reg u_int32_t	*ip;
+	u_int32_t whatt = MODE_ADD;
 	int	limitset = 0, count = 0, chasing = 0;
 	int	nusers = 0, is_op, ischop, new, len, keychange = 0, opcnt = 0;
 	aClient *who;
@@ -1652,15 +1652,16 @@ char	*parv[], *mbuf, *pbuf;
 		}
 	    } /* end of while loop for MODE processing */
 
-	whatt = 0;
+	/* reuse compat for chasing modes */
+	compat = 0;
 
 	for (ip = flags; *ip; ip += 2)
 		if ((*ip & new) && !(*ip & oldm.mode))
 		    {
-			if (whatt == 0)
+			if (compat == 0)
 			    {
 				*mbuf++ = '+';
-				whatt = 1;
+				compat = 1;
 			    }
 			if (ischop)
 			  {
@@ -1685,10 +1686,10 @@ char	*parv[], *mbuf, *pbuf;
 	for (ip = flags; *ip; ip += 2)
 		if ((*ip & oldm.mode) && !(*ip & new))
 		    {
-			if (whatt != -1)
+			if (compat != -1)
 			    {
 				*mbuf++ = '-';
-				whatt = -1;
+				compat = -1;
 			    }
 			if (ischop)
 				mode->mode &= ~*ip;
@@ -1697,10 +1698,10 @@ char	*parv[], *mbuf, *pbuf;
 
 	if (limitset && !nusers && mode->limit)
 	    {
-		if (whatt != -1)
+		if (compat != -1)
 		    {
 			*mbuf++ = '-';
-			whatt = -1;
+			compat = -1;
 		    }
 		mode->mode &= ~MODE_LIMIT;
 		mode->limit = 0;
@@ -1919,7 +1920,7 @@ char	*parv[], *mbuf, *pbuf;
 	return ischop ? count : -count;
 }
 
-static	int	can_join(sptr, chptr, key)
+static	u_int	can_join(sptr, chptr, key)
 aClient	*sptr;
 Reg	aChannel *chptr;
 char	*key;
@@ -2257,7 +2258,7 @@ aChannel *chptr;
 			channel = chptr->nextch;
 		if (chptr->nextch)
 			chptr->nextch->prevch = chptr->prevch;
-		del_from_channel_hash_table(chptr->chname, chptr);
+		del_from_channel_hash_table(chptr);
 
 		if (*chptr->chname == '!' && close_chid(chptr->chname+1))
 			cache_chid(chptr);
@@ -2284,7 +2285,7 @@ char	*parv[];
 	Reg	Link	*lp;
 	Reg	aChannel *chptr;
 	Reg	char	*name, *key = NULL;
-	int	i, j, tmplen, flags = 0;
+	u_int	i, j, tmplen, flags = 0;
 	char	*p = NULL, *p2 = NULL, *s, chop[5];
 
 	if (parc < 2 || *parv[1] == '\0')
@@ -2990,7 +2991,7 @@ char	*parv[];
 				/* We could've decreased size by 1 when
 				** calculating it, but I left it like that
 				** for the sake of clarity. --B. */
-				if (strlen(buf) + strlen(name) + 1
+				if ((int)(strlen(buf) + strlen(name) + 1)
 					> size)
 				{
 					/* Anyway, if it would not fit in the
@@ -3353,10 +3354,7 @@ char	*parv[];
 **	parv[1] - user to invite
 **	parv[2] - channel number
 */
-int	m_invite(cptr, sptr, parc, parv)
-aClient *cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_invite(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 {
 	aClient *acptr;
 	aChannel *chptr;
@@ -3734,7 +3732,7 @@ aClient	*cptr, *user;
 {
 	Reg	Link	*lp;
 	Reg	aChannel *chptr;
-	Reg	int	cnt = 0, len = 0, clen;
+	Reg	u_int	cnt = 0, len = 0, clen;
 	char	 *mask;
 
 	*buf = ':';
@@ -4015,7 +4013,7 @@ void transcode_channels (conversion_t *old)
   for (chptr = channel; chptr; chptr = chptr->nextch)
   {
     /* convert channel name... */
-    del_from_channel_hash_table(chptr->chname, chptr);
+    del_from_channel_hash_table(chptr);
     conv_transcode_realloc(old, chptr->chname, buff);
     add_to_channel_hash_table(chptr->chname, chptr);
     conv_transcode(old, chptr->topic, buff);

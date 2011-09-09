@@ -133,6 +133,7 @@ int cl, state;
  */
 static int
 dnsbl_check_cache(cl)
+int cl;
 {
     struct dnsbl_private *mydata = cldata[cl].instance->data;
     struct hostlog **last, *pl;
@@ -371,7 +372,7 @@ dnsbl_start(cl)
 u_int cl;
 {
     struct dnsbl_private *mydata = cldata[cl].instance->data;
-    struct dnsbl_list *l, *m;
+    struct dnsbl_list *l, *m = NULL;
     char *req;
     char *ip, *c1, *c2, *c3;
     int  ipl;
@@ -424,7 +425,7 @@ DebugLog((ALOG_DNSBL, 0,
 
     if (hst && m->is_whitelist == 0) /* do not cache whitelist hits 'cause */
 	{				/* we won't suffer much from that */
-	    int c = mydata->rejects;
+	    unsigned int c = mydata->rejects;
 
 	    dnsbl_succeed(cl, m->host, hst->h_addr_list[0]);
 	    dnsbl_add_cache(cl, (c == mydata->rejects) ?
@@ -463,7 +464,7 @@ u_int cl;
 	*/
 	DebugLog((ALOG_DNSBL, 0,
 		      "dnsbl_work(%d) invoked but why?", cl ));
-	return 0;
+	return cl;
 }
 
 /*
@@ -474,8 +475,7 @@ u_int cl;
  *	closing file descriptors.
  */
 void
-dnsbl_clean(cl)
-u_int cl;
+dnsbl_clean(u_int cl _A_UNUSED_)
 {
     DebugLog((ALOG_DNSBL, 0, "dnsbl_clean(%d): cleaning up", cl));
     /*

@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_id.c,v 1.7 2010-11-10 13:38:39 gvs Exp $
  */
 
 
@@ -33,7 +32,7 @@
 static unsigned char id_alphabet[CHIDNB+1] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890A";
 
-static unsigned int alphabet_id[256] =
+static int alphabet_id[256] =
 	{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,

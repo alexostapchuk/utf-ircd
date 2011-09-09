@@ -149,6 +149,7 @@ int cl, state;
  */
 static int
 socks_check_cache(cl)
+int cl;
 {
     struct socks_private *mydata = cldata[cl].instance->data;
     struct proxylog **last, *pl;
@@ -506,9 +507,6 @@ again:
 		return 0;
 	else
 		return socks_start(cl);
-
-	/* not reached */
-	return 0;
 }
 
 /******************************** PUBLIC ************************************/

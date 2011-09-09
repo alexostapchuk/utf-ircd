@@ -499,10 +499,7 @@ char	*parv[];
 ** parv[1] - string to match names against
 ** parv[2] - type of service
 */
-int	m_servlist(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_servlist(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 {
 	Reg	aService *sp;
 	Reg	aClient *acptr;
@@ -684,10 +681,7 @@ char	*parv[];
 ** parv[1] - string to match name against
 ** parv[2] - string to send to service
 */
-int	m_squery(cptr, sptr, parc, parv)
-aClient	*cptr, *sptr;
-int	parc;
-char	*parv[];
+int	m_squery(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 {
 	aClient *acptr;
 

@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: dbuf_def.h,v 1.6 2010-11-10 13:38:39 gvs Exp $
  */
 
 #define	DBUF_TAIL
@@ -38,8 +37,8 @@
 #if !defined(_SEQUENT_)
 typedef struct dbuf
     {
-	u_int	length;	/* Current number of bytes stored */
-	u_int	offset;	/* Offset to the first byte */
+	long	length;	/* Current number of bytes stored */
+	long	offset;	/* Offset to the first byte */
 	struct	dbufbuf *head;	/* First data buffer, if length > 0 */
 #ifdef DBUF_TAIL
 	/* added by mnystrom@mit.edu: */
@@ -49,8 +48,8 @@ typedef struct dbuf
 #else
 typedef struct dbuf
     {
-        uint   length; /* Current number of bytes stored */
-        uint   offset; /* Offset to the first byte */
+        long   length; /* Current number of bytes stored */
+        long   offset; /* Offset to the first byte */
         struct  dbufbuf *head;  /* First data buffer, if length > 0 */
 #ifdef DBUF_TAIL
 	/* added by mnystrom@mit.edu: */

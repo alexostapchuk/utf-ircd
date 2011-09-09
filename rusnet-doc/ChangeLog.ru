@@ -2,6 +2,34 @@
 --------------------------------------------------------------------------
 Версия 2.0
 --------------
+2011-09-09 erra <erra@ya.ru>
+	* common/conversion.c, common/dbuf.c, common/dbuf_def.h,
+		common/dbuf_ext.h, common/match.c, common/parse.c,
+		common/send.c, common/struct_def.h, common/sys_def.h,
+		iauth/a_defines.h, iauth/a_io.c, iauth/a_io_ext.h,
+		iauth/a_log.c, iauth/a_log_ext.h, iauth/iauth.c,
+		iauth/mod_dnsbl.c, iauth/mod_lhex.c, iauth/mod_socks.c,
+		iauth/mod_webproxy.c, ircd/channel.c, ircd/hash.c,
+		ircd/hash_ext.h, ircd/ircd.c, ircd/ircd_signal.c, ircd/res.c,
+		ircd/res_init.c, ircd/res_mkquery.c, ircd/res_mkquery_ext.h,
+		ircd/s_auth.c, ircd/s_bsd.c, ircd/s_bsd_ext.h, ircd/s_conf.c,
+		ircd/s_conf_ext.h, ircd/s_id.c, ircd/s_misc.c, ircd/s_serv.c,
+		ircd/s_serv_ext.h, ircd/s_service.c, ircd/s_service_ext.h,
+		ircd/s_user.c, ircd/s_user_ext.h, ircd/s_zip.c,
+		ircd/s_zip_ext.h, ircd/ssl.c, ircd/ssl.h, ircd/whowas.c,
+		iserv/iserv.c, rusnet/rusnet_cmds.c, rusnet/rusnet_cmds_ext.h,
+		rusnet/rusnet_virtual.c: массовая зачистка кода
+	* support/configure, support/configure.in: для gcc добавлен параметр
+			сборки -Wextra
+	* support/Makefile.in: удалён клиент
+
+2011-09-08 erra <erra@ya.ru>
+	* common/match.c: параметры вызова match() обрабатываются idn_encode,
+		если задано USE_LIBIDN
+	* common/send.c: скорректирован вызов bzero по массиву sentalong
+	* common/support.c, ircd/res_comp.c: зачистка кода, порождающего
+		предупреждения при сборке
+
 2011-09-07 erra <erra@ya.ru>
 	* common/send.c: подмена цветного сообщения в QUIT для каналов
 			в режиме +c

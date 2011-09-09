@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: a_log_ext.h,v 1.6 2005/08/23 22:28:22 skold Exp $
  */
 
 /*  This file contains external definitions for global variables and functions
@@ -35,9 +34,14 @@
 # define EXTERN
 #endif /* A_LOG_C */
 
+#ifdef	USE_SYSLOG
+#define	_I_UNUSED_
+#else
+#define	_I_UNUSED_	_UNUSED_
+#endif
+
 EXTERN void init_filelogs(void);
 EXTERN void init_syslog(void);
-EXTERN void vsendto_log (int, int, char *, va_list);
-EXTERN void sendto_log (int, int, char *, ...);
+EXTERN void sendto_log (int, int _I_UNUSED_, char *, ...);
 
 #undef EXTERN

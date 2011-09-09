@@ -50,7 +50,7 @@ int     serverbooting = 1;
 char	debugmode[4] = "";		/*  -"-    -"-   -"-   -"- */
 char	*sbrk0;				/* initial sbrk(0) */
 char	*tunefile = IRCDTUNE_PATH;
-volatile static int restart_iauth = 0;
+static volatile int restart_iauth = 0;
 int 	dorehash = 0;
 int	dorestart = 0;
 #ifdef USE_SSL
@@ -109,8 +109,10 @@ char	*mesg;
 		Debug((DEBUG_DEBUG, "Waiting for slaves:"));
 		time_slave = timeofday;
 		if (wait(NULL) > -1)
-			Debug((DEBUG_DEBUG, 
-			"Some slaves were alive... But since we are here, they are already dead"));
+		{
+			Debug((DEBUG_DEBUG, "Some slaves were alive... But "
+				"since we are here, they are already dead"));
+		}
 		Debug((DEBUG_DEBUG, "Time waited: %d secs", timeofday - time_slave));			   
 		(void)execv(IRCD_PATH, myargv);
 #ifdef USE_SYSLOG
@@ -468,13 +470,19 @@ time_t	currenttime;
 		    {
 			if (IsPerson(cptr))
 			    {
-				kflag = check_tlines(cptr, rehashed, &reason, cptr->name, &kconf, NULL);
+				kflag = check_tlines(cptr, rehashed, &reason,
+						cptr->name, &kconf, NULL);
 #ifdef RUSNET_RLINES
 				if (!kflag)
-	    			    rflag = check_tlines(cptr, rehashed, &reason, cptr->name, &rconf, NULL);
+	    			    rflag = check_tlines(cptr, rehashed, &reason,
+						cptr->name, &rconf, NULL);
 				if (rflag)
-				    Debug((DEBUG_DEBUG, "Found R-line for user %s!%s@%s", cptr->name,
-				                        cptr->user->username, cptr->sockhost));				
+				{
+				    Debug((DEBUG_DEBUG,
+					"Found R-line for user %s!%s@%s",
+					cptr->name, cptr->user->username,
+							cptr->sockhost));
+				}
 #endif
 			    }
 			else
@@ -1292,7 +1300,7 @@ void	io_loop()
 	if (dorehash)
 	    {	/* Only on signal, not on oper /rehash */
 		ircd_writetune(tunefile);
-		(void)rehash(&me, &me, 1, REHASH_ALL);
+		(void)rehash(1, REHASH_ALL);
 		dorehash = 0;
 	    }
 	if (restart_iauth || timeofday >= nextiarestart)

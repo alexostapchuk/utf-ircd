@@ -54,6 +54,7 @@ aTarget	*mask;
 char	*ipaddr;
 {
 #ifdef INET6
+	/* TODO: write IPv6 mask match */
 	return 1;
 #else
         int i1, i2, i3, i4;
