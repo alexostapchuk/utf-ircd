@@ -1345,8 +1345,10 @@ void	open_debugfile(void)
 
 	if (debuglevel >= 0)
 	    {
-		(void)printf("isatty = %d ttyname = %#x\n",
-			isatty(2), (u_int)ttyname(2));
+		char *tty = ttyname(2);
+
+		(void)printf("isatty = %d ttyname = %s (%#x)\n",
+			isatty(2), tty, (unsigned long) tty);
 		if (!(bootopt & BOOT_TTY)) /* leave debugging output on fd 2 */
 		    {
 			// (void)truncate(IRCDDBG_PATH, 0);
@@ -1359,9 +1361,13 @@ void	open_debugfile(void)
 				(void)close(fd); 
 			    }
 		    }
+
+		/* refresh terminal name */
+		tty = ttyname(2);
+
 		Debug((DEBUG_FATAL, "Debug: File <%s> Level: %d at %s",
 			( (!(bootopt & BOOT_TTY)) ? IRCDDBG_PATH :
-			(isatty(2) && ttyname(2)) ? ttyname(2) : "FD2-Pipe"),
+			(isatty(2) && tty) ? tty : "FD2-Pipe"),
 			debuglevel, myctime(time(NULL))));
 	    }
 #endif

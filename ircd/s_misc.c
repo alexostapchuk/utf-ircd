@@ -768,18 +768,28 @@ char	*comment;
 		*/
 		if (sptr->user)
 		    {
+			u_int8_t	has_quit, is_killed;
+
 			if (IsInvisible(sptr))
 				istat.is_user[1]--;
 			else
 				istat.is_user[0]--;
+
 			if (IsAnOper(sptr))
 				istat.is_oper--;
+
                         sendto_common_channels(sptr, ":%s QUIT :%s",
                                                sptr->name, comment);
+
 			if (!(acptr = cptr ? cptr : sptr->from))
 				acptr = sptr;
+
+			has_quit	= (sptr->flags & FLAGS_QUIT) ? 1 : 0;
+			is_killed	= (sptr->flags & FLAGS_KILLED) ? 1 : 0;
+
 			while ((lp = sptr->user->channel))
 			    {
+				aChannel *chptr = lp->value.chptr;
 				/*
 				** Mark channels from where remote chop left,
 				** this will eventually lock the channel.
@@ -788,23 +798,30 @@ char	*comment;
 				*/
 				if (sptr != cptr)
 				{
-					if (*lp->value.chptr->chname == '!')
+					if (*chptr->chname == '!')
 					    {
-						if (!(sptr->flags & FLAGS_QUIT) && !(sptr->flags & FLAGS_KILLED))
-							lp->value.chptr->history = timeofday + LDELAYCHASETIMELIMIT;
+						if (!has_quit && !is_killed)
+							chptr->history =
+								timeofday +
+							LDELAYCHASETIMELIMIT;
 					    }
 					else if (
 #ifndef BETTER_CDELAY
-						 !(sptr->flags & FLAGS_QUIT) &&
-						 !(sptr->flags & FLAGS_KILLED) &&
+						 !has_quit && !is_killed &&
 #endif
-						 is_chan_op(sptr, lp->value.chptr))
-						lp->value.chptr->history = timeofday + DELAYCHASETIMELIMIT;
+						 is_chan_op(sptr, chptr))
+						chptr->history =
+							timeofday +
+							DELAYCHASETIMELIMIT;
 				}
-				if (IsAnonymous(lp->value.chptr) &&
-				    !IsQuiet(lp->value.chptr))
-					sendto_channel_butserv(lp->value.chptr, sptr, ":%s PART %s :None", sptr->name, lp->value.chptr->chname);
-				remove_user_from_channel(sptr,lp->value.chptr);
+
+				if (IsAnonymous(chptr) && !IsQuiet(chptr))
+					sendto_channel_butserv(chptr, sptr,
+							":%s PART %s :None",
+								sptr->name,
+								chptr->chname);
+
+				remove_user_from_channel(sptr, chptr);
 			    }
 
 			/* Clean up invitefield */
@@ -814,8 +831,7 @@ char	*comment;
 
 			/* Add user to history */
 #ifndef BETTER_NDELAY
-			add_history(sptr, (sptr->flags & FLAGS_QUIT) ? 
-				    &me : NULL);
+			add_history(sptr, (has_quit) ? &me : NULL);
 #else
 			add_history(sptr, (sptr == cptr) ? &me : NULL);
 #endif

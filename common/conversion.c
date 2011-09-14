@@ -21,7 +21,7 @@
 #include "s_defines.h"
 #include "s_externs.h"
  
-#if defined(__GNUC__) && !defined(SOLARIS_10UP)
+#if defined(__GNUC__) && !defined(SOLARIS_10UP) && !defined(__FreeBSD__)
 #define _ICONV_CHAR_	(char ** __restrict__)
 #else	/* __GNUC__ */
 #define _ICONV_CHAR_	(const char **)

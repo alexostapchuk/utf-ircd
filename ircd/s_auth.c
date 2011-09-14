@@ -704,7 +704,7 @@ aClient	*cptr;
 
 #ifdef INET6
 	Debug((DEBUG_SEND, "sending [%s] to auth port %s.113",
-		authbuf, inet_ntop,(AF_INET6, (char *)&them.sin6_addr,
+		authbuf, inet_ntop(AF_INET6, (char *)&them.sin6_addr,
 				    mydummy, MYDUMMY_SIZE)));
 #else
 	Debug((DEBUG_SEND, "sending [%s] to auth port %s.113",

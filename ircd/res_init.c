@@ -60,12 +60,6 @@
 #include "s_externs.h"
 #undef RES_INIT_C
 
-#ifdef DEBUG
-#define	_D_UNUSED_
-#else
-#define	_D_UNUSED_	_UNUSED_
-#endif
-
 /*-------------------------------------- info about "sortlist" --------------
  * Marc Majka		1994/04/16
  * Allan Nathanson	1994/10/29 (BIND 4.9.3.x)

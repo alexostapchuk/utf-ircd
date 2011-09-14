@@ -2383,7 +2383,7 @@ aClient	*sptr, *acptr;
 #if defined(EXTRA_NOTICES) && defined(WHOIS_NOTICES)
 	if (IsAnOper(acptr) && acptr != sptr)
 	    sendto_one(acptr, ":%s NOTICE %s :WHOIS on YOU requested by %s "
-			"(%s@%s) [%s]", ME, acptr->name, parv[0],
+			"(%s@%s) [%s]", ME, acptr->name, sptr->name,
 			sptr->user->username, sptr->sockhost,
 			sptr->user->server);
 #endif

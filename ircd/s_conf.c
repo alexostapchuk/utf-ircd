@@ -1108,7 +1108,7 @@ char	*orig;
 		*s = '\0';
 		len = strlen(orig) + 2;	/* +2 for '@' and '\0' */
 		buf = (char *)MyMalloc(len);
-		(void *)strcpy(buf, orig);
+		strcpy(buf, orig);
 		buf[len - 2] = '@';
 		buf[len - 1] = '\0'; 
 		*s = '@';

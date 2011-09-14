@@ -152,6 +152,7 @@ CHKCONF_OBJS = chkconf.o
 CHKCONF = chkconf
 CLIENT_DEPS = setup.h config.h ../common/struct_def.h
 COMMON_DEPS = config.h setup.h
+MATCH_DEPS = ../common/match.c ../common/collsyms.h ../common/sm_loop.c
 SERVER_DEPS = $(COMMON_DEPS) ../ircd/s_defines.h ../ircd/s_externs.h
 IAUTH_DEPS = $(COMMON_DEPS) ../iauth/a_defines.h ../iauth/a_externs.h
 ISERV_DEPS = $(COMMON_DEPS) ../iserv/i_defines.h ../iserv/i_externs.h
@@ -253,7 +254,7 @@ install-server: server
 install-locale: @irc_cv_locale@
 	/bin/cp -r locale $(ircd_locale_dir)
 
-clmatch.o: ../common/match.c $(CLIENT_DEPS)
+clmatch.o: $(MATCH_DEPS) $(CLIENT_DEPS)
 	$(CC) $(C_CFLAGS) -c -o $@ ../common/match.c
 
 clsupport.o: ../common/support.c $(CLIENT_DEPS) ../common/patchlevel.h
@@ -266,7 +267,7 @@ dbuf.o: ../common/dbuf.c $(SERVER_DEPS)
 fileio.o: ../common/fileio.c $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -c -o $@ ../common/fileio.c
 
-match.o: ../common/match.c $(SERVER_DEPS)
+match.o: $(MATCH_DEPS) $(SERVER_DEPS)
 	$(CC) $(S_CFLAGS) -c -o $@ ../common/match.c
 
 packet.o: ../common/packet.c $(SERVER_DEPS)

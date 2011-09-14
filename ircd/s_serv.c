@@ -3344,27 +3344,27 @@ single_line: /* never reached in this code -skold */
 #endif
 }
 
-#ifdef DEBUGMODE
+#if 0
 /*
  * Actually this one is never called, so it can be removed safely
  * if nobody finds it useful  --erra
  *
  */
-int check_tconfs() {
+void check_tconfs() {
     aConfItem **confstart;
     aConfItem *tmp;
     confstart = &kconf;
-    while (tmp = *confstart) {
+    while ((tmp = *confstart)) {
 	Debug((DEBUG_INFO, "Kconf: %s %s %s", tmp->host, tmp->name, tmp->passwd));
 	confstart = &(tmp->next);
     }
     confstart = &econf;
-    while (tmp = *confstart) {
+    while ((tmp = *confstart)) {
 	Debug((DEBUG_INFO, "Econf: %s %s %s", tmp->host, tmp->name, tmp->passwd));
 	confstart = &(tmp->next);
     }
     confstart = &rconf;
-    while (tmp = *confstart) {
+    while ((tmp = *confstart)) {
 	Debug((DEBUG_INFO, "Rconf: %s %s %s", tmp->host, tmp->name, tmp->passwd));
 	confstart = &(tmp->next);
     }

@@ -2,6 +2,36 @@
 --------------------------------------------------------------------------
 Версия 2.0
 --------------
+2011-09-14 erra <erra@ya.ru>
+	* common/match.c: задано MBS_VALUE для инициализации mbtstat_t
+	* ircd/channel.c: не отправляем +R старым серверам; восстановлено
+			назначение режимов (влияло на режимы с параметрами)
+
+2011-09-13 erra <erra@ya.ru>
+	* common/send.c: удалён код запрета цветных сообщений (содержит ошибки)
+	* ircd/channel.c: подстановка сообщения в PART для каналов в режиме +c
+	* ircd/s_user.c: исправлена сборка с WHOIS_NOTICES
+
+2011-09-12 erra <erra@ya.ru>
+	* common/collsyms.h, common/match.c, common/sm_loop.c: для проверки
+			соответствия строк шаблону использован мультибайтный
+			код из GNU bash
+	* support/Makefile.in: поправлены зависимости для match.o
+
+2011-09-11 erra <erra@ya.ru>
+	* common/conversion.c: определение ICONV_CHAR поправлено для FreeBSD
+	* common/os.h: #include <wctype.h> для FreeBSD
+	* ircd/ircd.c: поправлено использование ttyname (зачистка кода)
+	* ircd/res_init.c: отменено переопределение _D_UNUSED_ (зачистка кода)
+	* ircd/s_auth.c: исправлена опечатка в отладочном коде (зачистка кода)
+	* ircd/s_conf.c: отменено неиспользуемое преобразование
+			типа (зачистка кода)
+	* ircd/s_id.c: преобразование беззнакового типа (зачистка кода)
+	* ircd/s_serv.c: функция check_tconfs удалена под #if 0
+			как неиспользуемая
+	* support/configure, support/configure.in: для FreeBSD добавлен
+			параметр -I/usr/local/include для определения idna.h
+
 2011-09-09 erra <erra@ya.ru>
 	* common/conversion.c, common/dbuf.c, common/dbuf_def.h,
 		common/dbuf_ext.h, common/match.c, common/parse.c,

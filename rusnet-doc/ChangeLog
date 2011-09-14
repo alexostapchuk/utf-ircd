@@ -1,5 +1,32 @@
 Version 2.0
 --------------
+2011-09-14 erra <erra@ya.ru>
+	* common/match.c: MBS_VALUE definition for mbtstat_t initialization
+	* ircd/channel.c: discard mode +R for older servers; restore mode
+			assignment (affected modes with args)
+
+2011-09-13 erra <erra@ya.ru>
+	* common/send.c: colorless code cancelled (erroneous)
+	* ircd/channel.c: discard colorful PART message for colorless channels
+	* ircd/s_user.c: whois opnotice fixed
+
+2011-09-12 erra <erra@ya.ru>
+	* common/collsyms.h, common/match.c, common/sm_loop.c: GNU bash wchar
+			matching code imported
+	* support/Makefile.in: match.o dependencies updated
+
+2011-09-11 erra <erra@ya.ru>
+	* common/conversion.c: ICONV_CHAR definition adjusted for FreeBSD
+	* common/os.h: #include <wctype.h> for FreeBSD
+	* ircd/ircd.c: ttyname usage refined (code clearance)
+	* ircd/res_init.c: redefinition of _D_UNUSED_ cancelled (code clearance)
+	* ircd/s_auth.c: typo fixed in debugging code (code clearance)
+	* ircd/s_conf.c: unused type conversion cancelled (code clearance)
+	* ircd/s_id.c: signed/unsigned conversion (code clearance)
+	* ircd/s_serv.c: check_tconfs marked out (not really used)
+	* support/configure, support/configure.in: -I/usr/local/include for
+			idna.h under FreeBSD
+
 2011-09-09 erra <erra@ya.ru>
 	* common/conversion.c, common/dbuf.c, common/dbuf_def.h,
 		common/dbuf_ext.h, common/match.c, common/parse.c,

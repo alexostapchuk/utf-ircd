@@ -654,6 +654,10 @@ AC_ARG_WITH(libidn, AC_HELP_STRING([--with-libidn=DIR],
 	if test "$libidn" = "yes"
 	then
 		case `uname` in
+		*BSD)
+			CFLAGS="${CFLAGS} -I/usr/local/include"
+			CPPFLAGS="${CPPFLAGS} -I/usr/local/include"
+		;;
 		SunOS)
 			CFLAGS="${CFLAGS} -I/usr/include/idn"
 			CPPFLAGS="${CPPFLAGS} -I/usr/include/idn"

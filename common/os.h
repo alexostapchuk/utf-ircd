@@ -222,8 +222,13 @@
 # include <netinfo/ni.h>
 #endif
 
-#if !defined(USE_OLD8BIT) && defined(HAVE_WCHAR_H)
-# include <wchar.h>
+#ifndef	USE_OLD8BIT
+# ifdef	HAVE_WCHAR_H
+#  include <wchar.h>
+# endif
+# ifdef	__FreeBSD__
+#  include <wctype.h>
+# endif
 #endif
 
 #if defined(USE_OPENSSL) && !defined(CONTRIB_COMPILE)

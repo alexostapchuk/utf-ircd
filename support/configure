@@ -6914,6 +6914,10 @@ fi
 	if test "$libidn" = "yes"
 	then
 		case `uname` in
+		*BSD)
+			CFLAGS="${CFLAGS} -I/usr/local/include"
+			CPPFLAGS="${CPPFLAGS} -I/usr/local/include"
+		;;
 		SunOS)
 			CFLAGS="${CFLAGS} -I/usr/include/idn"
 			CPPFLAGS="${CPPFLAGS} -I/usr/include/idn"

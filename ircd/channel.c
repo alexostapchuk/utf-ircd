@@ -730,7 +730,8 @@ aChannel *chptr;
 		*mbuf++ = 'q';
 	if (chptr->mode.mode & MODE_REOP)
 		*mbuf++ = 'r';
-	if (chptr->mode.mode & MODE_RECOGNIZED)
+	if (chptr->mode.mode & MODE_RECOGNIZED &&
+			(!IsServer(cptr) || cptr->serv->version & SV_RUSNET2))
 		*mbuf++ = 'R';
 	if (chptr->mode.limit)
 	    {
@@ -839,14 +840,6 @@ void	send_channel_modes(cptr, chptr)
 aClient *cptr;
 aChannel *chptr;
 {
-#if 0
-this is probably going to be very annoying, but leaving the following code
-uncommented may just lead to desynchs..
-	if ((*chptr->chname != '#' && *chptr->chname != '!')
-	    || chptr->users == 0) /* channel is empty (locked), thus no mode */
-		return;
-#endif
-
 	if (check_channelmask(&me, cptr, chptr->chname))
 		return;
 
@@ -861,22 +854,12 @@ uncommented may just lead to desynchs..
 	*modebuf = '+';
 	modebuf[1] = '\0';
 	send_mode_list(cptr, chptr->chname, chptr->mlist, CHFL_BAN, 'b');
-
-	if (modebuf[1] || *parabuf)
-	    {
-		/* only needed to help compatibility */
-		sendto_one(cptr, ":%s MODE %s %s %s",
-			   ME, chptr->chname, modebuf, parabuf);
-		*parabuf = '\0';
-		*modebuf = '+';
-		modebuf[1] = '\0';
-	    }
-
 	send_mode_list(cptr, chptr->chname, chptr->mlist,
 		       CHFL_EXCEPTION, 'e');
 	send_mode_list(cptr, chptr->chname, chptr->mlist,
 		       CHFL_INVITE, 'I');
 
+	/* send out what left in buffer */
 	if (modebuf[1] || *parabuf)
 		sendto_one(cptr, ":%s MODE %s %s %s",
 			   ME, chptr->chname, modebuf, parabuf);
@@ -1140,12 +1123,7 @@ char	*parv[], *mbuf, *pbuf;
 	while (curr && *curr && count >= 0)
 	    {
 		if (compat == -1 && *curr != '-' && *curr != '+')
-		{
-			if (*curr == 'e' || *curr == 'I')
-				compat = 1;
-			else
-				compat = 0;
-		}
+			compat = (*curr == 'R') ? 1 : 0;
 
 		switch (*curr)
 		{
@@ -1279,20 +1257,6 @@ char	*parv[], *mbuf, *pbuf;
 				break;
 			    }
 			plp = lp;
-			/*
-			** If this server noticed the nick change, the
-			** information must be propagated back upstream.
-			** This is a bit early, but at most this will generate
-			** just some extra messages if nick appeared more than
-			** once in the MODE message... --msa
-			*/
-/* nobody can figure this part of the code anymore.. -kalt
-			if (chasing && ischop)
-				sendto_one(cptr, ":%s MODE %s %c%c %s",
-					   ME, chptr->chname,
-					   whatt == MODE_ADD ? '+' : '-',
-					   *curr, who->name);
-*/
 			count++;
 			*penalty += 2;
 			break;
@@ -1637,12 +1601,12 @@ char	*parv[], *mbuf, *pbuf;
 			parc--;
 		    }
 		/*
-		 * Make sure old and new (+e/+I) modes won't get mixed
+		 * Make sure old and new (+R) modes won't get mixed
 		 * together on the same line
 		 */
 		if (MyClient(sptr) && curr && *curr != '-' && *curr != '+')
 		{
-			if (*curr == 'e' || *curr == 'I')
+			if (*curr == 'R')
 			    {
 				if (compat == 0)
 					*curr = '\0';
@@ -1651,6 +1615,9 @@ char	*parv[], *mbuf, *pbuf;
 				*curr = '\0';
 		}
 	    } /* end of while loop for MODE processing */
+
+	/* clear whatt for future usage */
+	whatt = 0;
 
 	/* reuse compat for chasing modes */
 	compat = 0;
@@ -2957,6 +2924,8 @@ char	*parv[];
 	size = BUFSIZE - strlen(parv[0]) - 10;
 	for (; (name = strtoken(&p, parv[1], ",")); parv[1] = NULL)
 	    {
+		char no_color_msg[] = "message discarded (colors disallowed)";
+
 		chptr = get_channel(sptr, name, 0);
 		if (!chptr)
 		    {
@@ -3009,8 +2978,10 @@ char	*parv[];
 			sendto_match_servs(chptr, cptr, PartFmt,
 				   	   parv[0], name, comment);
 
-		sendto_channel_butserv(chptr, sptr, PartFmt,
-					       parv[0], name, comment);
+		sendto_channel_butserv(chptr, sptr, PartFmt, parv[0], name,
+					(chptr->mode.mode & MODE_NOCOLOR &&
+						strchr(comment, 0x03)) ?
+						no_color_msg : comment);
 		remove_user_from_channel(sptr, chptr);
 	    }
 	if (*buf)
