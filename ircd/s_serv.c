@@ -1375,10 +1375,9 @@ int	mask;
 			 */
 			if (tmp->status & CONF_TLINE)
 				sendto_one(sptr, rpl_str(p[1], to), c, 
-					    (name) ? name : "*",
-					    (host) ? host : "*",
-					    (pass) ? pass : "-",
-					    port, (hold > 0) ? myctime(hold) : "permanent");
+					    (name) ? name : "*", port
+					    (pass) ? pass : "-", (hold > 0) ?
+						myctime(hold) : "permanent");
 
 			else if ( tmp->status == CONF_VER
 					    || tmp->status == CONF_INTERFACE

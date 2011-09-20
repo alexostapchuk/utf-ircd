@@ -3,6 +3,10 @@
 Версия 2.0
 --------------
 2011-09-20 erra <erra@ya.ru>
+	* ircd/s_err.c: исправлен формат RPL_STATSTRIGGER
+	* ircd/s_serv.c: исправлен вывод /stats T
+
+2011-09-20 erra <erra@ya.ru>
 	* ircd/s_serv.c: исправлены m_trigger/m_untrigger на предмет
 			необязательности класса
 

@@ -24,7 +24,7 @@ Version 3.0
 
 Version 2.0
 -------------
-[$] DALNet-like built-in antispam protection (T:lines)  -erra
+[+] DALNet-like built-in antispam protection (T:lines)  -erra
 [+] Topic burst on connect  -erra
 [+] Usermode +c (colorless) -erra
 [+] Usermode +I (identified nick) -erra

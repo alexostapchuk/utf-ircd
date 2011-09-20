@@ -344,7 +344,7 @@ static	Numeric	numeric_replies[] = {
 /* 225 */	{ RPL_WHOISRMODE, "%s :is Restricted" },
 /* 226 */	{ RPL_STATSRLINE, "%c %s!%s %s %d %s" },
 		{ 0, (char *)NULL },
-/* 228 */	{ RPL_STATSTRIGGER, "%c %s %d %s" },
+/* 228 */	{ RPL_STATSTRIGGER, "%c %s %d %s %s" },
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
 /* 231 */	{ RPL_SERVICEINFO, (char *)NULL },
