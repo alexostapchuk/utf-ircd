@@ -453,10 +453,7 @@ time_t	currenttime;
 {
 	static	time_t	lkill = 0;
 	Reg	aClient	*cptr;
-	Reg	int	kflag = 0;
-#ifdef RUSNET_RLINES	
-	Reg	int	rflag = 0;
-#endif
+	Reg	int	kflag = 0, rflag = 0;
 	int	ping = 0, i;
 	time_t	oldest = 0, timeout;
 	char	*reason;
@@ -472,7 +469,6 @@ time_t	currenttime;
 			    {
 				kflag = check_tlines(cptr, rehashed, &reason,
 						cptr->name, &kconf, NULL);
-#ifdef RUSNET_RLINES
 				if (!kflag)
 	    			    rflag = check_tlines(cptr, rehashed, &reason,
 						cptr->name, &rconf, NULL);
@@ -483,42 +479,33 @@ time_t	currenttime;
 					cptr->name, cptr->user->username,
 							cptr->sockhost));
 				}
-#endif
 			    }
 			else
 			    {
-				kflag = 0;
-#ifdef RUSNET_RLINES
-				rflag = 0;
-#endif
+				kflag = rflag = 0;
 				reason = NULL;
 			    }
 		    }
-#ifdef RUSNET_RLINES
-			if (rflag && IsPerson(cptr) && (!IsRMode(cptr)))
-			    {
-				int old = (cptr->user->flags & ALL_UMODES);
-				do_restrict(cptr);
-				send_umode_out(cptr, cptr, old);			
-				Debug((DEBUG_DEBUG, "Active R-Line for user %s!%s@%s", cptr->name,
-				                        cptr->user->username, cptr->sockhost));
-				sendto_flag(SCH_NOTICE,
-					    "R line active for %s",
+
+		if (rflag && IsPerson(cptr) && (!IsRMode(cptr)))
+		    {
+			int old = (cptr->user->flags & ALL_UMODES);
+
+			do_restrict(cptr);
+			send_umode_out(cptr, cptr, old);			
+			Debug((DEBUG_DEBUG, "R-Line active for %s!%s@%s",
+				cptr->name, cptr->user->username,
+							cptr->sockhost));
+			sendto_flag(SCH_NOTICE, "R line active for %s",
 					    get_client_name(cptr, FALSE));
-			    }
-#endif
+		    }
 
 		ping = IsRegistered(cptr) ? get_client_ping(cptr) :
 					    ACCEPTTIMEOUT;
-#ifdef RUSNET_RLINES
+
 		Debug((DEBUG_DEBUG, "c(%s) %d p %d k %d R %d a %d",
 			cptr->name, cptr->status, ping, kflag, rflag,
 			currenttime - cptr->lasttime));
-#else
-		Debug((DEBUG_DEBUG, "c(%s) %d p %d k %d a %d",
-			cptr->name, cptr->status, ping, kflag,
-			currenttime - cptr->lasttime));
-#endif
 		/*
 		 * Ok, so goto's are ugly and can be avoided here but this code
 		 * is already indented enough so I think its justified. -avalon
@@ -1114,10 +1101,8 @@ char	*argv[];
 
 	motd = NULL;
 	read_motd(IRCDMOTD_PATH);
-#ifdef RUSNET_RLINES
 	rmotd = NULL;
 	read_rmotd(IRCDRMOTD_PATH);
-#endif
 
 	gen_crc32table();
 	srand(timeofday ^ me.serv->crc);

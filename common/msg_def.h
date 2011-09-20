@@ -78,8 +78,12 @@
 #define	MSG_DNS      "DNS"	/* DNS  -> DNSS */
 #define MSG_KLINE	"KLINE"		/* KLINE */
 #define MSG_ELINE	"ELINE"		/* ELINE (EXEMPT) */
+#define MSG_RLINE	"RLINE"		/* RLINE (restricted) COMMAND */
+#define MSG_TRIGGER	"TRIGGER"	/* TRIGGER antispam COMMAND */
 #define MSG_UNKLINE	"UNKLINE"	/* UNKLINE */
 #define MSG_UNELINE	"UNELINE"	/* UNELINE (un-EXEMPT) */
+#define MSG_UNRLINE	"UNRLINE"	/* UNRLINE (unrestricting) COMMAND */
+#define MSG_UNTRIGGER	"UNTRIGGER"	/* UNTRIGGER antispam COMMAND */
 
 #define MSG_CODEPAGE	"CODEPAGE"	/* RUSNET CODEPAGE SYSTEM - obsolete */
 #ifndef USE_OLD8BIT
@@ -90,10 +94,6 @@
 #define MSG_SVSMODE	"SVSMODE"	/* SERVER REMOTE USER MODE, NEW */
 #define MSG_RMODE	"RMODE"		/* SERVER REMOTE USER MODE, OLD */
 #define MSG_RCPAGE	"RCPAGE"	/* SERVER REMOTE CHANGE CODEPAGE */
-#ifdef RUSNET_RLINES
-# define MSG_RLINE	"RLINE"		/* RUSNET RLINE COMMAND */
-# define MSG_UNRLINE	"UNRLINE"	/* RUSNET UNRLINE COMMAND */
-#endif
 #define	MSG_NICKSERV	"NICKSERV"	/* msg to NickServ service */
 #define	MSG_CHANSERV	"CHANSERV"	/* msg to ChanServ service */
 #define	MSG_MEMOSERV	"MEMOSERV"	/* msg to MemoServ service */

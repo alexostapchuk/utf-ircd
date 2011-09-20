@@ -391,14 +391,15 @@ static	aConfItem 	*initconf(void)
 			case 'q': /* network. USE WITH CAUTION! */
 				aconf->status = CONF_QUARANTINED_SERVER;
 				break;
-#ifdef RUSNET_RLINES
-			case 'R': /* Rusnet R-lines */
+			case 'R': /* R-lines (restricted clients) */
 				aconf->status = CONF_RUSNETRLINE;
 				break;
-#endif
 			case 'S': /* Service. Same semantics as   */
 			case 's': /* CONF_OPERATOR                */
 				aconf->status = CONF_SERVICE;
+				break;
+			case 'T':
+				aconf->status = CONF_TRIGGER;
 				break;
 			case 'V': /* Server link version requirements */
 				aconf->status = CONF_VER;

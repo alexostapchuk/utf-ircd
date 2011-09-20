@@ -17,40 +17,6 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
- 
-/*
- * End of story. Mind the ChangeLog.
- */
- 
-/* -- avalon -- 20 Feb 1992
- * Reversed the order of the params for attach_conf().
- * detach_conf() and attach_conf() are now the same:
- * function_conf(aClient *, aConfItem *)
- */
-
-/* -- Jto -- 20 Jun 1990
- * Added gruner's overnight fix..
- */
-
-/* -- Jto -- 16 Jun 1990
- * Moved matches to ../common/match.c
- */
-
-/* -- Jto -- 03 Jun 1990
- * Added Kill fixes from gruner@lan.informatik.tu-muenchen.de
- * Added jarlek's msgbase fix (I still don't understand it... -- Jto)
- */
-
-/* -- Jto -- 13 May 1990
- * Added fixes from msa:
- * Comments and return value to init_conf()
- */
-
-/*
- * -- Jto -- 12 May 1990
- *  Added close() into configuration file (was forgotten...)
- */
-
 
 #include "os.h"
 #include "s_defines.h"
@@ -69,9 +35,8 @@ static	int	lookup_confhost(aConfItem *);
 aConfItem	*conf = NULL;
 aConfItem	*kconf = NULL;
 aConfItem	*econf = NULL;
-#ifdef RUSNET_RLINES
 aConfItem	*rconf = NULL;
-#endif
+aConfItem	*tconf = NULL;
 
 /*
  * remove all conf entries from the client except those which match
@@ -404,20 +369,15 @@ aClient *cptr;
 							 cptr->auth, USERLEN))
 						ucnt++;
 				    }
+
 			if ((ConfMaxHLocal(aconf) > 0 &&
 			    hcnt >= ConfMaxHLocal(aconf))
-#ifdef RUSNET_RLINES
-			    || (IsRMode(cptr) && hcnt >= 2 )
-#endif			    
-			    )
+			    || (IsRMode(cptr) && hcnt >= 2 ))
 				return -4;	/* for error message */
+
 			if ((ConfMaxUHLocal(aconf) > 0 &&
 			    ucnt >= ConfMaxUHLocal(aconf))
-#ifdef RUSNET_RLINES
-			    || (IsRMode(cptr) && ucnt >= 2 )
-#endif			    
-			    
-			    )
+			    || (IsRMode(cptr) && ucnt >= 2 ))
 				return -5;      /* for error message */
 		}
 		/*
@@ -443,19 +403,14 @@ aClient *cptr;
 				    {
 					if ((ConfMaxHGlobal(aconf) > 0 &&
 					    ++ghcnt >= ConfMaxHGlobal(aconf))
-#ifdef RUSNET_RLINES
-					    || (IsRMode(cptr) && ghcnt >= 2)
-#endif
-					    )
+					    || (IsRMode(cptr) && ghcnt >= 2))
 						return -6;
+
 					if (ConfMaxUHGlobal(aconf) > 0 &&
 					    !strcmp(cptr->user->username,
 						    acptr->user->username) &&
 					    (++gucnt >=ConfMaxUHGlobal(aconf)
-#ifdef RUSNET_RLINES
-					    || (IsRMode(cptr) && gucnt >= 2)
-#endif			    
-					    ))
+					    || (IsRMode(cptr) && gucnt >= 2)))
 						return -7;
 				    }
 			    }
@@ -842,7 +797,7 @@ int	status;
 	if (status & REHASH_E)
 	    rehash_flags |= CONF_EXEMPT;
 	if (status & REHASH_C)
-	    rehash_flags |= CONF_SERVER_MASK | CONF_HUB |
+	    rehash_flags |= CONF_SERVER_MASK | CONF_HUB | CONF_DENY |
 			    CONF_LEAF | CONF_SERVICE | CONF_INTERFACE;
 	if (status & REHASH_B)
 	    rehash_flags |= CONF_BOUNCE;
@@ -854,10 +809,10 @@ int	status;
 	     | CONF_SSL_LISTEN_PORT
 #endif
 	     ;
-#ifdef RUSNET_RLINES
 	if (status & REHASH_R)
 	    rehash_flags |= CONF_RUSNETRLINE;
-#endif
+	if (status & REHASH_T)
+	    rehash_flags |= CONF_TRIGGER;
     }
     if ((status & REHASH_ALL) || (status & REHASH_DNS))
 	for (i = 0; i <= highest_fd; i++)
@@ -937,7 +892,6 @@ int	status;
 	    }
     }
 
-#ifdef RUSNET_RLINES
     if ((status & REHASH_ALL) || (status & REHASH_R))
     {
 	tmp = &rconf;
@@ -947,7 +901,17 @@ int	status;
 		free_conf(tmp2);
 	    }
     }
-#endif
+
+    if ((status & REHASH_ALL) || (status & REHASH_T))
+    {
+	tmp = &tconf;
+	while ((tmp2 = *tmp))
+	    {
+		*tmp = tmp2->next;
+		free_conf(tmp2);
+	    }
+    }
+
     if ((status & REHASH_ALL) || (status & REHASH_Y))
 	/*
 	 * We don't delete the class table, rather mark all entries
@@ -1357,14 +1321,16 @@ int	init_flags;
 			case 'q': /* network. USE WITH CAUTION! */
 				aconf->status = CONF_QUARANTINED_SERVER;
 				break;
-#ifdef RUSNET_RLINES
-			case 'R': /* Rusnet R-lines */
+			case 'R': /* R-lines (restricted clients) */
 				aconf->status = CONF_RUSNETRLINE;
 				break;
-#endif
 			case 'S': /* Service. Same semantics as   */
 			case 's': /* CONF_OPERATOR                */
 				aconf->status = CONF_SERVICE;
+				break;
+			case 'T': /* Service. Same semantics as   */
+			case 't': /* K/E/R lines                  */
+				aconf->status = CONF_TRIGGER;
 				break;
 			case 'V': /* Server link version requirements */
 				aconf->status = CONF_VER;
@@ -1713,13 +1679,16 @@ int	init_flags;
 			aconf->next = econf;
 			econf = aconf;
 		    }
-#ifdef RUSNET_RLINES
 		else if (aconf->status & CONF_RUSNETRLINE)
 		    {
 			aconf->next = rconf;
 			rconf = aconf;
 		    }
-#endif
+		else if (aconf->status & CONF_TRIGGER)
+		    {
+			aconf->next = tconf;
+			tconf = aconf;
+		    }
 		else
 		    {
 			aconf->next = conf;
@@ -1804,7 +1773,6 @@ badlookup:
 	return -1;
 }
 
-#ifdef RUSNET_RLINES
 void do_restrict(cptr)
 aClient	*cptr;
 {
@@ -1828,7 +1796,6 @@ aClient	*cptr;
 #endif
 	SetRMode(cptr);
 }
-#endif
 
 int 	check_tline_one(cptr, nick, aconf, checkhost, checkip)
 aClient		*cptr;

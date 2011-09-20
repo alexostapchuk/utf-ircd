@@ -57,6 +57,7 @@
 #define FNM_CASEFOLD	(1 << 4) /* Compare without regard to case. */
 #define FNM_EXTMATCH	(1 << 5) /* Use ksh-like extended matching. */
 
+
 static int flags = FNM_CASEFOLD;
 
 unsigned char tolowertab[] =
@@ -855,7 +856,7 @@ is_wcclass (wc, name)
   if (want_word)
     name = L"alnum";
 
-  memset (&state, '\0', sizeof (mbstate_t));
+  bzero (&state, sizeof (mbstate_t));
   mbs = (char *) malloc (wcslen(name) * MB_CUR_MAX + 1);
   mbslength = wcsrtombs (mbs, (const wchar_t **)&name, (wcslen(name) * MB_CUR_MAX + 1), &state);
 
@@ -896,12 +897,6 @@ is_wcclass (wc, name)
 #define IS_CCLASS(C, S)		is_wcclass((C), (S))
 #include "sm_loop.c"
 
-#ifdef	SOLARIS_10UP
-#define	MBS_VALUE	0
-#else
-#define	MBS_VALUE	{0}
-#endif
-
 /* Return pointer to first multibyte char in S, or NULL if none. */
 char *
 mbsmbchar (s)
@@ -909,7 +904,9 @@ mbsmbchar (s)
 {
   char *t;
   size_t clen;
-  mbstate_t mbs = { 0, MBS_VALUE };
+  mbstate_t mbs;
+
+  bzero (&mbs, sizeof (mbstate_t));
 
   for (t = (char *)s; *t; t++)
     {
@@ -952,7 +949,7 @@ xdupmbstowcs2 (destp, src)
   mbstate_t tmp_state;
   const char *tmp_p;
 
-  memset (&state, '\0', sizeof(mbstate_t));
+  bzero (&state, sizeof(mbstate_t));
 
   wsbuf_size = 0;
   wsbuf = NULL;
@@ -1057,7 +1054,7 @@ xdupmbstowcs (destp, indicesp, src)
     return (xdupmbstowcs2 (destp, src));
 #endif
 
-  memset (&state, '\0', sizeof(mbstate_t));
+  bzero (&state, sizeof(mbstate_t));
   wsbuf_size = WSBUF_INC;
 
   wsbuf = (wchar_t *) malloc (wsbuf_size * sizeof(wchar_t));

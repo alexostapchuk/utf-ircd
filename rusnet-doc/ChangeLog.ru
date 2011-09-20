@@ -2,8 +2,26 @@
 --------------------------------------------------------------------------
 Версия 2.0
 --------------
+2011-09-20 erra <erra@ya.ru>
+	* ircd/s_serv.c: исправлены m_trigger/m_untrigger на предмет
+			необязательности класса
+
+2011-09-18 erra <erra@ya.ru>
+	* common/match.c: bzero used instead of {0} assignment for mbs
+2011-09-18 erra <erra@ya.ru>
+	* common/match.c: для mbs использован вызов bzero вместо {0}
+	* ircd/s_user.c: исправлено условие в check_triggers
+	* ircd/s_serv.c: исправлено условие в match_trigger
+
+2011-09-15 erra <erra@ya.ru>
+	* ircd/s_serv.c: m_trigger/m_untrigger для T:lines, /stats T
+	* iserv/iserv.c: добавлена обработка строк T:
+
 2011-09-14 erra <erra@ya.ru>
+	* */*: удалено #ifdef RUSNET_RLINES (используется всегда)
 	* common/match.c: задано MBS_VALUE для инициализации mbtstat_t
+	* common/numeric_def.h, common/struct_def.h, ircd/s_err.c,
+		ircd/s_user.c: добавлен режим пользователя +c (бесцветный)
 	* ircd/channel.c: не отправляем +R старым серверам; восстановлено
 			назначение режимов (влияло на режимы с параметрами)
 

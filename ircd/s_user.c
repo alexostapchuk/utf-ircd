@@ -39,20 +39,16 @@ static int user_modes[]	     = { FLAGS_OPER, 'o',
 				 FLAGS_WALLOP, 'w',
 				 FLAGS_RESTRICTED, 'r',
 				 FLAGS_AWAY, 'a',
+				 FLAGS_RMODE, 'b',
 				 FLAGS_VHOST, 'x',
 #ifdef USE_SSL
 				 FLAGS_SMODE, 's',
 #endif
-#ifdef RUSNET_RLINES
-				 FLAGS_RMODE, 'b',
-#endif
-				/*
-				 * we need these two to be last ones
-				 * so that we can exclude them for
-				 * older servers  --erra
-				 */
-				 FLAGS_REGISTERED, 'R',
+				/* new modes must be last ones to have a chance
+				 * not to send them to older servers  --erra */
+				 FLAGS_COLORLESS, 'c',
 				 FLAGS_IDENTIFIED, 'I',
+				 FLAGS_REGISTERED, 'R',
 				 0, 0 };
 
 #define	ISTAT_BALANCE(sptr)	do {	\
@@ -671,7 +667,7 @@ char	*nick, *username;
 			return exit_client(cptr, sptr, &me, (reason) ? buf :
 					   "K-lined");
 		    }
-#ifdef RUSNET_RLINES
+
 		if (check_tlines(sptr, 1, &reason, nick, &rconf, NULL))
 		{
 		    if (reason)
@@ -695,24 +691,16 @@ char	*nick, *username;
 			Debug((DEBUG_DEBUG, "R-line active for user %s!%s@%s",
 			     sptr->name, sptr->user->username, sptr->sockhost));
 		}
-#endif
 
 #if defined(EXTRA_NOTICES) && defined(CLIENT_NOTICES)
                 sendto_flag(SCH_OPER, "Client connecting: %s (%s@%s) %s%s",
                         nick,
 			user->username,
-			user->host
+			user->host,
 # ifdef USE_SSL			
-			, IsSSL(sptr) ? "[SSL]" : ""
-# else
-			, ""
+			IsSSL(sptr) ? "[SSL]" :
 # endif
-# ifdef RUSNET_RLINES
-			, IsRMode(sptr) ? "[R]" : ""
-# else
-			, ""
-# endif			
-			);
+			"", IsRMode(sptr) ? "[R]" : "");
 #endif
 
 		if (oldstatus == STAT_MASTER && MyConnect(sptr))
@@ -965,21 +953,20 @@ char	*nick, *username;
 		sptr->exitc = EXITC_REG;
 		sendto_one(sptr, rpl_str(RPL_WELCOME, nick), buf);
 		/* This is a duplicate of the NOTICE but see below...*/
-#ifdef RUSNET_RLINES
+
 		if (!IsRMode(sptr)) {
-#endif /* RUSNET_RLINES */
-		sendto_one(sptr, rpl_str(RPL_YOURHOST, nick),
-			   get_client_name(&me, FALSE), version);
-		sendto_one(sptr, rpl_str(RPL_CREATED, nick), creation);
-		sendto_one(sptr, rpl_str(RPL_MYINFO, parv[0]),
-			   ME, version);
+			sendto_one(sptr, rpl_str(RPL_YOURHOST, nick),
+				   get_client_name(&me, FALSE), version);
+			sendto_one(sptr, rpl_str(RPL_CREATED, nick), creation);
+			sendto_one(sptr, rpl_str(RPL_MYINFO, parv[0]),
+				   ME, version);
 #ifdef SEND_ISUPPORT
-		sendto_one(sptr, rpl_str(RPL_ISUPPORT, parv[0]), isupport);
+			sendto_one(sptr, rpl_str(RPL_ISUPPORT, parv[0]),
+								isupport);
 #endif
-		(void)m_lusers(sptr, sptr, 1, parv);
-#ifdef RUSNET_RLINES
+			(void)m_lusers(sptr, sptr, 1, parv);
 		}
-#endif /* RUSNET_RLINES */
+
 		(void)m_motd(sptr, sptr, 1, parv);
 		if (IsRestricted(sptr))
 			sendto_one(sptr, err_str(ERR_RESTRICTED, nick));
@@ -1106,13 +1093,11 @@ char	*parv[];
 		if ((parc == 3) && parv[2] && (*parv[2] == '1')) {
 		/* Internal call, do not apply sanity checks and restrictions */
 		}
-#ifdef RUSNET_RLINES
 		else if (IsRMode(sptr))
 		{
 			sendto_one(sptr, err_str(ERR_RESTRICTED, nick));
 			return 2;
 		}
-#endif
 		else
 		{
 			Reg aChannel *chptr = rusnet_zmodecheck(cptr, nick);
@@ -1140,7 +1125,7 @@ char	*parv[];
 					   "Kill line active");
 			return 20;	/* KILLed NICK entered */
 		}
-#ifdef RUSNET_RLINES
+
 		if (check_tlines(sptr, 1, &reason, nick, &rconf, NULL))
 		{
 			int old = (cptr->user->flags & ALL_UMODES);
@@ -1153,8 +1138,7 @@ char	*parv[];
 					get_client_name(cptr, FALSE));
 			
 		}
-#endif
-	}
+	} /* MyClient */
 
 	/*
 	** Check against nick name collisions.
@@ -1656,6 +1640,36 @@ nickkilldone:
 		return 3;
 }
 
+static int check_triggers(sptr, message)
+aClient *sptr;
+char *message;
+{
+	Reg	aConfItem *aconf;
+	Link	*lp;
+	int	class = 0;
+
+	for (lp = sptr->confs; lp; lp = lp->next)
+	{
+		aconf = lp->value.aconf;
+		if (aconf->status & (CONF_CLIENT|CONF_RCLIENT))
+		{
+			class = aconf->class->class;
+			break;
+		}
+	}
+
+	for (aconf = tconf; aconf; aconf = aconf->next)
+		if ((!aconf->port || aconf->port == class) &&
+				!match(aconf->passwd, message))
+		{
+			Debug((DEBUG_DEBUG, "Spam: %s (matched: %s)",
+						message, aconf->passwd));
+			return 1;
+		}
+
+	return 0;
+}
+
 /*
 ** m_message (used in m_private() and m_notice())
 ** the general function to deliver MSG's between users/channels
@@ -1696,6 +1710,43 @@ int	parc, notice;
 
 	if (MyConnect(sptr))
 		parv[1] = canonize(parv[1]);
+
+	/* antispam control */
+	if (MyClient(sptr) && !IsRMode(sptr) && check_triggers(sptr, parv[2]))
+	{
+		time_t now = time(NULL);
+
+		if (sptr->lastspam > now + 60)
+			sptr->spamcount = 0;
+
+		if (sptr->spamcount++ < MAX_SPAM)
+		{
+			sendto_one(sptr, err_str(ERR_NOSPAM, parv[0]));
+			sptr->lastspam = now;
+#ifdef LOG_SPAM
+			sendto_flag(SCH_LOCAL, "Spam from %s!%s@%s: %s",
+					sptr->name, sptr->user->username,
+						sptr->sockhost, parv[2]);
+#endif
+		}
+		else
+		{
+			int old = (sptr->user->flags & ALL_UMODES);
+
+			do_restrict(sptr);
+			send_umode_out(sptr, sptr, old);
+			Debug((DEBUG_DEBUG, "Restricting %s!%s@%s for spam",
+					sptr->name, sptr->user->username,
+							sptr->sockhost));
+			sendto_flag(SCH_LOCAL,
+					"%s!%s@%s is restricted for spam",
+					sptr->name, sptr->user->username,
+							sptr->sockhost);
+
+		}
+		return 10;
+	}
+
 	for (p = NULL, nick = strtoken(&p, parv[1], ","); nick;
 	     nick = strtoken(&p, NULL, ","), penalty++)
 	    {
@@ -1710,21 +1761,22 @@ int	parc, notice;
 				       "Too many",nick,"No Message Delivered");
 		    continue;      
 		}   
-#ifdef RUSNET_RLINES
-		if (MyClient(sptr) && IsRMode(sptr) && penalty >= 1) {
+
+		if (MyClient(sptr) && IsRMode(sptr) && penalty >= 1)
 		    continue;      		
-		}
-#endif
+
 		/*
 		** nickname addressed?
 		*/
 		if ((acptr = find_person(nick, NULL)))
 		    {
-#ifdef RUSNET_RLINES
-			if (MyClient(sptr) && IsRMode(sptr)) {
+			if (MyClient(sptr) && IsRMode(sptr))
+			{
 				if (IsOper(acptr) || IsRusnetServices(acptr)) {
-					sendto_prefix_one(acptr, sptr, ":%s %s %s :%s",
-					    parv[0], cmd, nick, parv[2]);
+					sendto_prefix_one(acptr, sptr,
+							":%s %s %s :%s",
+							parv[0], cmd,
+							nick, parv[2]);
 					penalty += 10;
 					continue;
 				} else {
@@ -1735,13 +1787,20 @@ int	parc, notice;
 					continue;
 		    		}
 			}
-#endif
+
 			if (acptr->user->flags & FLAGS_REGISTERED &&
 				!(IsRusnetServices(sptr) ||
 					sptr->user->flags & FLAGS_IDENTIFIED))
 			{
 				sendto_one(sptr,
 					err_str(ERR_REGONLY, parv[0]), nick);
+				continue;
+			}
+			if (acptr->user->flags & FLAGS_COLORLESS &&
+				strchr(parv[2], 0x03))
+			{
+				sendto_one(sptr,
+					err_str(ERR_NOCOLOR, parv[0]), nick);
 				continue;
 			}
 
@@ -1762,14 +1821,13 @@ int	parc, notice;
 		if ((IsPerson(sptr) || IsService(sptr) || IsServer(sptr)) &&
 		    (chptr = find_channel(nick, NullChn)))
 		    {
-#ifdef RUSNET_RLINES
 			if (MyClient(sptr) && IsRMode(sptr)) {
 				if (!notice)
 				sendto_one(sptr, err_str(ERR_RESTRICTED,
 					   parv[0]));
 				continue;
 			}
-#endif
+
 		    	if (IsServer(sptr) || IsRusnetServices(sptr) ||
 					(flag = can_send(sptr, chptr)) == 0)
 				sendto_channel_butone(cptr, sptr, chptr,
@@ -1849,6 +1907,14 @@ int	parc, notice;
 								parv[0]), nick);
 					continue;
 				}
+				if (acptr->user->flags & FLAGS_COLORLESS &&
+					strchr(parv[2], 0x03))
+				{
+					sendto_one(sptr,
+						err_str(ERR_NOCOLOR, parv[0]),
+									nick);
+					continue;
+				}
 
 				sendto_prefix_one(acptr, sptr, ":%s %s %s :%s",
 						  parv[0], cmd, nick, parv[2]);
@@ -1899,6 +1965,12 @@ int	parc, notice;
 						sendto_one(sptr, err_str(ERR_REGONLY, parv[0]), nick);
 						continue;
 					}
+
+					if (acptr->user->flags & FLAGS_COLORLESS && strchr(parv[2], 0x03))
+					{
+						sendto_one(sptr, err_str(ERR_NOCOLOR, parv[0]), nick);
+						continue;
+					}
 					sendto_prefix_one(acptr, sptr,
 							  ":%s %s %s :%s",
 					 		  parv[0], cmd,
@@ -1929,6 +2001,11 @@ int	parc, notice;
 						sendto_one(sptr,
 							err_str(ERR_REGONLY,
 								parv[0]), nick);
+						continue;
+					}
+					if (acptr->user->flags & FLAGS_COLORLESS && strchr(parv[2], 0x03))
+					{
+						sendto_one(sptr, err_str(ERR_NOCOLOR, parv[0]), nick);
 						continue;
 					}
 					sendto_prefix_one(acptr, sptr,
@@ -2366,10 +2443,8 @@ aClient	*sptr, *acptr;
 		sendto_one(sptr, rpl_str(RPL_CHARSET, sptr->name),
 					acptr->name, acptr->transptr->id);
 #endif
-# ifdef RUSNET_RLINES
 	if (IsRMode(acptr))
 	    sendto_one(sptr, rpl_str(RPL_WHOISRMODE, sptr->name), name);
-# endif /* RUSNET_RLINES */
 #ifdef USE_SSL
 	if (IsSMode(acptr))
 	    sendto_one(sptr, rpl_str(RPL_USINGSSL, sptr->name), name);
@@ -2379,6 +2454,9 @@ aClient	*sptr, *acptr;
 
 	if (user->flags & FLAGS_IDENTIFIED)
 	    sendto_one(sptr, rpl_str(RPL_IDENTIFIED, sptr->name), name);
+
+	if (user->flags & FLAGS_COLORLESS)
+	    sendto_one(sptr, rpl_str(RPL_NOCOLOR, sptr->name), name);
 
 #if defined(EXTRA_NOTICES) && defined(WHOIS_NOTICES)
 	if (IsAnOper(acptr) && acptr != sptr)
@@ -2697,10 +2775,10 @@ char	*parv[];
 			if (!strncmp("Local Kill", comment, 10) ||
 				!strncmp(comment, "Killed", 6))
 			        comment = quitc;
-#ifdef RUSNET_RLINES
+
 		if (MyClient(sptr) && IsRMode(sptr))
 			comment = quitc;
-#endif
+
 		unistrcut(comment, TOPICLEN - 2);
 		if (!MyClient(sptr))
 			return exit_client(cptr, sptr, sptr, comment);
@@ -2930,10 +3008,9 @@ char	*parv[];
 
 	away = sptr->user->away;
 
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr))
 	    return 5;	
-#endif
+
 	if (parc < 2 || !*awy2)	/* Marking as not away */
 	    {
 		if (away)
@@ -3695,7 +3772,8 @@ int	old;
 
 		/* cut off new modes for old servers */
 		for (i = 0; old_modes[i]; i++)
-			if (old_modes[i] == 'I' || old_modes[i] == 'R')
+			if (old_modes[i] == 'I' || old_modes[i] == 'R'
+						|| old_modes[i] == 'c')
 			{
 				if (i == 1)
 					*old_modes = '\0';

@@ -614,14 +614,15 @@ static	aClient	anon = { NULL, NULL, NULL, &ausr, NULL, NULL, 0, 0,/*flags*/
 			 NULL,
 # endif
 			 0, DBUF_PHOLDER, DBUF_PHOLDER,
-			 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, 0, NULL, 0
-			 ,{_NO_IP_}, NULL, "" ,'\0', 0
+			 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL, 0, NULL, 0,
+			 {_NO_IP_}, NULL, "" ,'\0', 0,
 #ifdef USE_SSL
-			 , NULL, NULL
+			 NULL, NULL,
 #endif
 #ifdef HOLD_ENFORCED_NICKS
-			 , 0
+			 0,
 #endif
+			 0, 0
 			};
 #endif
 

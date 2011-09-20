@@ -1042,7 +1042,6 @@ char	*name;
 #endif
 }
 
-#ifdef RUSNET_RLINES
 aMotd		*rmotd = NULL;
 
 void read_rmotd(filename)
@@ -1084,7 +1083,6 @@ char *filename;
 	    }
 	fclose(fd);
 }     
-#endif
 
 aMotd		*motd = NULL;
 time_t		motd_mtime;

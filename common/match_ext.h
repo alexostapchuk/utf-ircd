@@ -31,11 +31,9 @@ extern int  CharAttrs[];
 #if defined(USE_OLD8BIT) || defined(LOCALE_STRICT_NAMES)
 extern char validtab[];
 #endif
-#endif /* MATCH_C */
 
 /*  External definitions for global functions.
  */
-#ifndef MATCH_C
 #define EXTERN extern
 #else /* MATCH_C */
 #define EXTERN

@@ -326,7 +326,10 @@ isConfLine *makePendingLine(char *line)
 		goto ILLEGAL_LINE;
 	    tmp_line->status = (tmp_line->expire >= 0) ? LINE_ADD : LINE_REMOVE;
 	}
-	if (!index(tmp_line->userhost, '@') && *tmp_line->userhost != '/')
+
+	/* XXX: Here be dragons! For the moment triggers don't use hostmasks */
+	if (tmp_line->type != 'T' && !index(tmp_line->userhost, '@') &&
+						*tmp_line->userhost != '/')
 	{
 	    char	*newhost;
 	    int	len = 3;	/* *@\0 = 3 */
@@ -549,8 +552,9 @@ static int flushPendingLines(void)
 		    continue;
 		}
 
-        	if (!(*buf == 'K' || *buf == 'E' || *buf == 'R')) /* This should be changed 
-						into something that does not hurt -skold */
+        	if (!(*buf == 'K' || *buf == 'E' || *buf == 'R' || *buf == 'T'))
+			/* This should be changed into something that
+				does not hurt -skold */
         	{
 		    appendLine(buf);
         	}
@@ -672,14 +676,14 @@ static int match_tline(isConfLine *newline, isConfLine *oldline)
 {
 
     if (newline->type != oldline->type)
-    {
 	return -2;
-    }
 
-    if (!strcmp(newline->userhost, oldline->userhost) && !strcmp(newline->name, oldline->name))
-	return 0;
-    else
-	return -2;
+    if (newline->type == 'T')
+	return (strcmp(newline->passwd, oldline->passwd) ||
+		(newline->port && newline->port != oldline->port)) ? -2 : 0;
+
+    return (strcmp(newline->userhost, oldline->userhost) ||
+		strcmp(newline->name, oldline->name)) ? -2 : 0;
 }
 
 

@@ -64,20 +64,6 @@ struct Message msgtab[] = {
 #else
   { MSG_RCPAGE,  m_rcpage,   MAXPARA, MSG_LAG|MSG_REG|MSG_NOU, 0, 0, 0L},
 #endif /* OPER_RCPAGE */
-#ifdef RUSNET_RLINES
-# ifdef OPER_TLINE
-  { MSG_RLINE,   m_rline,    MAXPARA, MSG_LAG|MSG_REG|MSG_OP
-#  ifdef LOCOP_TLINE
-						|MSG_LOP
-#  endif /* LOCOP_TLINE */
-						, 0, 0, 0L},
-  { MSG_UNRLINE, m_unrline,  MAXPARA, MSG_LAG|MSG_REG|MSG_OP
-#  ifdef LOCOP_TLINE
-						|MSG_LOP
-#  endif /* LOCOP_TLINE */
-						, 0, 0, 0L},
-# endif /* OPER_TLINE */
-#endif /* RUSNET_RLINES */
   { MSG_NICKSERV,m_nickserv, 1, MSG_LAG|MSG_REG, 0, 0, 0L},
   { MSG_CHANSERV,m_chanserv, 1, MSG_LAG|MSG_REG, 0, 0, 0L},
   { MSG_MEMOSERV,m_memoserv, 1, MSG_LAG|MSG_REG, 0, 0, 0L},
@@ -86,13 +72,21 @@ struct Message msgtab[] = {
 # ifdef LOCOP_TLINE
   { MSG_KLINE,   m_kline,    MAXPARA, MSG_LAG|MSG_REG|MSG_OP|MSG_LOP, 0, 0, 0L},
   { MSG_ELINE,   m_eline,    MAXPARA, MSG_LAG|MSG_REG|MSG_OP|MSG_LOP, 0, 0, 0L},
+  { MSG_RLINE,   m_rline,    MAXPARA, MSG_LAG|MSG_REG|MSG_OP|MSG_LOP, 0, 0, 0L},
+  { MSG_TRIGGER, m_trigger,  MAXPARA, MSG_LAG|MSG_REG|MSG_OP|MSG_LOP, 0, 0, 0L},
   { MSG_UNKLINE, m_unkline,  MAXPARA, MSG_LAG|MSG_REG|MSG_OP|MSG_LOP, 0, 0, 0L},
   { MSG_UNELINE, m_uneline,  MAXPARA, MSG_LAG|MSG_REG|MSG_OP|MSG_LOP, 0, 0, 0L},
+  { MSG_UNRLINE, m_unrline,  MAXPARA, MSG_LAG|MSG_REG|MSG_OP|MSG_LOP, 0, 0, 0L},
+  { MSG_UNTRIGGER, m_untrigger, MAXPARA, MSG_LAG|MSG_REG|MSG_OP|MSG_LOP, 0, 0, 0L},
 # else /* LOCOP_TLINE */
   { MSG_KLINE,   m_kline,    MAXPARA, MSG_LAG|MSG_REG|MSG_OP, 0, 0, 0L},
   { MSG_ELINE,   m_eline,    MAXPARA, MSG_LAG|MSG_REG|MSG_OP, 0, 0, 0L},
+  { MSG_RLINE,   m_rline,    MAXPARA, MSG_LAG|MSG_REG|MSG_OP, 0, 0, 0L},
+  { MSG_TRIGGER, m_trigger,  MAXPARA, MSG_LAG|MSG_REG|MSG_OP, 0, 0, 0L},
   { MSG_UNKLINE, m_unkline,  MAXPARA, MSG_LAG|MSG_REG|MSG_OP, 0, 0, 0L},
   { MSG_UNELINE, m_uneline,  MAXPARA, MSG_LAG|MSG_REG|MSG_OP, 0, 0, 0L},
+  { MSG_UNRLINE, m_unrline,  MAXPARA, MSG_LAG|MSG_REG|MSG_OP, 0, 0, 0L},
+  { MSG_UNTRIGGER, m_untrigger, MAXPARA, MSG_LAG|MSG_REG|MSG_OP, 0, 0, 0L},
 # endif /* LOCOP_TLINE */
 #endif /* OPER_TLINE */
 #endif /* CLIENT_COMPILE */

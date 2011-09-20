@@ -19,18 +19,20 @@ Version 3.0
 [ ] Re-write iauth, add sendheaders[], etc
 [ ] Implement EOB protocol commands
 [ ] Masked server groups support with EOB
-[ ] DALNet-like built-in antispam protection (T:lines)
 [ ] Multipath support (splitless network)
+[ ] Prohibit colored messages in QUIT for colorless (+c) channels
 
 Version 2.0
 -------------
+[$] DALNet-like built-in antispam protection (T:lines)  -erra
 [+] Topic burst on connect  -erra
+[+] Usermode +c (colorless) -erra
 [+] Usermode +I (identified nick) -erra
 [+] Usermode +R (registered nicks only) -erra
 [+] Chanmode +R (registered nicks only) -erra
 [+] STATS l to show l:lines (logging)  -erra
 [+] libidn support (UTF domain names)  -erra
-[$] Prohibit colored messages in PART and QUIT for colorless (+c) channels -erra
+[+] Prohibit colored messages in PART for colorless (+c) channels -erra
 [+] SVSNICK/SVSMODE support  -erra
 [+] Guardian timeout (optional, 1 minute) for enforced nick changes  -erra
 

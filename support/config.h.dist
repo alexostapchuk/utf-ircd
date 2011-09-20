@@ -75,6 +75,10 @@
  */
 #define NETWORKNAME "RusNet"
 
+/*
+ * This knob is now mandatory. It is safe to remove it as soon as
+ * nobody relies on it anymore
+ */
 #define RUSNET_RLINES
 
 /*
@@ -739,6 +743,16 @@
  * Max number of channels a user is allowed to join.
  */
 #define MAXCHANNELSPERUSER  20	/* Recommended value: 10 */
+
+/*
+ * Max number of unsolicited messages (triggered patterns) per minute
+ */
+#define MAX_SPAM  5	/* Recommended value: 5 */
+
+/*
+ * Log spam messages to &LOCAL
+ */
+#undef	LOG_SPAM
 
 /*
  * USE_IAUTH makes ircd use the iauth program for authentication.

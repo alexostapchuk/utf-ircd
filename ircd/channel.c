@@ -970,11 +970,10 @@ char	*parv[];
 		sendto_one(sptr, err_str(ERR_NEEDMOREPARAMS, parv[0]), "MODE");
  	 	return 1;
 	    }
-#ifdef RUSNET_RLINES
-	if (MyClient(sptr) && IsRMode(sptr)) {
+
+	if (MyClient(sptr) && IsRMode(sptr))
 		return 5;
-	}
-#endif
+
 	parv[1] = canonize(parv[1]);
 
 	for (name = strtoken(&p, parv[1], ","); name;
@@ -1224,10 +1223,10 @@ char	*parv[], *mbuf, *pbuf;
 					   parv[0], chptr->chname);
 				break;
 			    }
-#ifdef RUSNET_RLINES
+
 			if (IsRMode(who))
 				break;
-#endif
+
 			if (who == cptr && whatt == MODE_ADD && *curr == 'o')
 				break;
 
@@ -2277,7 +2276,6 @@ char	*parv[];
 	for (i = 0, j = 0, name = strtoken(&p, parv[1], ","); name;
 	     name = strtoken(&p, NULL, ","))
 	    {
-#ifdef RUSNET_RLINES
 		if (MyClient(sptr) && IsRMode(sptr))
 		{
 		    if (j > 0)
@@ -2285,7 +2283,7 @@ char	*parv[];
 		    else
 			j++;
 		}
-#endif
+
 		if (check_channelmask(sptr, cptr, name) == -1)
 			continue;
 		if (*name == '&' && !MyConnect(sptr))
@@ -2298,12 +2296,13 @@ char	*parv[];
 		if (MyClient(sptr))
 		    {
 			clean_channelname(name);
-#ifdef RUSNET_RLINES
-			if (IsRMode(sptr) && (*name == '!' || *name == '&')) {
-			sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
-			continue;
-		}
-#endif
+
+			if (IsRMode(sptr) && (*name == '!' || *name == '&'))
+			{
+				sendto_one(sptr,
+					err_str(ERR_RESTRICTED, parv[0]));
+				continue;
+			}
 		    }
 		if (*name == '!')
 		    {
@@ -2523,12 +2522,9 @@ char	*parv[];
 		flags = 0;
 		chop[0] = '\0';
 		if (MyConnect(sptr) && UseModes(name) &&
-		    (!IsRestricted(sptr) || (*name == '&')) && !chptr->users &&
-		    !(chptr->history && *chptr->chname == '!')
-#ifdef RUSNET_RLINES
-		    && !IsRMode(sptr)
-#endif		    
-		    )
+		    (!IsRestricted(sptr) || (*name == '&')) && !chptr->users
+			&& !(chptr->history && *chptr->chname == '!')
+			&& !IsRMode(sptr))
 		    {
 			if (*name == '!')
 				strcpy(chop, "\007O");
@@ -2637,11 +2633,8 @@ char	*parv[];
 	    }
 	if (*cbuf)
 		sendto_serv_butone(cptr, ":%s JOIN :%s", parv[0], cbuf);
-#ifdef RUSNET_RLINES
-	if (MyClient(sptr) && IsRMode(sptr))
-	    return 10;
-#endif
-	return 2;
+
+	return (MyClient(sptr) && IsRMode(sptr)) ? 10 : 2;
 }
 
 /*
@@ -2945,10 +2938,9 @@ char	*parv[];
 		    }
 		if (IsAnonymous(chptr))
 			comment = "None";
-#ifdef RUSNET_RLINES
+
 		if (MyClient(sptr) && IsRMode(sptr))
 			comment = "Restricted";
-#endif
 
 		/*
 		**  Remove user from the old channel (if any)
@@ -3337,13 +3329,12 @@ int	m_invite(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 		return 1;
 	    }
 
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr)) 
 	    {
 		sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
 		return 10;
 	    }
-#endif
+
 	if (!(acptr = find_person(parv[1], (aClient *)NULL)))
 	    {
 		sendto_one(sptr, err_str(ERR_NOSUCHNICK, parv[0]), parv[1]);

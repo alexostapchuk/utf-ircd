@@ -173,9 +173,7 @@ typedef struct        Syslog  aSyslog;
 #ifdef USE_SSL
 #define FLAGS_SSL         0x10000000 /* SSL-connection requested */
 #endif /* USE_SSL */
-#ifdef RUSNET_RLINES
 #define FLAGS_RLINE       0x20000000 /* User has got active R-line */
-#endif
 #ifndef USE_OLD8BIT
 #define FLAGS_UNICODE     0x40000000 /* it's UTF-8 connection */
 #endif
@@ -190,11 +188,11 @@ typedef struct        Syslog  aSyslog;
 #define FLAGS_VHOST       0x0080 /* user @ masked host */
 #define FLAGS_REGISTERED  0x0100 /* user accepts PRIVMSG/NOTICE from */
 				 /* registered nicks only */
-#ifdef USE_SSL
-#define FLAGS_SMODE	  0x0200 /* User is using SSL connection*/
-#endif
-#ifdef RUSNET_RLINES
+#define FLAGS_COLORLESS   0x0200 /* user rejets PRIVMSG/NOTICE with colors */
 #define FLAGS_RMODE	  0x0400 /* User mode +b (RusNet restriction)*/
+
+#ifdef USE_SSL
+#define FLAGS_SMODE	  0x0800 /* User is using SSL connection*/
 #endif
 
 /* Rehash flags */
@@ -213,11 +211,12 @@ typedef struct        Syslog  aSyslog;
 #define REHASH_C	0x0400
 #define REHASH_B	0x0800
 #define REHASH_E	0x1000
+#define REHASH_T	0x2000
 
 # ifdef USE_SSL
-# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY|FLAGS_IDENTIFIED|FLAGS_REGISTERED|FLAGS_VHOST|FLAGS_RMODE|FLAGS_SMODE)
+# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY|FLAGS_IDENTIFIED|FLAGS_REGISTERED|FLAGS_COLORLESS|FLAGS_VHOST|FLAGS_RMODE|FLAGS_SMODE)
 # else /* USE_SSL */
-# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY|FLAGS_IDENTIFIED|FLAGS_REGISTERED|FLAGS_VHOST|FLAGS_RMODE)
+# define SEND_UMODES	(FLAGS_INVISIBLE|FLAGS_OPER|FLAGS_WALLOP|FLAGS_AWAY|FLAGS_IDENTIFIED|FLAGS_REGISTERED|FLAGS_COLORLESS|FLAGS_VHOST|FLAGS_RMODE)
 # endif /* USE_SSL */
 #define ALL_UMODES	(SEND_UMODES|FLAGS_LOCOP|FLAGS_RESTRICTED)
 
@@ -231,6 +230,8 @@ typedef struct        Syslog  aSyslog;
 				 (x)->user->flags & FLAGS_RESTRICTED)
 #define Identified(x)		((x)->user && \
 				 (x)->user->flags & FLAGS_IDENTIFIED)
+#define Colorless(x)		((x)->user && \
+				 (x)->user->flags & FLAGS_COLORLESS)
 #define	IsAnOper(x)		((x)->user && \
 				 (x)->user->flags & (FLAGS_OPER|FLAGS_LOCOP))
 #define	IsPerson(x)		((x)->user && IsClient(x))
@@ -254,10 +255,8 @@ typedef struct        Syslog  aSyslog;
 # define IsSSL(x)		(sslable && ((x)->flags & FLAGS_SSL))
 # define IsSMode(x)		((x)->user && (x)->user->flags & FLAGS_SMODE)
 #endif /* USE_SSL */
-#ifdef RUSNET_RLINES
-# define IsRMode(x)		((x)->user && (x)->user->flags & FLAGS_RMODE)
-# define IsRLine(x)		((x)->flags & FLAGS_RLINE)
-#endif
+#define IsRMode(x)		((x)->user && (x)->user->flags & FLAGS_RMODE)
+#define IsRLine(x)		((x)->flags & FLAGS_RLINE)
 #define	CBurst(x)		((x)->flags & FLAGS_CBURST)
 #define	SetOper(x)		((x)->user->flags |= FLAGS_OPER)
 #define	SetLocOp(x)    		((x)->user->flags |= FLAGS_LOCOP)
@@ -274,11 +273,9 @@ typedef struct        Syslog  aSyslog;
 # define SetSSL(x)		((x)->flags |= FLAGS_SSL)
 # define SetSMode(x)		((x)->user->flags |= FLAGS_SMODE)
 #endif /* USE_SSL */
-#ifdef RUSNET_RLINES
-# define SetRMode(x)		((x)->user->flags = (x)->user->flags \
+#define SetRMode(x)		((x)->user->flags = (x)->user->flags \
 				    | (FLAGS_RMODE & ~FLAGS_VHOST))
-# define SetRLine(x)		(((x)->flags |= FLAGS_RLINE) && SetRMode(x))
-#endif
+#define SetRLine(x)		(((x)->flags |= FLAGS_RLINE) && SetRMode(x))
 #define	DoingDNS(x)		((x)->flags & FLAGS_DOINGDNS)
 #define	DoingAuth(x)		((x)->flags & FLAGS_AUTH)
 #define	DoingXAuth(x)		((x)->flags & FLAGS_XAUTH)
@@ -472,23 +469,20 @@ struct	ConfItem	{
 #define CONF_SSL_LISTEN_PORT	0x0800000
 #endif /* USE_SSL */
 
-#ifdef RUSNET_RLINES
 #define CONF_RUSNETRLINE	0x1000000
-#endif
+#define CONF_TRIGGER		0x2000000
+
 #ifdef LOG_EVENTS
-#define	CONF_LOG		0x2000000
+#define	CONF_LOG		0x4000000
 #endif
 
 #define	CONF_OPS		(CONF_OPERATOR | CONF_LOCOP)
 #define	CONF_SERVER_MASK	(CONF_CONNECT_SERVER | CONF_NOCONNECT_SERVER |\
 				 CONF_ZCONNECT_SERVER)
-#define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_RCLIENT | CONF_SERVICE | CONF_OPS | \
-				 CONF_SERVER_MASK)
-#ifdef RUSNET_RLINES
-# define CONF_TLINE		(CONF_KILL | CONF_EXEMPT | CONF_RUSNETRLINE)
-#else
-# define CONF_TLINE 		(CONF_KILL | CONF_EXEMPT)
-#endif
+#define	CONF_CLIENT_MASK	(CONF_CLIENT | CONF_RCLIENT | CONF_SERVICE |\
+				 CONF_OPS | CONF_SERVER_MASK)
+#define CONF_TLINE		(CONF_KILL | CONF_EXEMPT | CONF_RUSNETRLINE |\
+				 CONF_TRIGGER)
 
 #define	IsIllegal(x)		((x)->status & CONF_ILLEGAL)
 typedef	struct	{
@@ -653,6 +647,8 @@ struct Client	{
 #ifdef HOLD_ENFORCED_NICKS
 	time_t	held;		/* prohibit instant nick change after SVSNICK */
 #endif
+	time_t	lastspam;	/* last time client spammed (T:line matched) */
+	u_short	spamcount;	/* how many times client sent spam */
 };
 
 #define	CLIENT_LOCAL_SIZE sizeof(aClient)

@@ -103,12 +103,11 @@ aClient *sptr, *cptr;
 int	parc;
 char	*parv[];
 {
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr)) {
 		sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
 		return 5;
 	}
-#endif
+
 	if (hunt_server(cptr,sptr,":%s VERSION :%s",1,parc,parv) == HUNTED_ISME)
 		sendto_one(sptr, rpl_str(RPL_VERSION, parv[0]),
 			   version, debugmode, ME, serveropts);
@@ -1101,12 +1100,11 @@ char	*parv[];
 {
 	char **text = infotext;
 
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr)) {
 		sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
 		return 10;
 	}
-#endif
+
 	if (IsServer(cptr) && check_link(cptr))
 	    {
 		sendto_one(sptr, rpl_str(RPL_TRYAGAIN, parv[0]),
@@ -1150,12 +1148,10 @@ char	*parv[];
 	char	*mask;
 	aClient	*acptr;
 
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr)) {
 		sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
 		return 10;
 	}
-#endif
 
 	if (parc > 2)
 	    {
@@ -1320,11 +1316,7 @@ char	*parv[];
 **	      it--not reversed as in ircd.conf!
 */
 
-#ifdef RUSNET_RLINES
-#define	REP_ARRAY_SIZE	19
-#else
-#define	REP_ARRAY_SIZE	18
-#endif
+#define	REP_ARRAY_SIZE	20
 
 static u_int report_array[REP_ARRAY_SIZE][3] = {
 		{ CONF_ZCONNECT_SERVER,	  RPL_STATSCLINE, 'c'},
@@ -1338,21 +1330,21 @@ static u_int report_array[REP_ARRAY_SIZE][3] = {
 		{ CONF_OPERATOR,	  RPL_STATSOLINE, 'O'},
 		{ CONF_HUB,		  RPL_STATSHLINE, 'H'},
 		{ CONF_LOCOP,		  RPL_STATSOLINE, 'o'},
+		{ CONF_RUSNETRLINE,	  RPL_STATSRLINE, 'R'},
 		{ CONF_SERVICE,		  RPL_STATSSLINE, 'S'},
+		{ CONF_TRIGGER,		RPL_STATSTRIGGER, 'T'},
 		{ CONF_VER,		  RPL_STATSVLINE, 'V'},
 		{ CONF_BOUNCE,		  RPL_STATSBLINE, 'B'},
 		{ CONF_DENY,		  RPL_STATSDLINE, 'D'},
 		{ CONF_EXEMPT,		  RPL_STATSKLINE, 'E'},
 		{ CONF_INTERFACE,	  RPL_STATSFLINE, 'F'},
-# ifdef RUSNET_RLINES
-		{ CONF_RUSNETRLINE,	  RPL_STATSRLINE, 'R'},
-# endif
 		{ 0, 0, 0}
 	};
 
-static	void	report_configured_links(sptr, to, mask)
+static	void	report_configured_links(sptr, to, aconf, mask)
 aClient *sptr;
 char	*to;
+aConfItem *aconf;
 int	mask;
 {
 	static	char	null[] = "<NULL>";
@@ -1363,12 +1355,7 @@ int	mask;
 	time_t	hold;
 	aClient *acptr = find_client(to, NULL);
 
-	for (tmp = (mask & CONF_KILL) ? kconf : (
-#ifdef RUSNET_RLINES
-	    (mask & (CONF_RUSNETRLINE)) ? rconf :
-#endif	
-	 (mask & (CONF_EXEMPT)) ? econf : conf);
-	     tmp; tmp = tmp->next)
+	for (tmp = aconf; tmp; tmp = tmp->next)
 		if (tmp->status & mask)
 		    {
 			for (p = &report_array[0][0]; *p; p += 3)
@@ -1392,7 +1379,7 @@ int	mask;
 					    (host) ? host : "*",
 					    (pass) ? pass : "-",
 					    port, (hold > 0) ? myctime(hold) : "permanent");
-			    
+
 			else if ( tmp->status == CONF_VER
 					    || tmp->status == CONF_INTERFACE
 					    || tmp->status == CONF_BOUNCE)
@@ -1466,12 +1453,10 @@ char	*parv[];
 	int	wilds, doall;
 	char	*name, *cm;
 
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr)) {
 		sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
 		return 5;
 	}
-#endif
 
 #ifdef STATS_RESTRICTED
 	if (!IsAnOper(sptr) && !(stat == 'c' || stat == 'C' ||
@@ -1563,10 +1548,11 @@ char	*parv[];
 		break;
 #endif
 	case 'B' : case 'b' : /* B conf lines */
-		report_configured_links(cptr, parv[0], CONF_BOUNCE);
+		report_configured_links(cptr, parv[0], conf, CONF_BOUNCE);
 		break;
 	case 'c' : case 'C' : /* C and N conf lines */
-		report_configured_links(cptr, parv[0], CONF_CONNECT_SERVER|
+		report_configured_links(cptr, parv[0], conf,
+					CONF_CONNECT_SERVER|
 					CONF_ZCONNECT_SERVER|
 					CONF_NOCONNECT_SERVER);
 		break;
@@ -1581,27 +1567,26 @@ char	*parv[];
 	case 'e' :
 #endif
 	case 'E' : /* E lines */
-		report_configured_links(cptr, parv[0],
-					(CONF_EXEMPT));
+		report_configured_links(cptr, parv[0], econf, CONF_EXEMPT);
 		break;
 
 	case 'F' : case 'f' : /* F conf lines */
-		report_configured_links(cptr, parv[0], CONF_INTERFACE);
+		report_configured_links(cptr, parv[0], conf, CONF_INTERFACE);
 		break;
 
 	case 'H' : case 'h' : /* H, L and D conf lines */
-		report_configured_links(cptr, parv[0],
+		report_configured_links(cptr, parv[0], conf,
 					CONF_HUB|CONF_LEAF|CONF_DENY);
 		break;
 	case 'I' : case 'i' : /* I (and i) conf lines */
-		report_configured_links(cptr, parv[0],
+		report_configured_links(cptr, parv[0], conf,
 					CONF_CLIENT|CONF_RCLIENT);
 		break;
 	case 'K' : case 'k' : /* K lines */
-		report_configured_links(cptr, parv[0], CONF_KILL);
+		report_configured_links(cptr, parv[0], kconf, CONF_KILL);
 		break;
 	case 'L' : case 'l' : /* L lines */
-		report_configured_links(cptr, parv[0], CONF_LOG);
+		report_configured_links(cptr, parv[0], conf, CONF_LOG);
 		break;
 	case 'M' : case 'm' : /* commands use/stats */
 		for (mptr = msgtab; mptr->cmd; mptr++)
@@ -1612,7 +1597,7 @@ char	*parv[];
 					   mptr->rcount);
 		break;
 	case 'o' : case 'O' : /* O (and o) lines */
-		report_configured_links(cptr, parv[0], CONF_OPS);
+		report_configured_links(cptr, parv[0], conf, CONF_OPS);
 		break;
         case 'P' : /* ports listening */
 	        report_listeners(sptr, parv[0]);
@@ -1621,18 +1606,19 @@ char	*parv[];
 		report_ping(sptr, parv[0]);
 		break;
 	case 'Q' : case 'q' : /* Q lines */
-		report_configured_links(cptr,parv[0],CONF_QUARANTINED_SERVER);
+		report_configured_links(cptr, parv[0], conf,
+						CONF_QUARANTINED_SERVER);
 		break;
-#ifdef RUSNET_RLINES
-	case 'R' : case 'r' : /* Rusnet R lines */
-		report_configured_links(cptr, parv[0],
-					CONF_RUSNETRLINE);
+	case 'R' : case 'r' : /* R lines (restricted clients) */
+		report_configured_links(cptr, parv[0], rconf, CONF_RUSNETRLINE);
 		break;
-#endif
-	case 'S' : case 's' : /* S lines */
-		report_configured_links(cptr, parv[0], CONF_SERVICE);
+	case 'S' : case 's' : /* S lines (services) */
+		report_configured_links(cptr, parv[0], conf, CONF_SERVICE);
 		break;
-	case 'T' : case 't' : /* various statistics */
+	case 'T' : /* T lines (spam triggers) */
+		report_configured_links(cptr, parv[0], tconf, CONF_TRIGGER);
+		break;
+	case 't' : /* various statistics */
 		send_usage(cptr, parv[0]);
 		tstats(cptr, parv[0]);
 		break;
@@ -1646,7 +1632,7 @@ char	*parv[];
 		break;
 	    }
 	case 'V' : case 'v' : /* V conf lines */
-		report_configured_links(cptr, parv[0], CONF_VER);
+		report_configured_links(cptr, parv[0], conf, CONF_VER);
 		break;
 	case 'X' : case 'x' : /* lists */
 #ifdef	DEBUGMODE
@@ -1765,12 +1751,11 @@ int	m_help(aClient *cptr _UNUSED_, aClient *sptr,
     {
 	int i;
 
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr)) {
 		sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
 		return 5;
 	}
-#endif
+
 	for (i = 0; msgtab[i].cmd; i++)
 	  sendto_one(sptr,":%s NOTICE %s :%s",
 		     ME, parv[0], msgtab[i].cmd);
@@ -1798,12 +1783,10 @@ char	*parv[];
 		m_service = 0;	/* my services */
 	aClient *acptr;
 
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr)) {
 		sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
 		return 5;
 	}
-#endif
 
 	if (parc > 2)
 		if (hunt_server(cptr, sptr, ":%s LUSERS %s :%s", 2, parc, parv)
@@ -2110,11 +2093,11 @@ char	*parv[];
 {
 	if (hunt_server(cptr,sptr,":%s TIME :%s",1,parc,parv) == HUNTED_ISME)
 		sendto_one(sptr, rpl_str(RPL_TIME, parv[0]), ME, date((long)0));
-#ifdef RUSNET_RLINES
+
 	if (MyClient(sptr) && IsRMode(sptr)) {
 		return 10;
 	}
-#endif
+
 	return 2;
 }
 
@@ -2146,12 +2129,8 @@ char	*parv[];
 	    }
 	else
 		sendto_one(sptr, err_str(ERR_NOADMININFO, parv[0]), ME);
-#ifdef RUSNET_RLINES
-	if (MyClient(sptr) && IsRMode(sptr)) {
-		return 10;
-	}
-#endif
-	return 2;
+
+	return (MyClient(sptr) && IsRMode(sptr)) ? 10 : 2;
     }
 
 #if defined(OPER_REHASH) || defined(LOCOP_REHASH)
@@ -2223,6 +2202,10 @@ int	m_rehash(aClient *cptr _UNUSED_, aClient *sptr, int parc, char *parv[])
 				status |= REHASH_SSL;
 				break;
 #endif /* USE_SSL */
+			case 'T':
+			case 't':
+				status |= REHASH_T;
+				break;
 			case 'Y':
 			case 'y':
 				status |= REHASH_Y;
@@ -2302,12 +2285,11 @@ char	*parv[];
 	int	doall, link_s[MAXCONNECTIONS], link_u[MAXCONNECTIONS];
 	int	wilds, dow;
 
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr)) {
 		sendto_one(sptr, err_str(ERR_RESTRICTED, parv[0]));
 		return 10;
 	}
-#endif
+
 	if (parc > 1)
 		tname = parv[1];
 	else
@@ -2469,7 +2451,6 @@ char	*parv[];
 	register aMotd *temp;
 	struct tm *tm;
 
-#ifdef RUSNET_RLINES
 	if (MyClient(sptr) && IsRMode(sptr)) {
 		if (rmotd == NULL)
 		{
@@ -2483,16 +2464,19 @@ char	*parv[];
 		sendto_one(sptr, rpl_str(RPL_ENDOFMOTD, parv[0]));		
 		return 10;
 	}
-#endif
+
 	if (!IsUnknown(sptr))
 	{
-	if (check_link(cptr))
-	    {
-		sendto_one(sptr, rpl_str(RPL_TRYAGAIN, parv[0]), "MOTD");
-		return 5;
-	    }
-	if (hunt_server(cptr, sptr, ":%s MOTD :%s", 1,parc,parv)!=HUNTED_ISME)
-		return 5;
+		if (check_link(cptr))
+		    {
+			sendto_one(sptr, rpl_str(RPL_TRYAGAIN, parv[0]),
+								"MOTD");
+			return 5;
+		    }
+
+		if (hunt_server(cptr, sptr, ":%s MOTD :%s", 1, parc, parv)
+								!= HUNTED_ISME)
+			return 5;
 	}
 	tm = localtime(&motd_mtime);
 	if (motd == NULL)
@@ -2780,8 +2764,9 @@ char	*command;
 {
 	aClient	*acptr = NULL;
 /* sendto_slaves */
-	if (parv[1][0] == '*') { /* masks need to be broadcasted */
-	    sendto_serv_butone(cptr, ":%s %s %s %s %s %s %s :%s",
+	if (strchr(parv[1], '*'))	/* masks need to be broadcasted */
+	{
+		sendto_serv_butone(cptr, ":%s %s %s %s %s %s %s :%s",
 					parv[0],
 					command,
 					parv[1],
@@ -2790,9 +2775,8 @@ char	*command;
 					parv[4],
 					parv[5] ? parv[5] : "",
 					parv[6] ? parv[6] : "No reason");
-	    if (parv[1][1]) /* mask is not just '*' but server mask */
 		if (match(parv[1], ME))
-		    return -1; /* Mask doesn't match me */		
+			return -1; /* Mask doesn't match me */		
 	} else {
 	    /* Check that target server exists and is not sending us this */
 	    if ((acptr = find_server(parv[1], NULL)) == NULL)
@@ -2955,7 +2939,8 @@ int match_tline(aConfItem *line1, aConfItem *line2)
 }
 
 int send_tline_one(aConfItem *aconf) {
-    char type;
+    char type, class[6] = "";
+
     switch (aconf->status) {
 	case CONF_KILL:
 	    type = 'K';
@@ -2966,6 +2951,11 @@ int send_tline_one(aConfItem *aconf) {
 	case CONF_RUSNETRLINE:
 	    type = 'R';
 	    break;
+	case CONF_TRIGGER:
+	    type = 'T';
+	    if (aconf->port)
+		    sprintf(class, "%d", aconf->port);
+	    break;
 	default:
 	    return 0;
     }
@@ -2974,14 +2964,14 @@ int send_tline_one(aConfItem *aconf) {
 	    aconf->host, IRCDCONF_DELIMITER,
 	    aconf->passwd, IRCDCONF_DELIMITER,
 	    aconf->name,  IRCDCONF_DELIMITER,
-	    "", IRCDCONF_DELIMITER,
+	    class, IRCDCONF_DELIMITER,
 		    aconf->hold);
 	sendto_flag(SCH_ISERV, "%c%c%s%c%s%c%s%c%s%c%s",
 	    type, IRCDCONF_DELIMITER,
 	    aconf->host, IRCDCONF_DELIMITER,
 	    aconf->passwd, IRCDCONF_DELIMITER,
 	    aconf->name,  IRCDCONF_DELIMITER,
-	    "", IRCDCONF_DELIMITER,
+	    class, IRCDCONF_DELIMITER,
 				(aconf->hold > 0) ? myctime(aconf->hold) : 
 				    ((aconf->hold == 0) ? "permanent" : "remove"));
 	return 0;    
@@ -2992,10 +2982,7 @@ void rehash_tline(aConfItem **confstart, aConfItem *aconf)
     int		i = 0;
     Reg	aClient	*cptr;
     char	*reason;
-    int klined = 0;
-#ifdef RUSNET_RLINES
-    int rlined = 0;
-#endif
+    int klined = 0, rlined = 0;
     
     for (i = highest_fd; i >= 0; i--)
     {
@@ -3017,7 +3004,7 @@ void rehash_tline(aConfItem **confstart, aConfItem *aconf)
 		    (void)exit_client(cptr, cptr, &me, (reason) ?
 				buf : "Kill line active");
 		}
-#ifdef RUSNET_RLINES
+
 		if (aconf->status == CONF_RUSNETRLINE) {
 		    if (!IsRMode(cptr))
 		    {
@@ -3031,10 +3018,9 @@ void rehash_tline(aConfItem **confstart, aConfItem *aconf)
 			rlined++;
 		    }
 		}
-#endif
-	    }
-	}
-    }
+	    } /* check_tlines */
+	} /* IsPerson */
+    } /* for */
 
     if (klined)
 #ifdef WALLOPS_TO_CHANNEL
@@ -3062,6 +3048,260 @@ void rehash_tline(aConfItem **confstart, aConfItem *aconf)
 #endif
 }
 
+/* triggers are matched if patterns are matched. If current pattern is bound
+ * to a class, but new one isn't, or validity period differs, the current
+ * pattern is replaced. Otherwise, the new pattern is ignored.
+ *
+ * return codes are:
+ *	-2	patterns are incomparable
+ *	-1	new pattern is ignored
+ *	1	new pattern is chosen
+ */
+int match_trigger(aConfItem *curr, aConfItem *new)
+{
+	return (match(curr->passwd, new->passwd)) ? -2 :
+		(curr->port && !new->port) ? 1 :
+		(!curr->port || curr->port == new->port) ? -1 : -2;
+}
+
+/* Trigger syntax differs from other timed lines (K/R/E):
+ *
+ * Server syntax is:
+ *	* TRIGGER server hours [class] :pattern
+ *
+ * Client syntax is:
+ *	* TRIGGER hours [class] :pattern
+ *
+ *	* 0 hours mean permanent
+ *	* -1 hour means removal (unTRIGGER)
+ *
+ *	if class is defined, only clients in that class will trigger the line
+ */
+int m_trigger(cptr, sptr, parc, parv)
+aClient	*cptr, *sptr;
+int	parc;
+char	*parv[];
+{
+	time_t  tline_time;
+	u_short	t_index;
+	int	class;
+	char	*pattern, *str;
+
+	if (IsServer(sptr))
+	{
+		if (parc < 4)
+			return -1;		/* not enough parameters */    
+
+		if (sendto_slaves(cptr, parv, MSG_TRIGGER) < 0)
+			return 0;
+
+		t_index = 2;
+	}
+	else if (!MyClient(sptr))
+	{
+		sendto_one(sptr, err_str(ERR_NOPRIVILEGES, parv[0]));
+		return 0;
+	}
+	else if (parc < 3)
+	{
+		sendto_one(sptr,
+			":%s NOTICE %s :Usage: %s hours [class] :<pattern>",
+					me.name, parv[0], MSG_TRIGGER);
+		return -1;
+	}
+	else
+		t_index = 1;
+
+	tline_time =	(tline_time = atol(parv[t_index++])) ? tline_time : 0;
+
+	class	=	(parv[t_index + 1] && (class = atoi(parv[t_index++]))) ?
+			class : 0;
+
+	pattern = parv[t_index];
+
+	if (EmptyString(pattern))
+	{
+		if (IsClient(sptr))
+			sendto_one(sptr, ":%s NOTICE %s :Usage: %s "
+					"hours [class] :<pattern>",
+					me.name, parv[0], MSG_TRIGGER);
+		return 0;
+	}
+
+	for (str = pattern; *str; str++)
+		if (*str == IRCDCONF_DELIMITER)
+			*str = ',';
+ 
+    /*
+    * iserv command:
+    * <type>:<user@hostmask|user@ipmask>:<reason>:<nick>:<port>:<expiration_timestamp>
+    *
+    * here we store class into <port> and pattern into <reason>
+    *
+    * TODO: make this a subroutine to match handle_tline and shorten
+    * doubled code a bit
+    */
+    {
+	aConfItem *aconf = NULL, *tmp, **prev = &tconf;
+	time_t	expire, now = time(NULL);
+
+	if (tline_time > now) /* Means we got it in timestamp fmt */
+	    expire = tline_time;
+	else
+	    expire = (tline_time > 0) ? (tline_time * 3600 + now) : tline_time;
+
+	if ((expire > 0) && (expire <= now))
+	    return -1;
+
+	aconf = make_conf();
+	aconf->status = CONF_TRIGGER;
+
+	/* I doubt seriously we would need usermask for spam patterns */
+	DupString(aconf->host, "*");
+	DupString(aconf->passwd, pattern);
+	DupString(aconf->name, sptr->name);
+	aconf->port = class;
+	aconf->hold = expire;
+	aconf->clients = (tline_time < 0) ? -1 : 1;
+	istat.is_confmem += aconf->host ? strlen(aconf->host) + 1 : 0;
+	istat.is_confmem += aconf->passwd ? strlen(aconf->passwd) + 1 :0;
+	istat.is_confmem += aconf->name ? strlen(aconf->name) + 1 : 0;
+
+	while ((tmp = *prev))
+	{
+		int	match_res, conf_delete = 0;
+
+		if (((tmp->hold != 0) && (tmp->hold <= now)) ||
+					(tmp->status & CONF_ILLEGAL))
+		{
+			*prev = tmp->next; 
+			free_conf(tmp);
+			continue;
+		}
+
+		match_res = match_trigger(tmp, aconf);
+
+		if (match_res >= 0)
+			conf_delete = 1;
+		else if (match_res == -1)
+		{
+			if (tline_time >= 0)
+				aconf->clients = -1;
+			conf_delete = 0;
+		}
+		else if (match_res == -2)
+			conf_delete = 0;
+
+		if (conf_delete)
+		{
+			tmp->hold = -1;
+#ifdef USE_ISERV
+			send_tline_one(tmp);
+#endif
+			*prev = tmp->next; 
+			free_conf(tmp);
+		}
+		else
+			prev = &(tmp->next);
+	}
+	if (aconf->clients > 0)
+	{
+#ifdef USE_ISERV
+		send_tline_one(aconf);
+#endif
+		aconf->next = tconf;
+		tconf = aconf;
+	}
+	else
+		free_conf(aconf);
+    }
+	return 0;
+}
+
+/*
+ * Server syntax is:
+ *	* UNTRIGGER server [class] :message
+ *
+ * Client syntax is:
+ *	* [UN]TRIGGER [class] :message
+ *
+ * any currently defined pattern matching message will be removed
+ */
+
+int m_untrigger(cptr, sptr, parc, parv)
+aClient	*cptr, *sptr;
+int	parc;
+char	*parv[];
+{
+	aConfItem *tmp, *aconf, **prev = &tconf;
+	char	*pattern;
+	int	t_index = 1, class;
+	time_t	now = time(NULL);
+
+	if (IsServer(sptr))
+	{
+		if (parc < 3)
+			return -1;		/* not enough parameters */    
+
+		if (sendto_slaves(cptr, parv, MSG_UNTRIGGER) < 0)
+			return 0;
+
+		t_index++;
+	}
+	else if (!MyClient(sptr))
+	{
+		sendto_one(sptr, err_str(ERR_NOPRIVILEGES, parv[0]));
+		return 0;
+	}
+	else if (parc < 2)
+	{
+		sendto_one(sptr, ":%s NOTICE %s :Usage: %s [class] :<pattern>",
+					me.name, parv[0], MSG_UNTRIGGER);
+		return -1;
+	}
+
+	class = (parv[t_index + 1] && (class = atoi(parv[t_index++]))) ? class : 0;
+	pattern = parv[t_index];
+
+	if (EmptyString(pattern))
+	{
+		if (IsClient(sptr))
+			sendto_one(sptr, ":%s NOTICE %s :Usage: %s [class] "
+				":<pattern>", me.name, parv[0], MSG_UNTRIGGER);
+		return 0;
+	}
+
+	aconf = make_conf();
+	aconf->status = CONF_TRIGGER;
+	DupString(aconf->passwd, pattern);
+	aconf->port = class;
+	istat.is_confmem += aconf->passwd ? strlen(aconf->passwd) + 1 :0;
+
+	/* find lines to remove */
+	while ((tmp = *prev))
+	{
+		if (((tmp->hold != 0) && (tmp->hold <= now)) ||
+					(tmp->status & CONF_ILLEGAL))
+		{
+			*prev = tmp->next; 
+			free_conf(tmp);
+		}
+		else if (match_trigger(tmp, aconf) > -2)
+		{
+			tmp->hold = -1;
+#ifdef USE_ISERV
+			send_tline_one(tmp);
+#endif
+			*prev = tmp->next; 
+			free_conf(tmp);
+		}
+		else
+			prev = &(tmp->next);
+	}
+
+	free_conf(aconf);
+	return 0;
+}
 
 /* Server syntax:
      * LINE server nickmask usermask hostmask [hours|E] [:reason]
@@ -3071,7 +3311,7 @@ void rehash_tline(aConfItem **confstart, aConfItem *aconf)
 /* Oper syntax:
      * LINE nick!user@host [hours] [reason]
      * For exempt mind ELINE command.
-     * To remove Xline use UXKLINE.
+     * To remove Xline use UNXLINE.
 */ 
  /*
  ** If we add a line we should first check if we already have exact or matched (narrower) ones
@@ -3207,7 +3447,6 @@ char	*command;
 	    if (*str == IRCDCONF_DELIMITER)
 		*str = ',';
   
-#ifdef USE_ISERV
     /*
     * iserv command:
     * <type>:<user@hostmask|user@ipmask>:<reason>:<nick>:<port>:<expiration_timestamp>
@@ -3217,7 +3456,6 @@ char	*command;
 	char	type;
 	char	buf[USERLEN + HOSTLEN + 2];
 	time_t	expire;
-	int	conf_delete = 0;
 
 	*buf = '\0';
 	type = (*command == 'U') ? command[2] : command[0];
@@ -3265,8 +3503,7 @@ char	*command;
 	
 	while ((tmp = *prev))
 	{
-	    int match_res = match_tline(aconf, tmp);
-	    conf_delete = 0;
+	    int match_res, conf_delete = 0;
 	    
 	    if (((tmp->hold > 0) && (tmp->hold <= now)) || (tmp->status & CONF_ILLEGAL))
 	    {
@@ -3274,36 +3511,38 @@ char	*command;
 		free_conf(tmp);
 		continue;
 	    }
-	    if (match_res >= 0) {
+	    match_res = match_tline(aconf, tmp);
+	    if (match_res >= 0)
 		conf_delete = 1;
-		goto next_conf;
-	    }
-	    if (match_res == -1) {
-		if (tline_time >= 0) {
-		    aconf->clients = -1;
-		}
-		conf_delete = 0;
-		goto next_conf;
-	    }
-	    if (match_res == -2) {
-		conf_delete = 0;
-		goto next_conf;
-	    }
-	    
-	    next_conf:
-		if (conf_delete) {
-		    tmp->hold = -1;
-		    send_tline_one(tmp);
-		    *prev = tmp->next;
-		    free_conf(tmp);
 
-		}
-		else {
-		    prev = &(tmp->next);
-		}
+	    else if (match_res == -1)
+	    {
+		if (tline_time >= 0)
+		    aconf->clients = -1;
+
+		conf_delete = 0;
+	    }
+	    else if (match_res == -2)
+		conf_delete = 0;
+	    
+	    if (conf_delete)
+	    {
+		tmp->hold = -1;
+#ifdef USE_ISERV
+		send_tline_one(tmp);
+#endif
+		*prev = tmp->next;
+		free_conf(tmp);
+
+	    }
+	    else
+		prev = &(tmp->next);
 	}
-	if (aconf->clients > 0) {
+	if (aconf->clients > 0)
+	{
+#ifdef USE_ISERV
 	    send_tline_one(aconf);
+#endif
 	    aconf->next = *confstart;
 	    *confstart = aconf;
 
@@ -3315,9 +3554,9 @@ char	*command;
 	    rehashed = 1;		    /* also almost instant. -skold */
 #endif
 	}
-	else {
+	else
 	    free_conf(aconf);
-	}
+
 	return 0;
 #if 0
 single_line: /* never reached in this code -skold */
@@ -3341,7 +3580,6 @@ single_line: /* never reached in this code -skold */
 
 #endif
     }
-#endif
 }
 
 #if 0

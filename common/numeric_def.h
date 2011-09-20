@@ -86,6 +86,7 @@
 #define	ERR_SUMMONDISABLED   445
 #define ERR_USERSDISABLED    446
 
+#define ERR_NOSPAM           450
 #define ERR_NOTREGISTERED    451
 
 #define ERR_NEEDMOREPARAMS   461
@@ -139,6 +140,7 @@
 #define	RPL_UNAWAY           305
 #define	RPL_NOWAWAY          306
 #define	RPL_IDENTIFIED       307 /* match Bahamut and Unreal here */
+#define RPL_NOCOLOR          308
 
 #define RPL_WHOISUSER        311
 #define RPL_WHOISSERVER      312
@@ -238,10 +240,10 @@
 #define RPL_CODEPAGE         222
 #define RPL_CHARSET          223
 #define RPL_STATSFLINE       224
-#ifdef RUSNET_RLINES
-# define RPL_WHOISRMODE	     225
-# define RPL_STATSRLINE	     226
-#endif /* RUSNET_RLINES */
+#define RPL_WHOISRMODE	     225
+#define RPL_STATSRLINE	     226
+
+#define RPL_STATSTRIGGER     228
 
 #define RPL_SERVICEINFO      231
 #define RPL_ENDOFSERVICES    232

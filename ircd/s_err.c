@@ -42,9 +42,9 @@ static	Numeric	local_replies[] = {
 #endif
 /* 003 */	{ RPL_CREATED, ":This server was created %s" },
 # ifdef USE_SSL
-/* 004 */	{ RPL_MYINFO, "%s %s aboOiIrswx abcehiIklmnoOpqrRstvz" },
+/* 004 */	{ RPL_MYINFO, "%s %s abcoOiIrswx abcehiIklmnoOpqrRstvz" },
 # else
-/* 004 */	{ RPL_MYINFO, "%s %s aboOiIrwx abcehiIklmnoOpqrRstvz" },
+/* 004 */	{ RPL_MYINFO, "%s %s abcoOiIrwx abcehiIklmnoOpqrRstvz" },
 # endif
 #ifndef SEND_ISUPPORT
 /* 005 */	{ RPL_BOUNCE, ":Try server %s, port %d" },
@@ -138,7 +138,7 @@ static	Numeric	numeric_errors[] = {
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
-		{ 0, (char *)NULL },
+/* 450 */	{ ERR_NOSPAM, ":Spam is not allowed" },
 /* 451 */	{ ERR_NOTREGISTERED, ":You have not registered" },
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
@@ -169,7 +169,7 @@ static	Numeric	numeric_errors[] = {
 /* 476 */	{ ERR_BADCHANMASK, "%s :Bad Channel Mask" },
 /* 477 */	{ ERR_NOCHANMODES, "%s :Channel doesn't support modes" },
 /* 478 */	{ ERR_BANLISTFULL, "%s %s :Channel list is full" },
-/* 479 */	{ ERR_NOCOLOR, "%s :Channel couldn't accept colors (+c)" },
+/* 479 */	{ ERR_NOCOLOR, "%s :Does not accept colors (+c)" },
 #ifdef WALLOPS_TO_CHANNEL
 /* 480 */	{ ERR_NOWALLOP,
 		":Join &WALLOPS instead" },
@@ -213,7 +213,7 @@ static	Numeric	numeric_replies[] = {
 /* 305 */	{ RPL_UNAWAY, ":You are no longer marked as being away" },
 /* 306 */	{ RPL_NOWAWAY, ":You have been marked as being away" },
 /* 307 */	{ RPL_IDENTIFIED, ":Identified by NickServ" },
-		{ 0, (char *)NULL },	/* is a Server Administrator */
+/* 308 */	{ RPL_NOCOLOR, ":Does not accept colors" },
 		{ 0, (char *)NULL },	/* is a services admin */
 		{ 0, (char *)NULL },	/* is an IRC helper */
 /* 311 */	{ RPL_WHOISUSER, "%s %s %s * :%s" },
@@ -342,11 +342,9 @@ static	Numeric	numeric_replies[] = {
 /* 223 */	{ RPL_CHARSET, "%s :charset is %s" },
 /* 224 */	{ RPL_STATSFLINE, "%c %s %s %s %d %d" },
 /* 225 */	{ RPL_WHOISRMODE, "%s :is Restricted" },
-# ifdef RUSNET_RLINES
 /* 226 */	{ RPL_STATSRLINE, "%c %s!%s %s %d %s" },
-# endif
 		{ 0, (char *)NULL },
-		{ 0, (char *)NULL },
+/* 228 */	{ RPL_STATSTRIGGER, "%c %s %d %s" },
 		{ 0, (char *)NULL },
 		{ 0, (char *)NULL },
 /* 231 */	{ RPL_SERVICEINFO, (char *)NULL },

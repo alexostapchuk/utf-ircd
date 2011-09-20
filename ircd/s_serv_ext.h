@@ -62,9 +62,11 @@ EXTERN int find_server_num (char *sname);
 EXTERN int m_kline (aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int m_rline (aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int m_eline (aClient *cptr, aClient *sptr, int parc, char *parv[]);
+EXTERN int m_trigger (aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int m_unkline (aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int m_unrline (aClient *cptr, aClient *sptr, int parc, char *parv[]);
 EXTERN int m_uneline (aClient *cptr, aClient *sptr, int parc, char *parv[]);
+EXTERN int m_untrigger (aClient *cptr, aClient *sptr, int parc, char *parv[]);
 
 #if defined(OPER_REHASH) || defined(LOCOP_REHASH)
 EXTERN int m_rehash (aClient *cptr _UNUSED_, aClient *sptr,

@@ -27,9 +27,7 @@
 extern struct stats ircst, *ircstp;
 extern aMotd *motd;
 extern time_t motd_mtime;
-#ifdef RUSNET_RLINES
 extern aMotd *rmotd;
-#endif
 #endif /* S_MISC_C */
 
 /*  External definitions for global functions.
@@ -55,9 +53,7 @@ EXTERN void checklist(void);
 EXTERN void initstats(void);
 EXTERN void tstats (aClient *cptr, char *name);
 EXTERN void read_motd (char *filename);
-#ifdef RUSNET_RLINES
 EXTERN void read_rmotd (char *filename);
-#endif
 #ifndef USE_OLD8BIT
 EXTERN void set_internal_encoding (aClient *cptr, aConfItem *aconf);
 #endif

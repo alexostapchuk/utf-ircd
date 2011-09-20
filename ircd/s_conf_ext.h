@@ -24,11 +24,7 @@
 /*  External definitions for global variables.
  */
 #ifndef S_CONF_C
-extern aConfItem *conf, *kconf;
-extern aConfItem *econf;
-#ifdef RUSNET_RLINES
-extern aConfItem *rconf;
-#endif
+extern aConfItem *conf, *kconf, *econf, *rconf, *tconf;
 
 /*  External definitions for global functions.
  */
@@ -68,9 +64,7 @@ EXTERN int openconf(void);
 EXTERN int initconf(int opt, int init_flags);
 EXTERN int check_tlines(aClient *cptr, int doall, char **comment, char *nick, 
 	aConfItem **iconf, aConfItem *aconf);
-#ifdef RUSNET_RLINES
 EXTERN void do_restrict(aClient *cptr);
-#endif
 EXTERN int find_two_masks(char *name, char *host, u_int stat);
 EXTERN int find_conf_flags(char *name, char *key, unsigned int stat);
 EXTERN int find_restrict(aClient *cptr);
