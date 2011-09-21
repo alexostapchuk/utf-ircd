@@ -169,14 +169,15 @@ char *cstrip(char *src)
 	if (!dest)
 		return src;
 
-	for (s = src, d = dest; *s; s++, d++)
+	for (s = src, d = dest; *s; s++)
 	{
 		if (*s == '\x0f' || *s == '\x1f' || *s == '\x02'
 				|| *s == '\x12' || *s == '\x16')
 			continue;
 
-		/* color code matches (\d{1,2}(,\d{1,2})?)? pattern */
-		if (*s == '\x03')
+		/* color code matches (\d{1,2}(,\d{1,2})?)? pattern	*/
+		/* several color codes may come in sequence		*/
+		while (*s == '\x03')
 		{
 			s++;
 			if (isdigit(*s)) s++;
@@ -186,7 +187,7 @@ char *cstrip(char *src)
 			if (isdigit(*s)) s++;
 		}
 
-		*d = *s;
+		*d++ = *s;
 	}
 
 	*d = '\0'; /* terminate string */

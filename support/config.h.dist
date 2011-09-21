@@ -461,6 +461,16 @@
 /* define it if you want to replace unconverted characters with some chars */
 #define	DO_TEXT_REPLACE		1
 #define	TEXT_REPLACE_CHAR	'?'
+
+/*
+ * If you left this one undefined, you might experience troubles with
+ * non-ASCII characters in your ircd.conf or kills.conf unless your locale
+ * is UTF-8. In other hand, if you define this, your kills.conf WILL most
+ * probably be read incorrectly for IDN names and UTF patterns. So,
+ * you'd rather NOT define that unless you're absolutely sure what you do.
+ */
+#undef	DECODE_CONFIG
+
 #endif /* not USE_OLD8BIT */
 
 #ifndef HAVE_UTF_LOCALE

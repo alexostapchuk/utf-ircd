@@ -1138,11 +1138,12 @@ int	init_flags;
 	aConfig	*ConfigTop, *p;
 	FILE	*fdn;
 #ifndef USE_OLD8BIT
+# ifdef	DECODE_CONFIG
 	conversion_t *conv;
 	char	line2[4096];
 	char	*rline;
 	size_t	len;
-  
+# endif
 	UseUnicode = -1;
 	Force8bit = 0; /* see set_internal_encoding() */
 #endif
@@ -1166,7 +1167,7 @@ int	init_flags;
 		}
 		return -1;
 	}
-#ifndef USE_OLD8BIT
+#if !defined(USE_OLD8BIT) && defined(DECODE_CONFIG)
 	conv = conv_get_conversion(config_charset);
 #endif
 	ConfigTop = config_read(fdn, 0, new_config_file(configfile, NULL, 0));
@@ -1220,7 +1221,9 @@ int	init_flags;
 			tmp2 = NULL;
 		    }
 		tmp3 = tmp4 = NULL;
-#ifndef USE_OLD8BIT
+#if defined(USE_OLD8BIT) || !defined(DECODE_CONFIG)
+		tmp = getfield(line);
+#else
 		if (conv)
 		{
 			rline = line2;
@@ -1229,8 +1232,6 @@ int	init_flags;
 			rline[len] = '\0';
 		}
 		tmp = getfield(rline);
-#else
-		tmp = getfield(line);
 #endif
 		if (!tmp)
 			continue;
@@ -1701,7 +1702,9 @@ int	init_flags;
 #ifndef USE_OLD8BIT
 	if (UseUnicode == -1) /* didn't set from config, so use default */
 		set_internal_encoding(NULL, NULL);
+# ifdef	DECODE_CONFIG
 	conv_free_conversion(conv);
+# endif
 #endif
 	(void)close(fd);
 #if defined(M4_PREPROC) && !defined(USE_IAUTH) && !defined(USE_ISERV)

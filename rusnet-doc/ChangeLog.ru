@@ -7,6 +7,8 @@
 			для удаления расцветок перед проверкой сообщения
 			на спам
 	* ircd/channel.c: вызов check_spam добавлен в m_part()
+	* ircd/s_conf.c: не перекодируем ircd.conf/kills.conf, если при сборке
+			не было задано DECODE_CONFIG
 	* ircd/s_debug.c: STRIP_COLORS выводится как 'b' в server_opts
 	* ircd/s_err.c: исправлен формат RPL_STATSTRIGGER
 	* ircd/s_misc.c: вызов check_spam() добавлен в exit_one_client
@@ -14,7 +16,8 @@
 	* ircd/s_user.c: добавлена функция check_spam() для вызова из
 			m_message, m_part и exit_one_client
 	* support/config.h.dist: добавлен параметр сборки STRIP_COLORS,
-			по умолчанию включен
+			по умолчанию включен; добавлен параметр DECODE_CONFIG,
+			по умолчанию выключен
 
 2011-09-20 erra <erra@ya.ru>
 	* ircd/s_serv.c: исправлены m_trigger/m_untrigger на предмет
