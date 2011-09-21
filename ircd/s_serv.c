@@ -1375,7 +1375,7 @@ int	mask;
 			 */
 			if (tmp->status & CONF_TLINE)
 				sendto_one(sptr, rpl_str(p[1], to), c, 
-					    (name) ? name : "*", port
+					    (name) ? name : "*", port,
 					    (pass) ? pass : "-", (hold > 0) ?
 						myctime(hold) : "permanent");
 

@@ -2939,6 +2939,10 @@ char	*parv[];
 		if (IsAnonymous(chptr))
 			comment = "None";
 
+		/* antispam control */
+		if (check_spam(sptr, parv[0], parv[2]))
+			comment = "Spam discarded";
+
 		if (MyClient(sptr) && IsRMode(sptr))
 			comment = "Restricted";
 
@@ -2972,6 +2976,7 @@ char	*parv[];
 
 		sendto_channel_butserv(chptr, sptr, PartFmt, parv[0], name,
 					(chptr->mode.mode & MODE_NOCOLOR &&
+						comment == parv[2] &&
 						strchr(comment, 0x03)) ?
 						no_color_msg : comment);
 		remove_user_from_channel(sptr, chptr);

@@ -32,6 +32,9 @@ char	serveropts[] = {
 #ifndef	NO_IDENT
 'a',
 #endif
+#ifdef	STRIP_COLORS
+'b',
+#endif
 #ifdef	CHROOTDIR
 'c',
 #endif

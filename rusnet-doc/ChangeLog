@@ -1,8 +1,16 @@
 Version 2.0
 --------------
 2011-09-20 erra <erra@ya.ru>
+	* common/support.c, common/support_ext.h: cstrip() added for
+			stripping colors from spam messages before checking
+	* ircd/channel.c: check_spam call added to m_part()
+	* ircd/s_debug.c: STRIP_COLORS is shown as 'b' in server_opts
 	* ircd/s_err.c: RPL_STATSTRIGGER fixed
+	* ircd/s_misc.c: check_spam() call added to exit_one_client
 	* ircd/s_serv.c: /stats T output fixed
+	* ircd/s_user.c: check_spam() created to be called from m_message
+			as well as m_part and exit_one_client
+	* support/config.h.dist: STRIP_COLORS added, defined by default
 
 2011-09-20 erra <erra@ya.ru>
 	* ircd/s_serv.c: m_trigger/m_untrigger fixed for optional class

@@ -155,6 +155,46 @@ char *path;
 	return path;
 }
 
+/*
+** Colorless string copy, used to strip ANSI colors as well as bold, italic,
+** and underline from a message. Currently only used to check spam because
+** of performance penalty it introduces. See man strdup(3) for details
+*/
+#ifdef STRIP_COLORS
+char *cstrip(char *src)
+{
+	Reg char *s, *d;
+	char *dest = MyMalloc(strlen(src) + 1);
+
+	if (!dest)
+		return src;
+
+	for (s = src, d = dest; *s; s++, d++)
+	{
+		if (*s == '\x0f' || *s == '\x1f' || *s == '\x02'
+				|| *s == '\x12' || *s == '\x16')
+			continue;
+
+		/* color code matches (\d{1,2}(,\d{1,2})?)? pattern */
+		if (*s == '\x03')
+		{
+			s++;
+			if (isdigit(*s)) s++;
+			if (isdigit(*s)) s++;
+			if (*s == ',') s++;
+			if (isdigit(*s)) s++;
+			if (isdigit(*s)) s++;
+		}
+
+		*d = *s;
+	}
+
+	*d = '\0'; /* terminate string */
+
+	return dest;
+}
+#endif
+
 #ifdef INET6
 /*
  * inetntop: return the : notation of a given IPv6 internet number.

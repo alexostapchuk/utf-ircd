@@ -1640,13 +1640,24 @@ nickkilldone:
 		return 3;
 }
 
-static int check_triggers(sptr, message)
+/*
+** Evaluate spam triggers against a message
+**
+** Returns 1 if trigger matches, 0 otherwise
+*/
+
+int check_triggers(sptr, message)
 aClient *sptr;
 char *message;
 {
 	Reg	aConfItem *aconf;
 	Link	*lp;
 	int	class = 0;
+#ifdef STRIP_COLORS
+	char	*text = cstrip(message);
+#else
+	char	*text = message;
+#endif
 
 	for (lp = sptr->confs; lp; lp = lp->next)
 	{
@@ -1660,13 +1671,68 @@ char *message;
 
 	for (aconf = tconf; aconf; aconf = aconf->next)
 		if ((!aconf->port || aconf->port == class) &&
-				!match(aconf->passwd, message))
+				!match(aconf->passwd, text))
 		{
 			Debug((DEBUG_DEBUG, "Spam: %s (matched: %s)",
 						message, aconf->passwd));
+#ifdef STRIP_COLORS
+			if (text != message)
+				MyFree(text);
+#endif
 			return 1;
 		}
 
+#ifdef STRIP_COLORS
+	if (text != message)
+		MyFree(text);
+#endif
+	return 0;
+}
+
+/*
+** check message against spam triggers and restrict a client
+** if threshold exceeded
+**
+** Returns 0 when no spam found, 1 otherwise
+*/
+int check_spam(sptr, nick, message)
+aClient *sptr;
+char *nick, *message;
+{
+	if (MyClient(sptr) && !IsRMode(sptr) && check_triggers(sptr, message))
+	{
+		time_t now = time(NULL);
+
+		if (sptr->lastspam > now + 60)
+			sptr->spamcount = 0;
+
+		if (sptr->spamcount++ < MAX_SPAM)
+		{
+			sendto_one(sptr, err_str(ERR_NOSPAM, nick));
+			sptr->lastspam = now;
+#ifdef LOG_SPAM
+			sendto_flag(SCH_LOCAL, "Spam from %s!%s@%s: %s",
+					sptr->name, sptr->user->username,
+						sptr->sockhost, message);
+#endif
+		}
+		else
+		{
+			int old = (sptr->user->flags & ALL_UMODES);
+
+			do_restrict(sptr);
+			send_umode_out(sptr, sptr, old);
+			Debug((DEBUG_DEBUG, "Restricting %s!%s@%s for spam",
+					sptr->name, sptr->user->username,
+							sptr->sockhost));
+			sendto_flag(SCH_LOCAL,
+					"%s!%s@%s is restricted for spam",
+					sptr->name, sptr->user->username,
+							sptr->sockhost);
+
+		}
+		return 1;
+	}
 	return 0;
 }
 
@@ -1712,40 +1778,8 @@ int	parc, notice;
 		parv[1] = canonize(parv[1]);
 
 	/* antispam control */
-	if (MyClient(sptr) && !IsRMode(sptr) && check_triggers(sptr, parv[2]))
-	{
-		time_t now = time(NULL);
-
-		if (sptr->lastspam > now + 60)
-			sptr->spamcount = 0;
-
-		if (sptr->spamcount++ < MAX_SPAM)
-		{
-			sendto_one(sptr, err_str(ERR_NOSPAM, parv[0]));
-			sptr->lastspam = now;
-#ifdef LOG_SPAM
-			sendto_flag(SCH_LOCAL, "Spam from %s!%s@%s: %s",
-					sptr->name, sptr->user->username,
-						sptr->sockhost, parv[2]);
-#endif
-		}
-		else
-		{
-			int old = (sptr->user->flags & ALL_UMODES);
-
-			do_restrict(sptr);
-			send_umode_out(sptr, sptr, old);
-			Debug((DEBUG_DEBUG, "Restricting %s!%s@%s for spam",
-					sptr->name, sptr->user->username,
-							sptr->sockhost));
-			sendto_flag(SCH_LOCAL,
-					"%s!%s@%s is restricted for spam",
-					sptr->name, sptr->user->username,
-							sptr->sockhost);
-
-		}
+	if (check_spam(sptr, parv[0], parv[2]))
 		return 10;
-	}
 
 	for (p = NULL, nick = strtoken(&p, parv[1], ","); nick;
 	     nick = strtoken(&p, NULL, ","), penalty++)

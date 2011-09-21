@@ -755,6 +755,13 @@
 #undef	LOG_SPAM
 
 /*
+ * Strip colors from messages before checking for spam
+ * Warning! This operation introduces additional performance penalty,
+ * so you'd probably want to turn it off (needs some profiling here)
+ */
+#define	STRIP_COLORS
+
+/*
  * USE_IAUTH makes ircd use the iauth program for authentication.
  * it can always be overriden by using the -s switch
  */

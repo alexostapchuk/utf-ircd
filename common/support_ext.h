@@ -41,6 +41,9 @@ EXTERN char *strerror (int err_no);
 #endif /* HAVE_STRERROR */
 EXTERN char *myctime (time_t value);
 EXTERN char *mybasename (char *);
+#ifdef STRIP_COLORS
+EXTERN char *cstrip(char *src);
+#endif
 #ifdef INET6
 EXTERN char *inetntop(int af, const void *in, char *local_dummy, size_t the_size);
 EXTERN int inetpton(int af, const char *src, void *dst);
