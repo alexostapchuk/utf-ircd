@@ -1373,11 +1373,18 @@ int	mask;
 			 * On K/V/B/F lines the passwd contents can be
 			 * displayed on STATS reply. 	-Vesa
 			 */
-			if (tmp->status & CONF_TLINE)
+			if (tmp->status & CONF_TRIGGER)
 				sendto_one(sptr, rpl_str(p[1], to), c, 
 					    (name) ? name : "*", port,
 					    (pass) ? pass : "-", (hold > 0) ?
 						myctime(hold) : "permanent");
+
+			else if (tmp->status & CONF_TLINE)
+				sendto_one(sptr, rpl_str(p[1], to), c, 
+					    (name) ? name : "*",
+					    (host) ? host : "*",
+					    (pass) ? pass : "-",
+					    port, (hold > 0) ? myctime(hold) : "permanent");
 
 			else if ( tmp->status == CONF_VER
 					    || tmp->status == CONF_INTERFACE

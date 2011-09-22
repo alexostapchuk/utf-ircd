@@ -2,6 +2,8 @@ Version 2.0
 --------------
 2011-09-22 erra <erra@ya.ru>
 	* ircd/s_misc.c: check_triggers() call removed from exit_one_client
+	* ircd/s_serv.c: /stats K/R/E fixed (CONF_TRIGGER was messed with
+			CONF_TLINE)
 	* ircd/s_user.c: check_triggers() call added to m_quit
 	* ircd/s_user_ext.h: removed EXTERN declaration for check_triggers()
 

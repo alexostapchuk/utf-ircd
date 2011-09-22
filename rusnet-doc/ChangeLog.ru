@@ -4,6 +4,8 @@
 --------------
 2011-09-22 erra <erra@ya.ru>
 	* ircd/s_misc.c: вызов check_triggers() удалён из exit_one_client
+	* ircd/s_serv.c: починен /stats K/R/E (CONF_TRIGGER был попутан с
+			CONF_TLINE)
 	* ircd/s_user.c: вызов check_triggers() добавлен в m_quit
 	* ircd/s_user_ext.h: удалено объявление EXTERN для check_triggers()
 
