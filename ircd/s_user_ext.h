@@ -37,7 +37,6 @@ EXTERN int ereject_user(aClient *, char, char *);
 EXTERN int register_user(aClient *, aClient *, char *, char *);
 EXTERN char *canonize(char *buffer);
 EXTERN int m_nick(aClient *cptr, aClient *sptr, int parc, char *parv[]);
-EXTERN int check_triggers(aClient *sptr, char *message);
 EXTERN int check_spam(aClient *sptr, char *nick, char *message);
 EXTERN int m_private(aClient *cptr, aClient *sptr, int parc,
 			  char *parv[]);

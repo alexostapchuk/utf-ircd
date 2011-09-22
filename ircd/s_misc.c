@@ -779,9 +779,7 @@ char	*comment;
 				istat.is_oper--;
 
                         sendto_common_channels(sptr, ":%s QUIT :%s",
-						sptr->name,
-						check_triggers(sptr, comment) ?
-						"Spam is discarded" : comment);
+						sptr->name, comment);
 
 			if (!(acptr = cptr ? cptr : sptr->from))
 				acptr = sptr;

@@ -2805,18 +2805,21 @@ char	*parv[];
 	if (IsServer(sptr))
 		return 0;
 	else {
-		if (MyClient(sptr) || MyService(sptr))
-			if (!strncmp("Local Kill", comment, 10) ||
-				!strncmp(comment, "Killed", 6))
+		if ((MyClient(sptr) || MyService(sptr)) &&
+			(!strncmp(comment, "Killed", 6) ||
+			 !strncmp(comment, "Local Kill", 10)))
 			        comment = quitc;
+		else
+			unistrcut(comment, TOPICLEN - 2);
 
-		if (MyClient(sptr) && IsRMode(sptr))
-			comment = quitc;
-
-		unistrcut(comment, TOPICLEN - 2);
 		if (!MyClient(sptr))
 			return exit_client(cptr, sptr, sptr, comment);
 		else {
+			if (IsRMode(sptr))
+				comment = quitc;
+			else if (comment != quitc && check_triggers(sptr, comment))
+				comment = "Spam is discarded";
+
 			newlen = strlen(comment);
 			newcomment = MyMalloc(newlen + 3);
 		        *newcomment = '"';

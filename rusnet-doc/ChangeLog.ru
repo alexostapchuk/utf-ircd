@@ -2,6 +2,11 @@
 --------------------------------------------------------------------------
 Версия 2.0
 --------------
+2011-09-22 erra <erra@ya.ru>
+	* ircd/s_misc.c: вызов check_triggers() удалён из exit_one_client
+	* ircd/s_user.c: вызов check_triggers() добавлен в m_quit
+	* ircd/s_user_ext.h: удалено объявление EXTERN для check_triggers()
+
 2011-09-20 erra <erra@ya.ru>
 	* common/support.c, common/support_ext.h: добавлена функция cstrip()
 			для удаления расцветок перед проверкой сообщения
