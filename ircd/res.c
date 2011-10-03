@@ -104,12 +104,20 @@ int	op;
 		    {
 			ircd_res.nscount = 1;
 #ifdef INET6
-			/* still IPv4 */
-			ircd_res.nsaddr_list[0].sin_addr.s_addr =
-			  inet_pton(AF_INET, "127.0.0.1",
-				    &ircd_res.nsaddr_list[0].sin_addr.s_addr);
+			struct in6_addr	loop = 
+#ifdef	__sun__
+			{
+				._S6_un._S6_u8 = IN6ADDR_LOOPBACK_INIT
+			};
+#else	/* __sun__ */
+			IN6ADDR_LOOPBACK_INIT;
+#endif	/* __sun__ */
+
+			memcpy(&ircd_res.nsaddr_list[0].ia_sin6.sin6_addr,
+				&loop, sizeof(loop));
+			ircd_res.nsaddr_list[0].ia_sin6.sin6_family = AF_INET6;
 #else
-			ircd_res.nsaddr_list[0].sin_addr.s_addr =
+			ircd_res.nsaddr_list[0].ia_sin.sin_addr.s_addr =
 				inetaddr("127.0.0.1");
 #endif
 		    }
@@ -119,12 +127,11 @@ int	op;
 	    {
 		int	on = 0;
 
-#ifdef INET6
-		/* still IPv4 */
+		ret = resfd = socket(AF_INET6, SOCK_DGRAM, 0);
+		if (ret < 0) {
+			/* this system does not support INET6 */
 		ret = resfd = socket(AF_INET, SOCK_DGRAM, 0);
-#else
-		ret = resfd = socket(AF_INET, SOCK_DGRAM, 0);
-#endif
+		}
 		(void) SETSOCKOPT(ret, SOL_SOCKET, SO_BROADCAST, &on, on);
 	    }
 	    
@@ -323,49 +330,61 @@ char	*cp;
  * isnt present. Returns number of messages successfully sent to 
  * nameservers or -1 if no successful sends.
  */
+#ifdef	INET6
+#define	NS_ADDR_SIZE	sizeof(ircd_res.nsaddr_list[i])
+#else
+#define	NS_ADDR_SIZE	sizeof(ircd_res.nsaddr_list[i].ia_sin)
+#endif
+
 static	int	send_res_msg(msg, len, rcount)
 char	*msg;
 int	len, rcount;
 {
 	Reg	int	i;
 	int	sent = 0, max;
+	ssize_t	res;
 
 	if (!msg)
 		return -1;
 
 	max = MIN(ircd_res.nscount, rcount);
-	if (ircd_res.options & RES_PRIMARY)
-		max = 1;
-	if (!max)
+
+	if ((ircd_res.options & RES_PRIMARY) || !max)
 		max = 1;
 
 	for (i = 0; i < max; i++)
 	    {
-#ifdef INET6
-		/* still IPv4 */
-		ircd_res.nsaddr_list[i].sin_family = AF_INET;
-#else
-		ircd_res.nsaddr_list[i].sin_family = AF_INET;
-#endif
-#ifdef INET6
-		if (sendto(resfd, msg, len, 0,
-			   (struct sockaddr *)&(ircd_res.nsaddr_list[i]),
-			   sizeof(struct sockaddr)) == len)
-#else
-		if (sendto(resfd, msg, len, 0,
-			   (struct sockaddr *)&(ircd_res.nsaddr_list[i]),
-			   sizeof(struct sockaddr)) == len)
-#endif
+		res = sendto(resfd, msg, len, 0,
+				&ircd_res.nsaddr_list[i].ia_addr, NS_ADDR_SIZE);
+#ifdef	INET6
+		if ((res < 0) && (errno == EAFNOSUPPORT) &&
+		    (ircd_res.nsaddr_list[i].ia_addr.sa_family == AF_INET))
+		{
+			inet_address_t	addr;
 
-		    {
+			memset(&addr, 0, sizeof(addr));
+			/* make a mapped address */
+			addr.ia_addr.sa_family = AF_INET6;
+			addr.ia_sin6.sin6_addr.s6_addr[10] =
+			addr.ia_sin6.sin6_addr.s6_addr[11] = 0xff;
+			memcpy(addr.ia_sin6.sin6_addr.s6_addr + 12,
+			    &ircd_res.nsaddr_list[i].ia_sin.sin_addr,
+			    sizeof(ircd_res.nsaddr_list[i].ia_sin.sin_addr));
+			addr.ia_sin6.sin6_port =
+				ircd_res.nsaddr_list[i].ia_sin.sin_port;
+			res = sendto(resfd, msg, len, 0, &addr.ia_addr,
+				sizeof(addr));
+		}
+#endif
+		if (res == len)
+		{
 			reinfo.re_sent++;
 			sent++;
-		    }
-		else
-		    {
+		} else
+		{
 			Debug((DEBUG_ERROR,"s_r_m:sendto: %d on %d",
 				errno, resfd));
-		    }
+		}
 	    }
 
 	return (sent) ? sent : -1;
@@ -871,23 +890,14 @@ char	*lp;
 	Reg	HEADER	*hptr;
 	Reg	ResRQ	*rptr = NULL;
 	aCache	*cp = NULL;
-#ifdef INET6
-	struct	sockaddr_in	sin;
-#else
-	struct	sockaddr_in	sin;
-#endif
+	inet_address_t	addr;
 	int	rc, a, max;
-	SOCK_LEN_TYPE len = sizeof(sin);
+	SOCK_LEN_TYPE len = sizeof(addr);
 	char	buffer[512];
 	char	*addrstr = NULL;
 
 	(void)alarm((unsigned)4);
-#ifdef INET6
-	rc = recvfrom(resfd, buf, sizeof(buf), 0, (struct sockaddr *)&sin, &len);
-#else
-	rc = recvfrom(resfd, buf, sizeof(buf), 0, (struct sockaddr *)&sin, &len);
-#endif
-
+	rc = recvfrom(resfd, buf, sizeof(buf), 0, &addr.ia_addr, &len);
 	(void)alarm((unsigned)0);
 	if (rc <= (int)sizeof(HEADER))
 		goto getres_err;
@@ -920,18 +930,24 @@ char	*lp;
 		max = 1;
 
 	for (a = 0; a < max; a++)
-#ifdef INET6
-		if (!ircd_res.nsaddr_list[a].sin_addr.s_addr ||
-		    !bcmp((char *)&sin.sin_addr,
-			  (char *)&ircd_res.nsaddr_list[a].sin_addr,
-			  sizeof(struct in_addr)))
-#else
-		if (!ircd_res.nsaddr_list[a].sin_addr.s_addr ||
-		    !bcmp((char *)&sin.sin_addr,
-			  (char *)&ircd_res.nsaddr_list[a].sin_addr,
-			  sizeof(struct in_addr)))
-#endif
+		if (ircd_res.nsaddr_list[a].ia_addr.sa_family ==
+			addr.ia_addr.sa_family) {
+			if (((addr.ia_addr.sa_family == AF_INET) &&
+			    (ircd_res.nsaddr_list[a].ia_sin.sin_addr.s_addr ==
+				addr.ia_sin.sin_addr.s_addr)) ||
+			    ((addr.ia_addr.sa_family == AF_INET6) &&
+			    (memcmp(&ircd_res.nsaddr_list[a].ia_sin6.sin6_addr,
+				&addr.ia_sin6.sin6_addr,
+				sizeof(addr.ia_sin6.sin6_addr)) == 0)))
 			break;
+		} else if ((addr.ia_addr.sa_family == AF_INET6) &&
+		    (ircd_res.nsaddr_list[a].ia_addr.sa_family == AF_INET) &&
+		    IN6_IS_ADDR_V4MAPPED(&addr.ia_sin6.sin6_addr) &&
+		    (ircd_res.nsaddr_list[a].ia_sin.sin_addr.s_addr ==
+		    *(in_addr_t *)(addr.ia_sin6.sin6_addr.s6_addr + 12))) {
+		    break;
+		    
+		}
 	if (a == max)
 	    {
 		reinfo.re_unkrep++;
@@ -974,27 +990,46 @@ char	*lp;
 	    }
 	a = proc_answer(rptr, hptr, buf, buf+rc);
 	if (a == -1) {
+		switch (addr.ia_addr.sa_family) {
+			case AF_INET6:
+				inet_ntop(addr.ia_addr.sa_family,
+					&addr.ia_sin6.sin6_addr,
+					mydummy2, MYDUMMY_SIZE);
+				break;
+			case AF_INET:
+			default:
+				inet_ntop(addr.ia_addr.sa_family,
+					&addr.ia_sin.sin_addr,
+					mydummy2, MYDUMMY_SIZE);
+				break;
+		}
 #ifdef	INET6
+		inet_ntop(AF_INET6, rptr->he.h_addr.s6_addr,
+			mydummy, MYDUMMY_SIZE);
+#else	/* INET6 */
+		inet_ntop(AF_INET, &rptr->he.h_addr,
+			mydummy, MYDUMMY_SIZE);
+#endif	/* INET6 */
 		sprintf(buffer, "Bad hostname returned from %s for %s",
-			inetntop(AF_INET, &sin.sin_addr, mydummy2, 
-				MYDUMMY_SIZE),
-			inetntop(AF_INET6, rptr->he.h_addr.s6_addr,
-				mydummy, MYDUMMY_SIZE));
-#else
-		sprintf(buffer, "Bad hostname returned from %s for ", 
-			inetntoa((char *)&sin.sin_addr));
-		strcat(buffer, inetntoa((char *)&rptr->he.h_addr));
-#endif
+			mydummy2, mydummy);
 		sendto_flag(SCH_ERROR, "%s", buffer);
 		Debug((DEBUG_DNS, "%s", buffer));
 	}
 	else if (a == -3)
 	{
-#ifdef INET6
-		addrstr = inetntop(AF_INET, &sin.sin_addr, mydummy2, MYDUMMY_SIZE);
-#else
-		addrstr = inetntoa((char *)&sin.sin_addr);
-#endif
+		void	*ptr;
+
+		switch (addr.ia_addr.sa_family) {
+			case AF_INET6:
+				ptr = &addr.ia_sin6.sin6_addr;
+				break;
+			case AF_INET:
+			default:
+				ptr = &addr.ia_sin.sin_addr;
+				break;
+		}
+		addrstr = (char *)inet_ntop(addr.ia_addr.sa_family, ptr,
+					mydummy2, MYDUMMY_SIZE);
 		max = snprintf(buffer, sizeof(buffer), "Bad CNAME "
 				"answer returned from %s in reply about ",
 					addrstr ? addrstr : "<bad address>");

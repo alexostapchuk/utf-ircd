@@ -1,10 +1,37 @@
 Version 2.0
 --------------
+2011-10-03 erra <erra@ya.ru>
+	* ircd/channel.c: fixed topic setting by ChanServ
+
+2011-10-01 erra <erra@ya.ru>
+	* ircd/s_bsd.c: setsockopt for IPV6_V6ONLY considered okay if
+			error code is ENOPROTOOPT
+
+2011-09-30 erra <erra@ya.ru>
+	* common/send.c: definition for _NO_IP_ fixed
+	* ircd/s_conf.c: code clearance
+
+2011-09-30 denk <denis@tambov.ru>
+	* ircd/res.c: IPv6 support fixed
+	* ircd/s_bsd.c: IPv6 support fixed (disable IPv6-only sockets)
+
+2011-09-29 denk <denis@tambov.ru>
+	* ircd/res.c, ircd/res_init.c, ircd/resolv_def.h: IPv6 support added
+
+2011-09-28 erra <erra@ya.ru>
+	* common/match.c, common/sm_loop.c: patterns narrowed to * and ? only
+			if no extended pattern flag (FNM_RNGMATCH) set
+
+2011-09-26 erra <erra@ya.ru>
+	* ircd/channel.c: check_spam call condition by bird_of_luck
+
 2011-09-22 erra <erra@ya.ru>
+	* common/support.c: cstrip() cycle refined
 	* ircd/s_misc.c: check_triggers() call removed from exit_one_client
 	* ircd/s_serv.c: /stats K/R/E fixed (CONF_TRIGGER was messed with
 			CONF_TLINE)
-	* ircd/s_user.c: check_triggers() call added to m_quit
+	* ircd/s_user.c: check_triggers() call added to m_quit; guardian check
+			for NULL message added to check_spam
 	* ircd/s_user_ext.h: removed EXTERN declaration for check_triggers()
 
 2011-09-20 erra <erra@ya.ru>

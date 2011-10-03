@@ -80,12 +80,19 @@
 #define	MAXRESOLVSORT		10	/* number of net to sort on */
 #define	RES_MAXNDOTS		15	/* should reflect bit field size */
 
+typedef	union {
+	struct sockaddr		ia_addr;
+	struct sockaddr_in	ia_sin;
+	struct sockaddr_in6	ia_sin6;
+} inet_address_t;
+
+
 struct __res_state {
 	int	retrans;	 	/* retransmition time interval */
 	int	retry;			/* number of times to retransmit */
 	u_long	options;		/* option flags - see below. */
 	int	nscount;		/* number of name servers */
-	struct sockaddr_in
+	inet_address_t
 		nsaddr_list[MAXNS];	/* address of name server */
 #define	nsaddr	nsaddr_list[0]		/* for backward compatibility */
 	u_short	id;			/* current message id */

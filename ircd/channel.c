@@ -2904,8 +2904,21 @@ char	*parv[];
 	    }
 
 	parv[1] = canonize(parv[1]);
-	comment = (BadPtr(parv[2])) ? "" : parv[2];
-	unistrcut(comment, TOPICLEN);
+
+	if (MyClient(sptr))
+	{
+		if (IsRMode(sptr))
+			comment = "Restricted";
+
+		/* antispam control */
+		else if (parc > 2 && check_spam(sptr, parv[0], parv[2]))
+			comment = "Spam discarded";
+	}
+	else if (!BadPtr(parv[2]))
+	{
+		comment = parv[2];
+		unistrcut(comment, TOPICLEN);
+	}
 
 	/*
 	** Broadcasted to other servers is ":nick PART #chan,#chans :comment",
@@ -2917,7 +2930,7 @@ char	*parv[];
 	size = BUFSIZE - strlen(parv[0]) - 10;
 	for (; (name = strtoken(&p, parv[1], ",")); parv[1] = NULL)
 	    {
-		char no_color_msg[] = "message discarded (colors disallowed)";
+		char *msg;
 
 		chptr = get_channel(sptr, name, 0);
 		if (!chptr)
@@ -2936,15 +2949,11 @@ char	*parv[];
 				   name);
 			continue;
 		    }
-		if (IsAnonymous(chptr))
-			comment = "None";
 
-		/* antispam control */
-		if (check_spam(sptr, parv[0], parv[2]))
-			comment = "Spam discarded";
-
-		if (MyClient(sptr) && IsRMode(sptr))
-			comment = "Restricted";
+		msg =	(IsAnonymous(chptr)) ? "None" : 
+			(chptr->mode.mode & MODE_NOCOLOR &&
+				(comment == parv[2] && strchr(comment, 0x03))) ?
+			"message discarded (colors disallowed)" : comment;
 
 		/*
 		**  Remove user from the old channel (if any)
@@ -2962,7 +2971,7 @@ char	*parv[];
 					/* Anyway, if it would not fit in the
 					** buffer, send it right away. --B */
 					sendto_serv_butone(cptr, PartFmt,
-						parv[0], buf, comment);
+							parv[0], buf, msg);
 					*buf = '\0';
 				}
 				if (*buf)
@@ -2972,13 +2981,10 @@ char	*parv[];
 		    }
 		else
 			sendto_match_servs(chptr, cptr, PartFmt,
-				   	   parv[0], name, comment);
+				   	   parv[0], name, msg);
 
-		sendto_channel_butserv(chptr, sptr, PartFmt, parv[0], name,
-					(chptr->mode.mode & MODE_NOCOLOR &&
-						comment == parv[2] &&
-						strchr(comment, 0x03)) ?
-						no_color_msg : comment);
+		sendto_channel_butserv(chptr, sptr, PartFmt,
+					parv[0], name, msg);
 		remove_user_from_channel(sptr, chptr);
 	    }
 	if (*buf)
@@ -3250,7 +3256,7 @@ char	*parv[];
 		    {
 			chptr = find_channel(name, NullChn);
 			if (!chptr || !(IsMember(sptr, chptr)
-					|| !IsRusnetServices(sptr)))
+					|| IsRusnetServices(sptr)))
 			    {
 				sendto_one(sptr, err_str(ERR_NOTONCHANNEL,
 					   parv[0]), name);

@@ -1757,11 +1757,7 @@ Reg	aConfItem	*aconf;
 	else if ((hp = gethost_byname(s, &ln)))
 		bcopy(hp->h_addr, (char *)&(aconf->ipnum),
 			sizeof(struct IN_ADDR));
-#ifdef	INET6
-	else
-		goto badlookup;
-
-#else
+#ifndef	INET6
 	if (aconf->ipnum.s_addr != INADDR_NONE)
 		return 0;
 #endif

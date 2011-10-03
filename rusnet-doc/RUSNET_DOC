@@ -1,4 +1,21 @@
-$Id$
+2.x RUSNET-IRC REFERENCE
+=======================================================================
+1. Extended bans and K/R/E:lines support
+   Starting from 2.0 ircd supports range matching ([a-z]) if pattern
+   starts with &. This is convenient way to offer new functionality
+   while keeping safe older clients and servers
+
+2. International domain names (IDN) support. As important consequence,
+   ircd.conf (especially kills.conf) must be true UTF8 now.
+
+3. Spam Triggers (/trigger and /untrigger) for messages from local clients.
+   Recorded as T:lines in ircd.conf (kills.conf), /rehash t to re-read,
+   /stats T to list. Colors are stripped from messages before pattern
+   matching if STRIP_COLORS is defined in config.h (default).
+
+4. Usermode +c (colorless), +I (identified to Services), and +R (accepts
+   messages from identified users only). Channel mode +R (welcomes identified
+   users only).
 
 1.5.x RUSNET-IRC REFERENCE
 =======================================================================
@@ -88,7 +105,7 @@ $Id$
     --enable-ipv6 parameter when you run configure script. If you selected
     to support IPv6 then you have to change ALL delimiters in your ircd.conf
     from ':' to '%' because character ':' used in IPv6 notation. Be careful
-    to not miss that! Perhaps, you'd want to --enable-vhost6 as well.
+    not to miss that! Perhaps, you'd want to --enable-vhost6 as well.
 
 1.4.3 RUSNET-IRC REFERENCE
 =======================================================================

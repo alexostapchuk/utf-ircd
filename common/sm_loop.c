@@ -181,12 +181,14 @@ fprintf(stderr, "gmatch: pattern = %s; pe = %s\n", pattern, pe);
 		if ((flags & FNM_EXTMATCH) == 0 && c != L('[') && FOLD (*n) != c1) /*]*/
 		  continue;
 
+#ifdef EXTENDED_GLOB
 		/* If we're doing an extended glob match and the pattern is not
 		   one of the extended glob patterns, we can check the first
 		   character. */
 		if ((flags & FNM_EXTMATCH) && p[1] != L('(') && /*)*/
 		    STRCHR (L("?*+@!"), *p) == 0 && c != L('[') && FOLD (*n) != c1) /*]*/
 		  continue;
+#endif
 
 		/* Otherwise, we just recurse. */
 		if (GMATCH (n, se, p, pe, flags) == 0)
@@ -196,6 +198,7 @@ fprintf(stderr, "gmatch: pattern = %s; pe = %s\n", pattern, pe);
 	  }
 
 	case L('['):
+	  if (flags & FNM_RNGMATCH)
 	  {
 	    if (sc == L('\0') || n == se)
 	      return FNM_NOMATCH;

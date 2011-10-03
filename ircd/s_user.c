@@ -1699,7 +1699,8 @@ int check_spam(sptr, nick, message)
 aClient *sptr;
 char *nick, *message;
 {
-	if (MyClient(sptr) && !IsRMode(sptr) && check_triggers(sptr, message))
+	if (message && *message && MyClient(sptr) && !IsRMode(sptr) &&
+						check_triggers(sptr, message))
 	{
 		time_t now = time(NULL);
 

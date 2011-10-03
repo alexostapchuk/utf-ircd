@@ -54,11 +54,9 @@
 #undef FNM_NOMATCH
 
 #define	FNM_NOMATCH	1
+#define FNM_RNGMATCH	(1 << 4) /* Match ranges ([a-z]).           */
 #define FNM_CASEFOLD	(1 << 4) /* Compare without regard to case. */
 #define FNM_EXTMATCH	(1 << 5) /* Use ksh-like extended matching. */
-
-
-static int flags = FNM_CASEFOLD;
 
 unsigned char tolowertab[] =
 		{ 0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa,
@@ -1169,23 +1167,34 @@ match (mask, name)
      char *mask;
      char *name;
 {
+  int flags = FNM_CASEFOLD;
+  char *patt = mask;
 #ifdef HANDLE_MULTIBYTE
   int ret;
   size_t n;
   wchar_t *wpattern, *wstring;
+#endif
 
-  if (mbsmbchar (name) == 0 && mbsmbchar (mask) == 0)
-    return (internal_strmatch ((unsigned char *)mask, (unsigned char *)name, flags));
+  /* handle extended patterns */
+  if (*mask == '&')
+  {
+    patt++;
+    flags |= FNM_RNGMATCH;
+  }
 
-  n = xdupmbstowcs (&wpattern, NULL, mask);
+#ifdef HANDLE_MULTIBYTE
+  if (mbsmbchar (name) == 0 && mbsmbchar (patt) == 0)
+    return (internal_strmatch ((unsigned char *)patt, (unsigned char *)name, flags));
+
+  n = xdupmbstowcs (&wpattern, NULL, patt);
   if (n == (size_t)-1 || n == (size_t)-2)
-    return (internal_strmatch ((unsigned char *)mask, (unsigned char *)name, flags));
+    return (internal_strmatch ((unsigned char *)patt, (unsigned char *)name, flags));
 
   n = xdupmbstowcs (&wstring, NULL, name);
   if (n == (size_t)-1 || n == (size_t)-2)
     {
       free (wpattern);
-      return (internal_strmatch ((unsigned char *)mask, (unsigned char *)name, flags));
+      return (internal_strmatch ((unsigned char *)patt, (unsigned char *)name, flags));
     }
 
   ret = internal_wstrmatch (wpattern, wstring, flags);
@@ -1195,7 +1204,7 @@ match (mask, name)
 
   return ret;
 #else
-  return (internal_strmatch ((unsigned char *)mask, (unsigned char *)name, flags));
+  return (internal_strmatch ((unsigned char *)patt, (unsigned char *)name, flags));
 #endif /* !HANDLE_MULTIBYTE */
 }
 

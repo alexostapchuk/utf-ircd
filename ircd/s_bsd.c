@@ -1673,6 +1673,13 @@ aClient	*cptr;
 	opt = 8192;
 	if (SETSOCKOPT(fd, SOL_SOCKET, SO_SNDBUF, &opt, opt) < 0)
 		report_error("setsockopt(SO_SNDBUF) %s:%s", cptr);
+#if defined(INET6) && defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
+	opt = 0;
+	ret = SETSOCKOPT(fd, IPPROTO_IPV6, IPV6_V6ONLY, &opt, opt);
+	if (ret < 0 && ret != ENOPROTOOPT)
+		report_error("setsockopt(IPV6_V6ONLY) %s:%s", cptr);
+	ret = 0;
+#endif	/* INET6 && IPV6_V6ONLY && IPPROTO_IPV6 */
 # ifdef	SO_SNDLOWAT
 	/*
 	 * Setting the low water mark should improve performence by avoiding

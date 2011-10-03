@@ -2,11 +2,39 @@
 --------------------------------------------------------------------------
 Версия 2.0
 --------------
+2011-10-03 erra <erra@ya.ru>
+	* ircd/channel.c: починена установка топика сервисами
+
+2011-10-01 erra <erra@ya.ru>
+	* ircd/s_bsd.c: код возврата ENOPROTOOPT для вызова setsockopt
+			для IPV6_V6ONLY считается нормальным
+
+2011-09-30 erra <erra@ya.ru>
+	* common/send.c: поправлено определение для _NO_IP_
+	* ircd/s_conf.c: зачистка кода
+
+2011-09-30 denk <denis@tambov.ru>
+	* ircd/res.c: поправлена поддержка IPv6
+	* ircd/s_bsd.c: поправлена поддержка IPv6 (отмена работы только по IPv6)
+
+2011-09-29 denk <denis@tambov.ru>
+	* ircd/res.c, ircd/res_init.c, ircd/resolv_def.h: поддержка IPv6
+
+2011-09-28 erra <erra@ya.ru>
+	* common/match.c, common/sm_loop.c: если не задан флаг FNM_RNGMATCH,
+			используется только базовая шаблонизация (* и ?)
+
+2011-09-26 erra <erra@ya.ru>
+	* ircd/channel.c: условия вызова check_spam изменены по наводке
+			bird_of_luck
+
 2011-09-22 erra <erra@ya.ru>
+	* common/support.c: исправлен рабочий цикл в cstrip()
 	* ircd/s_misc.c: вызов check_triggers() удалён из exit_one_client
 	* ircd/s_serv.c: починен /stats K/R/E (CONF_TRIGGER был попутан с
 			CONF_TLINE)
-	* ircd/s_user.c: вызов check_triggers() добавлен в m_quit
+	* ircd/s_user.c: вызов check_triggers() добавлен в m_quit; проверка
+			на пустое сообщение добавлена в check_spam
 	* ircd/s_user_ext.h: удалено объявление EXTERN для check_triggers()
 
 2011-09-20 erra <erra@ya.ru>

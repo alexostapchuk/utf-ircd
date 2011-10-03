@@ -188,12 +188,15 @@ ircd_res_init()
 
 /*ifdef INET6 not, because of IPv4 DNS serving */
 #ifdef USELOOPBACK
+#error Not yet implemented with IPv6
 	ircd_res.nsaddr.sin_addr = inet_makeaddr(IN_LOOPBACKNET, 1);
 #else
-	ircd_res.nsaddr.sin_addr.s_addr = INADDR_ANY;
+	memcpy(&ircd_res.nsaddr.ia_sin6.sin6_addr, &in6addr_any,
+		sizeof(ircd_res.nsaddr.ia_sin6.sin6_addr));
+	/*ircd_res.nsaddr.sin_addr.s_addr = INADDR_ANY;*/
 #endif
-	ircd_res.nsaddr.sin_family = AF_INET;
-	ircd_res.nsaddr.sin_port = htons(NAMESERVER_PORT);
+	ircd_res.nsaddr.ia_sin6.sin6_family = AF_INET6;
+	ircd_res.nsaddr.ia_sin6.sin6_port = htons(NAMESERVER_PORT);
 	ircd_res.nscount = 1;
 	ircd_res.ndots = 1;
 	ircd_res.pfcode = 0;
@@ -299,17 +302,41 @@ ircd_res_init()
 		}
 		/* read nameservers to query */
 		if (MATCH(buf, "nameserver") && nserv < MAXNS) {
-		    struct in_addr a;
+		    inet_address_t	a;
 
 		    cp = buf + sizeof("nameserver") - 1;
 		    while (*cp == ' ' || *cp == '\t')
 			cp++;
-		    if ((*cp != '\0') && (*cp != '\n') && inetaton(cp, &a)) {
+/*		    if ((*cp != '\0') && (*cp != '\n') && inetaton(cp, &a)) {
 			ircd_res.nsaddr_list[nserv].sin_addr = a;
 			ircd_res.nsaddr_list[nserv].sin_family = AF_INET;
 			ircd_res.nsaddr_list[nserv].sin_port =
 				htons(NAMESERVER_PORT);
 			nserv++;
+		    }*/
+		    if ((*cp != '\0') && (*cp != '\n')) {
+		    	char	*end = strchr(cp, '\n');
+
+			if (end != NULL)
+				*end = '\0';
+			end = strchr(cp, '\r');
+			if (end != NULL)
+				*end = '\0';
+			if (inet_pton(AF_INET, cp, &a.ia_sin.sin_addr) == 1) {
+			    a.ia_sin.sin_family = AF_INET;
+			    a.ia_sin.sin_port = htons(NAMESERVER_PORT);
+			    memcpy(ircd_res.nsaddr_list + nserv, &a,
+				sizeof(a));
+			    nserv++;
+			} else if (inet_pton(AF_INET6, cp,
+				&a.ia_sin6.sin6_addr) == 1) {
+				/* IPv6 */
+			    a.ia_sin6.sin6_family = AF_INET6;
+			    a.ia_sin6.sin6_port = htons(NAMESERVER_PORT);
+			    memcpy(ircd_res.nsaddr_list + nserv, &a,
+				sizeof(a));
+			    nserv++;
+		    }
 		    }
 		    continue;
 		}

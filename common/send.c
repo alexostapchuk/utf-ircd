@@ -24,7 +24,7 @@
 # include "s_externs.h"
 #undef SEND_C
 
-#ifdef	INET6
+#if defined(INET6) || defined(__FreeBSD__) || defined(__sun__)
 #define	_NO_IP_	{{0}}
 #else
 #define	_NO_IP_	0
