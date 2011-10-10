@@ -44,8 +44,13 @@ static	char	*PartFmt = ":%s PART %s :%s";
 /*
  * some buffers for rebuilding channel/nick lists with ,'s
  */
-static	char	nickbuf[BUFSIZE], buf[BUFSIZE];
+static	char	nickbuf[BUFSIZE];
 static	char	modebuf[MODEBUFLEN], parabuf[MODEBUFLEN];
+#ifndef USE_OLD8BIT
+static	char	buf[MB_LEN_MAX*BUFSIZE];
+#else
+static	char	buf[BUFSIZE];
+#endif
 
 /*
  * return the length (>=0) of a chain of links.

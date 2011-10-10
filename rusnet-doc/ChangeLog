@@ -1,7 +1,11 @@
 Version 2.0
 --------------
+2011-10-10 erra <erra@ya.ru>
+	* ircd/channel.c: channel name buffer increased to avoid join !longname
+			coredumps caused by sprintf() buffer overrun
+
 2011-10-03 erra <erra@ya.ru>
-	* ircd/channel.c: fixed topic setting by ChanServ
+	* ircd/channel.c: topic setting by ChanServ fixed
 
 2011-10-01 erra <erra@ya.ru>
 	* ircd/s_bsd.c: setsockopt for IPV6_V6ONLY considered okay if
