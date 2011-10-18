@@ -305,9 +305,9 @@ aChannel *chptr;
 	if (!IsPerson(cptr))
 		return NULL;
 
-	s = make_nick_user_host(name, cptr->user->username, cptr->user->host);
 	t = mystrdup(make_nick_user_host(name, cptr->user->username,
 							cptr->sockhost));
+	s = make_nick_user_host(name, cptr->user->username, cptr->user->host);
 
 	for (tmp = chptr->mlist; tmp; tmp = tmp->next)
 		if (tmp->flags == type && (

@@ -1,3 +1,16 @@
+Version 2.0.1
+--------------
+2011-10-14 erra <erra@ya.ru>
+	* ircd/channel.c: match_modeid fixed
+
+2011-10-14 erra <erra@ya.ru>
+	* common/send.c: send_message(): stop if fd < 0
+	* support/configure, support/configure.in: sun cc test added
+
+2011-10-13 denk <denis@tambov.ru>
+	* ircd/s_bsd.c: setsockopt for IPV6_V6ONLY moved to inetport() and
+			applied for listening ports only
+
 Version 2.0
 --------------
 2011-10-10 erra <erra@ya.ru>

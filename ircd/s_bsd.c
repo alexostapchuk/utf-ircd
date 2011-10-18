@@ -253,6 +253,17 @@ int	dolisten;
 			server.sin6_addr = in6addr_any;
 		else
 			inetpton(AF_INET6, ip, server.sin6_addr.s6_addr);
+#if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
+		if (dolisten)
+		{
+			int	opt = 0;
+
+			if (SETSOCKOPT(cptr->fd, IPPROTO_IPV6,
+					IPV6_V6ONLY, &opt, opt) < 0)
+				report_error("setsockopt(IPV6_V6ONLY) %s:%s",
+					cptr);
+		}
+#endif	/* IPV6_V6ONLY && IPPROTO_IPV6 */
 #else
 		if (!ip || !isdigit(*ip))
 			server.sin_addr.s_addr = INADDR_ANY;
@@ -260,14 +271,7 @@ int	dolisten;
 			server.sin_addr.s_addr = inetaddr(ip);
 #endif
 		server.SIN_PORT = htons(port);
-		/*
-		 * Try 10 times to bind the socket with an interval of 20
-		 * seconds. Do this so we don't have to keep trying manually
-		 * to bind. Why ? Because a port that has closed often lingers
-		 * around for a short time.
-		 * This used to be the case.  Now it no longer is.
-		 * Could cause the server to hang for too long - avalon
-		 */
+
 		if (bind(cptr->fd, (SAP)&server, sizeof(server)) == -1)
 		    {
 			report_error("binding stream socket %s:%s", cptr);
@@ -1673,13 +1677,6 @@ aClient	*cptr;
 	opt = 8192;
 	if (SETSOCKOPT(fd, SOL_SOCKET, SO_SNDBUF, &opt, opt) < 0)
 		report_error("setsockopt(SO_SNDBUF) %s:%s", cptr);
-#if defined(INET6) && defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
-	opt = 0;
-	ret = SETSOCKOPT(fd, IPPROTO_IPV6, IPV6_V6ONLY, &opt, opt);
-	if (ret < 0 && ret != ENOPROTOOPT)
-		report_error("setsockopt(IPV6_V6ONLY) %s:%s", cptr);
-	ret = 0;
-#endif	/* INET6 && IPV6_V6ONLY && IPPROTO_IPV6 */
 # ifdef	SO_SNDLOWAT
 	/*
 	 * Setting the low water mark should improve performence by avoiding

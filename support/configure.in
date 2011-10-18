@@ -1171,6 +1171,19 @@ fi
 dnl -------------------------------------------------------------------
 dnl modified Autoconf tests; their names begin with IRC_ instead of AC_
 dnl -------------------------------------------------------------------
+AC_DEFUN([IRC_CHECK_SUNCC],
+  [
+    AC_MSG_CHECKING([if $CC is Sun CC])
+    
+    if $CC -V 2>&1 | grep '^cc: Sun C' > /dev/null; then
+        HAS_SUNCC="yes"
+    else
+        HAS_SUNCC="no"
+    fi
+
+    AC_MSG_RESULT([$HAS_SUNCC])
+  ]
+)
 
 AC_DEFUN(IRC_PROG_CC,
 [define(AC_PROVIDE_AC_PROG_CC)
@@ -1183,6 +1196,7 @@ fi
 ac_test_CFLAGS="${CFLAGS+set}"
 if test x$ac_cv_c_compiler_gnu = xyes; then
   GCC=yes
+  AC_PROG_GCC_TRADITIONAL
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS=
   if test "$ac_test_CFLAGS" = set; then
@@ -1192,6 +1206,7 @@ if test x$ac_cv_c_compiler_gnu = xyes; then
   fi
 else
   GCC=
+  IRC_CHECK_SUNCC
 fi
 ])
 
@@ -1482,10 +1497,10 @@ AC_CANONICAL_HOST
 AC_PROG_CPP
 AC_PROG_AWK
 
-AC_PROG_GCC_TRADITIONAL
-
 if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
         CFLAGS="$CFLAGS -Wall -funsigned-char"
+elif test "$SUNCC" = "yes"; then
+	CFLAGS="$CFLAGS -errhdr=%all -errwarn=%all"
 fi
 
 AC_ARG_WITH(rpath,

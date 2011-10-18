@@ -336,6 +336,7 @@ long	len;
 	    {
 		Debug((DEBUG_ERROR,
 		       "Local socket %s with negative fd... AARGH!", to->name));
+		return 0;
 	    }
 	if (IsMe(to))
 	    {

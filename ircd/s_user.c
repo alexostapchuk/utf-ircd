@@ -3836,7 +3836,7 @@ int	old;
 					   sptr->name, sptr->name, old_modes);
 		    }
 
-		free(old_modes);
+		MyFree(old_modes);
 	}
 
 	if (cptr && MyClient(cptr))

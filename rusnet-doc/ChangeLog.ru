@@ -1,5 +1,18 @@
 ВНИМАНИЕ: этот файл может быть недостаточно свеж, смотрите ChangeLog
 --------------------------------------------------------------------------
+Версия 2.0.1
+--------------
+2011-10-14 erra <erra@ya.ru>
+	* ircd/channel.c: исправлена функция match_modeid
+
+2011-10-14 erra <erra@ya.ru>
+	* common/send.c: send_message(): прекращаем отправку, если fd < 0
+	* support/configure, support/configure.in: добавлен тест на sun cc
+
+2011-10-13 denk <denis@tambov.ru>
+	* ircd/s_bsd.c: вызов setsockopt для IPV6_V6ONLY перемещён в inetport()
+			и применяется только для слушающих портов
+
 Версия 2.0
 --------------
 2011-10-10 erra <erra@ya.ru>
