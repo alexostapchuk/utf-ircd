@@ -29,7 +29,6 @@ unsigned char rusnet_codepage_register(char *port,  char *name, char *intable,
 {
     struct Codepage *translator_new;
     extern char config_prefix[256];
-    FILE *fp;
 
     char   intablefile[512], outtablefile[512];
    
@@ -140,9 +139,6 @@ struct Codepage *rusnet_getptrbyname(char *id)
 
 void rusnet_translate(struct Codepage *work, unsigned char dir, unsigned char *source, int len)
 {
-    FILE *fp;
-
-    unsigned char *dest;
     unsigned char *table=NULL;
     unsigned i;
 

@@ -23,7 +23,6 @@
 static void rusnet_changecodepage(struct Client *cptr, char *pageid, char *id)
 {
 #ifdef USE_OLD8BIT
-    FILE *fp;
     struct Codepage *work = rusnet_getptrbyname(pageid);
    
     if (work != NULL) 

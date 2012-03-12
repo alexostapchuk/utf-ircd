@@ -1,3 +1,46 @@
+Version 2.0.5
+--------------
+2012-02-13 erra <erra@ya.ru>
+	* ircd/s_misc.c,rusnet/rusnet_cmds.c: code clearance (unused variables)
+
+2012-02-12 erra <erra@ya.ru>
+	* ircd/res.c: hostbuf and hostbuf2 made 1 byte bigger
+	* ircd/s_auth.c,ircd/s_bsd.c: buffer in sendto_iauth increased to pass
+			MAXHOSTLEN domain names
+
+Version 2.0.4
+--------------
+2012-02-11 erra <erra@ya.ru>
+	* ircd/res.c: memory allocation inside and after IDN decoding
+			fixed (found by denk)
+	* ircd/s_misc.c: DNS names limit fixed
+
+2012-02-09 erra <erra@ya.ru>
+	* iauth/a_struct_def.h: MAXHOSTLEN used for hostnames
+	* ircd/res.c: MAXHOSTLEN used for hostnames and buffers
+
+Version 2.0.3
+--------------
+2012-01-30 erra <erra@ya.ru>
+	* common/support.c: heap corruption prevented in cstrip (found by denk)
+
+2012-01-29 erra <erra@ya.ru>
+	* common/support.c: ISUPPORT reply extended with FNC and CASEMAPPING
+	* ircd/s_conf.c: buffer overflow prevented in attach_Iline (by denk)
+
+Version 2.0.2
+--------------
+2011-11-13 erra <erra@ya.ru>
+	* common/struct_def.h: MAXHOSTLEN defined
+	* ircd/s_conf.c: increase DNS names buffer to MAXHOSTLEN;
+			do not try DEFAULT_CHARSET for OLD8BIT
+	* ircd/s_misc.c: handle oversized DNS names
+	* rusnet/rusnet_codepages.c, rusnet/rusnet_init.c: code clearance
+	* support/configure.in, support/configure: typo fixed in zlib detection
+
+2011-10-21 erra <erra@ya.ru>
+	* ircd/s_err.c: RPL_IDENTIFIED and RPL_NOCOLOR fixed
+
 Version 2.0.1
 --------------
 2011-10-14 erra <erra@ya.ru>

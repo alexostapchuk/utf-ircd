@@ -183,6 +183,7 @@ char *cstrip(char *src)
 			if (isdigit(*s)) s++;
 		}
 
+		if (*s == '\0') break;	/* deal with malformed codes */
 		if (*s == '\x0f' || *s == '\x1f' || *s == '\x02'
 				|| *s == '\x12' || *s == '\x16')
 			continue;
@@ -714,12 +715,11 @@ char *make_isupport()
 	strcpy(isupport,"MAP ");
 	p +=4;
 #endif
-	sprintf(p, "PREFIX="
-		"(ohv)@%%+ CODEPAGES"
-		" MODES=%d CHANTYPES=#&!+ MAXCHANNELS=%d "
-		"NICKLEN=%d TOPICLEN=%d KICKLEN=%d NETWORK=%s "
-		"CHANMODES=beI,k,l,acimnpqrRstz", MAXMODEPARAMS,
-		MAXCHANNELSPERUSER, NICKLEN, TOPICLEN, TOPICLEN, NETWORKNAME);
+	sprintf(p, "PREFIX=(ohv)@%%+ CHANTYPES=#&!+ CODEPAGES FNC "
+		"CHANMODES=beI,k,l,acimnpqrRstz EXCEPTS=e INVEX=I MODES=%d "
+		"MAXCHANNELS=%d CASEMAPPING=ascii NICKLEN=%d TOPICLEN=%d "
+		"KICKLEN=%d NETWORK=%s ", MAXMODEPARAMS, MAXCHANNELSPERUSER,
+		NICKLEN, TOPICLEN, TOPICLEN, NETWORKNAME);
 
 	return isupport;
 }

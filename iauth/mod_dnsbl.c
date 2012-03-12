@@ -17,7 +17,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: mod_dnsbl.c,v 1.10 2005/08/23 22:36:40 gvs Exp $
  */
 
 #include "os.h"

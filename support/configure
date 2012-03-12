@@ -5972,7 +5972,7 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 	    done
-                if test "x$irc_zlib_dir" != "x"
+                if test "x$irc_zlib_dir" = "x"
 		then
                     { $as_echo "$as_me:${as_lineno-$LINENO}: ZLIB not found" >&5
 $as_echo "$as_me: ZLIB not found" >&6;}

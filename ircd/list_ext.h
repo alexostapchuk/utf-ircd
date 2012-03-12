@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: list_ext.h,v 1.7 2005/09/16 16:02:26 skold Exp $
  */
 
 /*  This file contains external definitions for global variables and functions

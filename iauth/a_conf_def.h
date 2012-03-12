@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: a_conf_def.h,v 1.5 2005/08/23 22:28:22 skold Exp $
  */
 
 typedef struct Module aModule;

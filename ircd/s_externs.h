@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_externs.h,v 1.9 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  This file includes all *_ext.h files containing external declarations

@@ -792,7 +792,7 @@ aClient	*cptr;
 	Reg	aHashEntry	*tmp3;
 	u_int	hashv, hv;
 #ifndef USE_OLD8BIT
-	char	ucname[HOSTLEN+1]; /* see the aClient->ucname */
+	char	ucname[UNINICKLEN+1]; /* see the aClient->ucname */
 
 	rfcstrtoupper(ucname, name, sizeof(ucname));
 	hashv = hash_nick_name(ucname, &hv);

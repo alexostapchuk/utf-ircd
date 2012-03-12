@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: parse_ext.h,v 1.7 2010-11-10 13:38:39 gvs Exp $
  */
 
 /*  External definitions for global variables.

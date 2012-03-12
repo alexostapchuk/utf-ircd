@@ -29,9 +29,9 @@
 
 #undef	DEBUG	/* because there is a lot of debug code in here :-) */
 
-static	char	hostbuf[HOSTLEN+101]; /* +100 for INET6 */
+static	char	hostbuf[MAXHOSTLEN + 1];
 /* Second buffer for answers containing more than one hostname -kmale */
-static	char	hostbuf2[HOSTLEN+101]; /* +100 for INET6 */
+static	char	hostbuf2[MAXHOSTLEN + 1];
 static	char	dot[] = ".";
 static	int	incache = 0;
 static	CacheTable	hashtable[ARES_CACSIZE];
@@ -465,7 +465,7 @@ char	*name;
 Reg	ResRQ	*rptr;
 int	type;
 {
-	char	hname[HOSTLEN+1];
+	char	hname[MAXHOSTLEN+1];
 	int	len;
 
 	strncpyzt(hname, name, sizeof(hname));
@@ -784,7 +784,11 @@ HEADER	*hptr;
 #endif
 									))
 					return -1;
-				hp->h_name =(char *)MyMalloc(len+1);
+#ifdef USE_LIBIDN
+				/* it might have changed after idna_decode */
+				len = strlen(hostbuf);
+#endif
+				hp->h_name =(char *)MyMalloc(len + 1);
 				(void)strcpy(hp->h_name, hostbuf);
 			    }
 			else
@@ -805,13 +809,13 @@ HEADER	*hptr;
 				break;
 			    }
 			cp += n;
-			len = strlen(hostbuf);
-			if (len > HOSTLEN)
+			if (len > MAXHOSTLEN)
 			    {
 				return -1;
 			    }
 			Debug((DEBUG_INFO, "got host %s (%d vs %d)",
-				hostbuf, len, strlen(hostbuf)));
+					hostbuf, len, strlen(hostbuf)));
+			len = strlen(hostbuf);
 			if (bad_hostname(hostbuf, len
 #ifdef USE_LIBIDN
 							, 0
@@ -835,7 +839,7 @@ HEADER	*hptr;
 			ans++;
 			break;
 		case T_CNAME :
-			if (len > HOSTLEN)
+			if (len > MAXHOSTLEN)
 			    {
 				return -3;
 			    }
@@ -847,7 +851,7 @@ HEADER	*hptr;
 				break;
 			    }
 			len2 = strlen(hostbuf2);
-			if (len2 > HOSTLEN)
+			if (len2 > MAXHOSTLEN)
 			    {
 				return -3;
 			    }
@@ -863,6 +867,10 @@ HEADER	*hptr;
 				return -3; /* a break would be enough here */
 			if (alias >= &(hp->h_aliases[MAXALIASES-1]))
 				break;
+#ifdef USE_LIBIDN
+			/* it might have changed after idna_decode */
+			len = strlen(hostbuf);
+#endif
 			*alias = (char *)MyMalloc(len + 1);
 			(void)strcpy(*alias++, hostbuf);
 			*alias = NULL;
@@ -1947,7 +1955,22 @@ int len;
 		if (rc == IDNA_SUCCESS)
 		{
 			if (convert)
-				strcpy(name, idn);
+			{
+				/* now handle smart asses who play tricks with
+				   their DNS servers to produce long hostnames
+					--erra */
+				char *s = idn;
+				int len = strlen(s) - MAXHOSTLEN;
+
+				if (len > 0)
+					s += len + 1;
+
+				/* now reach clearance with multibyte strings */
+				while (mblen(s, 6) == -1)
+					s++;
+
+				strcpy(name, s);
+			}
 		}
 		else
 		{

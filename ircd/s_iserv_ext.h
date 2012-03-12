@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_iserv_ext.h,v 1.3 2005/08/23 22:28:22 skold Exp $
  */
 
 /*  This file contains external definitions for global variables and functions

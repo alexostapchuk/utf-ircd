@@ -54,7 +54,7 @@ void initialize_rusnet(char *path)
 
      FILE *finit;
      char s[BUFLEN + 1];
-     int  i,j,k,l;
+     int  i,j;
      char *parm[16], *p, *r;
      char *ptr;
      char *codepage_name, *intable, *outtable, *portnum;
@@ -100,7 +100,7 @@ void initialize_rusnet(char *path)
            if (strcasecmp(parm[0], "logfile") == 0)
            {
                   logging_enabled = 1;
-                  strcpy(logfile_name, parm[1]);
+                  strcpy((char *)logfile_name, parm[1]);
            }
            else
            if (strcasecmp(parm[0], "prefix") == 0)

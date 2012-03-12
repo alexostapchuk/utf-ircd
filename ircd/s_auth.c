@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: s_auth.c,v 1.12 2010-11-10 13:38:39 gvs Exp $
  */
 
 #include "os.h"
@@ -103,7 +102,7 @@ static aExtData	*iauth_stats = NULL;
  */
 int	vsendto_iauth(char *pattern, va_list va)
 {
-	static	char	abuf[BUFSIZ], *p;
+	static	char	abuf[MAXHOSTLEN + 10], *p;
 	int	i, len;
 
 	if (adfd < 0)

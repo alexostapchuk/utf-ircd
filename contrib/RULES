@@ -1,5 +1,3 @@
-# $Id: RULES,v 1.6 2010-11-10 13:38:39 gvs Exp $
-
 
 This file describes how to prepare a package for inclusion
 in the contrib/ directory.  The goal is to have a consistent

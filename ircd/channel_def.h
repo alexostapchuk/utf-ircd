@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: channel_def.h,v 1.6 2005/08/23 22:28:22 skold Exp $
  */
 
 #define CREATE 1	/* whether a channel should be

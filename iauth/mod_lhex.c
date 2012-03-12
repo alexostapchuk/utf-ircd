@@ -166,7 +166,7 @@ u_int cl;
 		** We haven't sent the query yet, the connection was just
 		** established.
 		*/
-		char query[3+7+6+4+USERLEN+2*HOSTLEN+8+3];/*strlen(atoi(cl))<=8*/
+		char query[31+USERLEN+2*HOSTLEN];/*strlen(atoi(cl))<=8*/
 		char *ident = cldata[cl].authuser;
 
 		/* This is part of every request */

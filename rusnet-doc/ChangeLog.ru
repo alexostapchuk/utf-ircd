@@ -1,5 +1,52 @@
 ВНИМАНИЕ: этот файл может быть недостаточно свеж, смотрите ChangeLog
 --------------------------------------------------------------------------
+Версия 2.0.5
+--------------
+2012-02-13 erra <erra@ya.ru>
+	* ircd/s_misc.c,rusnet/rusnet_cmds.c: зачистка кода от неиспользуемых
+			переменных
+
+2012-02-12 erra <erra@ya.ru>
+	* ircd/res.c: hostbuf и hostbuf2 увеличены на 1 байт
+	* ircd/s_auth.c,ircd/s_bsd.c: буфер в sendto_iauth увеличен, чтобы
+			уместить доменные имена длиной MAXHOSTLEN байт
+
+Версия 2.0.4
+--------------
+2012-02-11 erra <erra@ya.ru>
+	* ircd/res.c: исправлено выделение памяти в декодировании
+			IDN-имени и последующем употреблении (нашёл denk)
+	* ircd/s_misc.c: исправлено ограничение на длину имён в DNS
+
+2012-02-09 erra <erra@ya.ru>
+	* iauth/a_struct_def.h: для доменных имён используется MAXHOSTLEN
+	* ircd/res.c: для доменных имён и буферов используется MAXHOSTLEN
+
+Версия 2.0.3
+--------------
+2012-01-30 erra <erra@ya.ru>
+	* common/support.c: исправлен выход за пределы строки
+			в cstrip (нашёл denk)
+
+2012-01-29 erra <erra@ya.ru>
+	* common/support.c: в ISUPPORT добавлены FNC и CASEMAPPING
+	* ircd/s_conf.c: предотвращено переполнение буфера
+			в attach_Iline (нашёл denk)
+
+Версия 2.0.2
+--------------
+2011-11-13 erra <erra@ya.ru>
+	* common/struct_def.h: задан MAXHOSTLEN
+	* ircd/s_conf.c: буфер для имён DNS увеличен до MAXHOSTLEN;
+			использование DEFAULT_CHARSET отменено для OLD8BIT
+	* ircd/s_misc.c: добавлена обработка чрезмерно длинных имён в DNS
+	* rusnet/rusnet_codepages.c, rusnet/rusnet_init.c: зачистка кода
+	* support/configure.in, support/configure: исправлена опечатка
+			в проверке на zlib
+
+2011-10-21 erra <erra@ya.ru>
+	* ircd/s_err.c: исправлены шаблоны RPL_IDENTIFIED и RPL_NOCOLOR
+
 Версия 2.0.1
 --------------
 2011-10-14 erra <erra@ya.ru>

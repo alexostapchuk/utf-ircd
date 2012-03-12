@@ -46,6 +46,11 @@ typedef struct        Syslog  aSyslog;
 
 #define	HOSTLEN		63	/* Length of hostname.  Updated to         */
 				/* comply with RFC1123                     */
+#ifdef NI_MAXHOST
+#define	MAXHOSTLEN	NI_MAXHOST
+#else
+#define	MAXHOSTLEN	1024	/* eventually all HOSTLEN applications	    */
+#endif				/* will be replaced with MAXHOSTLEN  --erra */
 
 #define	NICKLEN		31	/* Necessary to put 31 here instead of 32
 				** This preserves compatibility with services

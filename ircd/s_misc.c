@@ -310,13 +310,29 @@ Reg	aClient	*cptr;
 Reg	char	*host;
 {
 	Reg	char	*s;
+	Reg	int	len;
 
 	if ((s = (char *)index(host, '@')))
 		s++;
 	else
 		s = host;
-	strncpyzt(cptr->sockhost, s, sizeof(cptr->sockhost));
+
 	Debug((DEBUG_DNS,"get_sockhost %s",s));
+
+	/* now handle smart asses who play tricks with
+	   their DNS servers to produce long hostnames --erra */
+	len = strlen(s) - sizeof(cptr->sockhost);
+
+	if (len > 0)
+		s += len + 1;
+
+#ifdef USE_LIBIDN
+	/* now reach clearance with multibyte strings */
+	while (mblen(s, 6) == -1)
+		s++;
+#endif
+	/* it's safe to call strcpy here */
+	strcpy(cptr->sockhost, s);
 }
 
 /*
@@ -1100,8 +1116,8 @@ char *filename;
 	conversion_t *conv;
 	char line2[512];
 	char *rline;
-#endif
 	size_t len;
+#endif
 
 	if ((fd = open(filename, O_RDONLY)) == -1)
 		return;

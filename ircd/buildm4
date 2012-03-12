@@ -16,8 +16,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-# $Id: buildm4,v 1.6 2010-11-10 13:38:39 gvs Exp $
-#
 
 #
 # If only this was a perl script...*sigh*

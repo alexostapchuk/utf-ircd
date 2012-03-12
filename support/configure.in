@@ -478,7 +478,7 @@ AC_ARG_WITH(zlib,
                     irc_zlib_dir=""
                 ])
 	    done
-                if test "x$irc_zlib_dir" != "x"
+                if test "x$irc_zlib_dir" = "x"
 		then
                     AC_MSG_NOTICE(ZLIB not found)
                 else

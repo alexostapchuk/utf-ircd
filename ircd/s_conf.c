@@ -153,8 +153,8 @@ char	*sockhost;
 	Reg	aConfItem	*aconf;
 	Reg	char	*hname;
 	Reg	int	i;
-	static	char	uhost[HOSTLEN+USERLEN+3];
-	static	char	fullname[HOSTLEN+1];
+	static	char	uhost[MAXHOSTLEN+USERLEN+3];
+	static	char	fullname[MAXHOSTLEN+1];
 
 	for (aconf = conf; aconf; aconf = aconf->next)
 	    {
@@ -169,10 +169,9 @@ char	*sockhost;
 			for (i = 0, hname = hp->h_name; hname;
 			     hname = hp->h_aliases[i++])
 			    {
-				strncpyzt(fullname, hname,
-					sizeof(fullname));
+				strncpyzt(fullname, hname, sizeof(fullname));
 				add_local_domain(fullname,
-						 HOSTLEN - strlen(fullname));
+						 MAXHOSTLEN - strlen(fullname));
 				Debug((DEBUG_DNS, "a_il: %s->%s",
 				      sockhost, fullname));
 				if (index(aconf->name, '@'))
@@ -195,7 +194,8 @@ char	*sockhost;
 		    }
 		else
 			*uhost = '\0';
-		(void)strncat(uhost, sockhost, sizeof(uhost) - strlen(uhost));
+		(void)strncat(uhost, sockhost,
+					sizeof(uhost) - strlen(uhost) - 1);
 		if (strchr(aconf->host, '/'))		/* 1.2.3.0/24 */
 		    {
 			if (match_ipmask(aconf->host, cptr))
@@ -205,7 +205,8 @@ char	*sockhost;
 		if (*aconf->name == '\0' && hp)
 		    {
 			strncpyzt(uhost, hp->h_name, sizeof(uhost));
-			add_local_domain(uhost, sizeof(uhost) - strlen(uhost));
+			add_local_domain(uhost,
+					sizeof(uhost) - strlen(uhost) - 1);
 		    }
 attach_iline:
 		if (aconf->status & CONF_RCLIENT)
@@ -1387,6 +1388,7 @@ int	init_flags;
 			DupString(aconf->host, tmp);
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
+#ifndef	USE_OLD8BIT
 			if (aconf->status & 
 				(CONF_LISTEN_PORT
 #ifdef USE_SSL
@@ -1401,7 +1403,9 @@ int	init_flags;
 				DupString(aconf->passwd, s);
 			}
 			else
+#endif
 			DupString(aconf->passwd, tmp);
+
 			if ((tmp = getfield(NULL)) == NULL)
 				break;
 #ifdef	INET6

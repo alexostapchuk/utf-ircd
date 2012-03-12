@@ -658,10 +658,10 @@ int rcvdsig;
 	    {
 		int i;
 		aClient *cptr;
-		char	abuf[BUFSIZ];	/* size of abuf in vsendto_iauth */
+		char	abuf[MAXHOSTLEN + 10];	/* size of abuf in vsendto_iauth */
 		/* 20 is biggest possible ending "%d O\n\0", which means
 		** 16-digit fd -- very unlikely :> */
-		char	*e = abuf + BUFSIZ - 20;
+		char	*e = abuf + MAXHOSTLEN - 10;
 		char	*s = abuf;
 
 		/* Build abuf to send big buffer once (or twice) to iauth,

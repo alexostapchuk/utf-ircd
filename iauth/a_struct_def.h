@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *   $Id: a_struct_def.h,v 1.5 2005/08/23 22:28:22 skold Exp $
  */
 
 
@@ -30,7 +29,7 @@ struct AuthData
 	/* the following are set by a_io.c and may be read by modules */
 	char	user[USERLEN+1];	/* username */
 	char	passwd[PASSWDLEN+1];	/* password */
-	char	host[HOSTLEN+1];	/* hostname */
+	char	host[MAXHOSTLEN+1];	/* hostname */
 	char	itsip[HOSTLEN+1];	/* client ip */
 	u_short	itsport;		/* client port */
 	char	ourip[HOSTLEN+1];	/* our ip */
