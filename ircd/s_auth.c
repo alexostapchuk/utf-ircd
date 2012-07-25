@@ -120,7 +120,7 @@ int	vsendto_iauth(char *pattern, va_list va)
 
 		if (i == -1)
 		{
-			if (cnt > 2 || errno != EAGAIN && errno != EWOULDBLOCK)
+			if (cnt > 2 || (errno != EAGAIN && errno != EWOULDBLOCK))
 			{
 				sendto_flag(SCH_AUTH, "Aiiie! lost slave "
 					"authentication process");

@@ -427,7 +427,6 @@ char	*nick, *username;
 {
 	Reg	aConfItem *aconf;
 	aClient	*acptr;
-	aServer	*sp = NULL;
 	anUser	*user = sptr->user;
 	short	oldstatus = sptr->status;
 	char	*parv[3], *s;
@@ -462,8 +461,6 @@ char	*nick, *username;
 		    }
 		if (!DoneXAuth(sptr) && (iauth_options & XOPT_REQUIRED))
 		    {
-			char *reason;
-
 			if (iauth_options & XOPT_NOTIMEOUT)
 			    {
 				count += 1;
@@ -473,13 +470,11 @@ char	*nick, *username;
 	    "iauth may not be running! (refusing new user connections)");
 					last = timeofday;
 				    }
-				reason = "No iauth!";
 				sptr->exitc = EXITC_AUTHFAIL;
 			    }
-			else {
-				reason = "iauth t/o";
+			else
 				sptr->exitc = EXITC_AUTHTOUT;
-			}
+
 			return ereject_user(cptr, sptr->exitc,
 					    "Authentication failure!");
 		    }
@@ -707,7 +702,6 @@ char	*nick, *username;
 			(void)m_oper(&me, sptr, 1, parv);
 /*		*user->tok = '1';
 		user->tok[1] = '\0';*/
-		sp = user->servp;
 #ifndef NO_DIRECT_VHOST
 		if (sptr->flags & FLAGS_XMODE)
 		{

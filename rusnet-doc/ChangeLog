@@ -1,6 +1,7 @@
 Version 2.0.6
 --------------
 2012-07-25 erra <erra@ya.ru>
+	* ircd/chkconf.c,ircd/ircd.c,ircd/s_user.c: unused variables cleared
 	* ircd/ircd.c: use Unicode locale to avoid banmasks with question
 			marks matching a byte, not a symbol
 	* ircd/s_auth.c: give ircd a chance to get out of deadlock

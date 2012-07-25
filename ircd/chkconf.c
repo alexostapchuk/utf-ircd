@@ -203,7 +203,7 @@ static	void	showconf(void)
 static	aConfItem 	*initconf(void)
 {
 	int	fd;
-	char	*tmp, *tmp3 = NULL, *s;
+	char	*tmp, *s;
 	int	ccount = 0, ncount = 0, flags = 0, nr = 0;
 	aConfItem *aconf = NULL, *ctop = NULL;
 	int	mandatory_found = 0, valid = 1;
@@ -439,7 +439,7 @@ static	aConfItem 	*initconf(void)
 						"no class, default 0");
 				aconf->class = get_class(atoi(tmp), nr);
 			    }
-			tmp3 = getfield(NULL);
+			/* getfield(NULL); */
 		} while (0); /* to use break without compiler warnings */
 
 		if (!aconf->class && (aconf->status & (CONF_CONNECT_SERVER|

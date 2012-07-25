@@ -76,7 +76,6 @@ void	server_reboot(mesg)
 char	*mesg;
 {
 	Reg	int	i;
-	int	time_slave;
 	sendto_flag(SCH_NOTICE, "Restarting server because: %s (%u)", mesg,
 		    (u_int)((char *)sbrk((size_t)0)-sbrk0));
 
@@ -104,10 +103,12 @@ char	*mesg;
 	ircd_writetune(tunefile);
 	if (!(bootopt & (BOOT_INETD)))
 	    {
+		int	time_slave = timeofday;
+
 		(void)close(0);
 		/* Have to wait for our zombies --skold */
 		Debug((DEBUG_DEBUG, "Waiting for slaves:"));
-		time_slave = timeofday;
+
 		if (wait(NULL) > -1)
 		{
 			Debug((DEBUG_DEBUG, "Some slaves were alive... But "
