@@ -1013,7 +1013,7 @@ char	*argv[];
 # ifdef LOCALE_PATH
 	setenv("LOCPATH", LOCPATH, 1);
 # endif
-	setlocale(LC_ALL, LOCALE "." CHARSET_8BIT); /* it's fixed for now */
+	setlocale(LC_ALL, LOCALE "." CHARSET_UNICODE); /* it's fixed for now */
 	setlocale(LC_TIME, SYS_LOCALE);
 	setlocale(LC_MESSAGES, SYS_LOCALE);
 #endif

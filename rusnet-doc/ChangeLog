@@ -1,3 +1,11 @@
+Version 2.0.6
+--------------
+2012-07-25 erra <erra@ya.ru>
+	* ircd/ircd.c: use Unicode locale to avoid banmasks with question
+			marks matching a byte, not a symbol
+	* ircd/s_auth.c: give ircd a chance to get out of deadlock
+			when iauth gets stuck
+
 Version 2.0.5
 --------------
 2012-02-13 erra <erra@ya.ru>

@@ -103,7 +103,7 @@ static aExtData	*iauth_stats = NULL;
 int	vsendto_iauth(char *pattern, va_list va)
 {
 	static	char	abuf[MAXHOSTLEN + 10], *p;
-	int	i, len;
+	int	i, len, cnt = 0;
 
 	if (adfd < 0)
 	{
@@ -114,13 +114,13 @@ int	vsendto_iauth(char *pattern, va_list va)
 	p = abuf;
 	len = strlen(p);
 
-	do
+	while (len > 0)
 	{
 		i = write(adfd, abuf, len);
 
 		if (i == -1)
 		{
-			if (errno != EAGAIN && errno != EWOULDBLOCK)
+			if (cnt > 2 || errno != EAGAIN && errno != EWOULDBLOCK)
 			{
 				sendto_flag(SCH_AUTH, "Aiiie! lost slave "
 					"authentication process");
@@ -129,12 +129,19 @@ int	vsendto_iauth(char *pattern, va_list va)
 				start_iauth(0);
 				return -1;
 			}
-			i = 0;
+			else
+			{
+				sleep(1);
+				cnt++;
+			}
 		}
-		p += i;
-		len -= i;
+		else
+		{
+			cnt = 0;
+			p += i;
+			len -= i;
+		}
 	}
-	while (len > 0);
 
 	return 0;
 }
